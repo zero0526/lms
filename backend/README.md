@@ -39,3 +39,68 @@ src
 ├── static/
 └── templates/
 pom.xml                                               // (10) Quản lý thư viện và dự án
+
+
+The system allows teachers to grant students assistant privileges, with optional permissions if needed.
+@Entity
+@Table(name = "user_course_roles")
+public class UserCourseRole {
+@Id
+@GeneratedValue(strategy = GenerationType.IDENTITY)
+private Long id;
+
+    @ManyToOne(optional = false)
+    private User user;
+
+    @ManyToOne(optional = false)
+    private Course course;
+
+    @ManyToOne(optional = false)
+    private Role role; // e.g. TEACHER, ASSISTANT, STUDENT
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "user_course_permissions",
+        joinColumns = @JoinColumn(name = "user_course_role_id"),
+        inverseJoinColumns = @JoinColumn(name = "permission_id")
+    )
+    private Set<Permission> extraPermissions = new HashSet<>();
+
+    private LocalDateTime assignedAt = LocalDateTime.now();
+}
+@PostMapping("/{courseId}/assistants")
+
+[//]: # (authentication:user info , #courseId get from @PathVariable Long courseId)
+@PreAuthorize("@courseSecurity.hasPermission(authentication, #courseId, 'ASSIGN_ASSISTANT')")
+public ResponseEntity<?> addAssistant(
+@PathVariable Long courseId,
+@RequestBody AssignAssistantRequest req
+) {
+courseRoleService.assignAssistant(courseId, req.getUserId(), req.getPermissions());
+return ResponseEntity.ok("Assistant assigned successfully");
+}
+
+@Component("courseSecurity")
+public class CourseSecurity {
+
+    private final UserCourseRoleRepository userCourseRoleRepository;
+
+    public CourseSecurity(UserCourseRoleRepository repo) {
+        this.userCourseRoleRepository = repo;
+    }
+
+    public boolean hasPermission(Authentication auth, Long courseId, String permissionName) {
+        String email = auth.getName();
+
+        return userCourseRoleRepository.findByUserEmailAndCourseId(email, courseId)
+                .flatMap(ucr -> ucr.getAllPermissions().stream()
+                        .filter(p -> p.getName().equals(permissionName))
+                        .findFirst()
+                ).isPresent();
+    }
+    public Set<Permission> getAllPermissions() {
+        Set<Permission> all = new HashSet<>(role.getPermissions());
+        all.addAll(extraPermissions);
+        return all;
+    }
+}

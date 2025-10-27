@@ -1,24 +1,29 @@
 services:
   redis:
     image: redis:8.2.1
-    container_name: redis
+    container_name: redis_course
     restart: always
     ports:
-      - "6379:6379"
+      - "6380:6379"
     command: redis-server --save 20 1 --loglevel warning
     volumes:
-      - redis_data_1:/data
+      - redis_data_course:/data
 
   postgres:
     image: postgres:17
-    container_name: postgres
+    container_name: postgres_course
     restart: always
     ports:
-      - "5433:5432"
+      - "5434:5432"
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: 123
       POSTGRES_DB: mydatabase
     volumes:
-      - postgres_data_1:/var/lib/postgresql/data
+      - postgres_data_course:/var/lib/postgresql/data
       - ./init:/docker-entrypoint-initdb.d
+
+volumes:
+  postgres_data_course:
+  redis_data_course:
+    driver: local
