@@ -1,4 +1,4 @@
 package webtech.online.course.services;
 
-public class AuthService {
+public interface UserProfileService {
 }

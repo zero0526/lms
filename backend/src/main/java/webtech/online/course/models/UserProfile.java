@@ -6,33 +6,34 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-import webtech.online.course.models.enums.Gender;
+import webtech.online.course.enums.Gender;
 
 import java.time.LocalDateTime;
 import java.util.Map;
 
 @Entity
-@Table(name = "user_info")
+@Table(name = "user_profiles")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserInfo {
+public class UserProfile {
     @Id
-    @GeneratedValue(strategy= GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
+    @Column(name = "user_id")
+    private Long userId;
 
-    @Column(name = "avatar_url", length = 255)
-    private String avatarUrl;
+    @OneToOne(fetch = FetchType.LAZY)
+    @MapsId
+    @JoinColumn(name = "user_id")
+    private User user;
 
-    @Column(name = "phone_number")
+    @Column(name = "phone")
     private String phoneNumber;
 
     @Column(name = "gender")
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
-    @Column(name = "birth_date")
+    @Column(name = "date_of_birth")
     private LocalDateTime birthDate;
 
     @Column(name = "address", length = 255)

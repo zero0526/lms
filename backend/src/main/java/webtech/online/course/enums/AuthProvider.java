@@ -1,4 +1,4 @@
-package webtech.online.course.models.enums;
+package webtech.online.course.enums;
 
 public enum AuthProvider {
     LOCAL,
