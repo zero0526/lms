@@ -25,7 +25,7 @@ export default function Home() {
     </p>
     <div className="flex space-x-4">
       <button className="bg-white text-[#00b6b6] font-semibold px-6 py-3 rounded-lg hover:bg-gray-100">
-        Join for Free
+        <a href="/login">Join for Free</a>
       </button>
       <button className="flex items-center space-x-2 border border-white px-6 py-3 rounded-lg hover:bg-white/10">
         <span>▶</span>
