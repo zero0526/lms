@@ -1,6 +1,7 @@
 package webtech.online.course.services.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import webtech.online.course.dtos.OAuth2UserInfo;
@@ -94,7 +95,9 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
+
     public Optional<User> findByEmail(String email){
         return userRepository.findByEmail(email);
     }
+
 }
