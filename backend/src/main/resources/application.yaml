@@ -21,7 +21,7 @@ spring:
     host: smtp.gmail.com
     port: 587
     username: nguyenkhoe2652004@gmail.com
-    password: pass
+    password: swwdiguqwurzauzi
     properties:
       mail:
         smtp:
@@ -39,3 +39,10 @@ server:
 app:
   token:
     expire-seconds: 604800
+
+logging:
+  level:
+    root: Warn
+  webtech:
+    online:
+      course: DEBUG

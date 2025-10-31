@@ -17,6 +17,7 @@ import webtech.online.course.models.UserSession;
 import webtech.online.course.models.VerificationToken;
 import webtech.online.course.security.JwtService;
 import webtech.online.course.security.UserDetailsServiceImpl;
+import webtech.online.course.services.EmailService;
 import webtech.online.course.services.VerificationTokenService;
 import webtech.online.course.services.impl.EmailServiceImpl;
 import webtech.online.course.services.impl.UserServiceImpl;
@@ -37,7 +38,7 @@ public class AuthController {
     private final UserServiceImpl userServiceImpl;
     private final UserSessionService userSessionService;
     private final VerificationTokenService verificationTokenService;
-    private final EmailServiceImpl emailService;
+    private final EmailService emailService;
 
 //    @PreAuthorize("hasAuthority('ROLE_TEACHER')")
     @PostMapping("/login")
@@ -49,8 +50,8 @@ public class AuthController {
             UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(request.getEmail());
             String accessToken = jwtService.generateToken(userDetails);
             String refreshToken = jwtService.generateRefreshToken(userDetails);
-            User user= userServiceImpl.findByEmail(request.getEmail()).orElseThrow();
-
+            User user= userServiceImpl.findByEmail(request.getEmail()).orElseThrow(()->new UsernameNotFoundException("Not found the user has email, role is provided"));
+            if(!user.getRole().getName().equals(request.getRole())||!user.getProviderUserId().equals("Local"))throw new UsernameNotFoundException("Not found the user has email, role is provided");
             userSessionService.enforceMaxSession(user, 1);
 
             UserSession session = UserSession.builder()
