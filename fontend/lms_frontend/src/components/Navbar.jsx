@@ -22,7 +22,7 @@ export default function Navbar() {
       {/* Thanh tìm kiếm */}
       <form
         onSubmit={handleSearch}
-        className="hidden md:flex items-center bg-white rounded-full overflow-hidden mx-6 w-64 focus-within:ring-2 focus-within:ring-yellow-300"
+        className="hidden md:flex items-center bg-white rounded-full overflow-hidden mx-6 w-90 focus-within:ring-2"
       >
         <input
           type="text"
