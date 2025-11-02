@@ -41,10 +41,10 @@ export default function Navbar() {
 
       {/* Menu */}
       <ul className="hidden md:flex space-x-8 font-medium">
-        <li><a href="#home" className="hover:text-yellow-200">Home</a></li>
+        <li><a href="/home" className="hover:text-yellow-200">Home</a></li>
         <li><a href="#courses" className="hover:text-yellow-200">Courses</a></li>
         <li><a href="#careers" className="hover:text-yellow-200">Careers</a></li>
-        <li><a href="#blog" className="hover:text-yellow-200">Blog</a></li>
+        <li><a href="/blog" className="hover:text-yellow-200">Blog</a></li>
         <li><a href="#about" className="hover:text-yellow-200">About Us</a></li>
       </ul>
 
