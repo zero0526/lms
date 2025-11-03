@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
+import Blog from "./pages/Blog";
 
 
 export default function App() {
@@ -12,6 +13,9 @@ export default function App() {
         <Route path="/home" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/blog" element={<Blog />} />
+
+        
       </Routes>
     </BrowserRouter>
   );
