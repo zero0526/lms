@@ -1,6 +1,6 @@
 export default function Footer() {
   return (
-    <footer className="bg-[#002B3D] text-white py-10 mt-20">
+    <footer className="bg-[#002B3D] text-white py-10 mt-0">
       <div className="max-w-6xl mx-auto text-center">
         <h2 className="text-xl font-semibold mb-3">TOTC Online Learning</h2>
         <p className="text-gray-400 text-sm mb-6">
