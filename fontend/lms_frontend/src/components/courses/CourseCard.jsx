@@ -1,6 +1,6 @@
 import React from "react";
-import student from "../assets/person.svg"
-import lesson from "../assets/lesson.svg"
+import student from "../../assets/person.svg"
+import lesson from "../../assets/lesson.svg"
 
 export default function CourseCard({ course }) {
 

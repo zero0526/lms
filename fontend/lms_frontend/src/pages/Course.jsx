@@ -1,10 +1,10 @@
 import React from "react";
 import Navbar from "../components/Navbar";
-import LearningSection from "../components/LearningSection";
-import CourseRecommendationSection from "../components/CourseRecommendationSection";
+import LearningSection from "../components/courses/LearningSection";
+import CourseRecommendationSection from "../components/courses/CourseRecommendationSection";
 import Footer from "../components/Footer";
-import CourseDevelopmentSection from "../components/CourseDevelopmentSection";
-import CourseTeacher from "../components/CourseTeacher";
+import CourseDevelopmentSection from "../components/courses/CourseDevelopmentSection";
+import CourseTeacher from "../components/courses/CourseTeacher";
 
 export default function Course() {
   return (
