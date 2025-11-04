@@ -1,7 +1,7 @@
-import img1 from "../assets/article1.png";
-import img2 from "../assets/article2.jpeg";
-import img3 from "../assets/article3.jpg";
-import img4 from "../assets/article4.jpg";
+import img1 from "../../assets/article1.png"
+import img2 from "../../assets/article2.jpeg";
+import img3 from "../../assets/article3.jpg";
+import img4 from "../../assets/article4.jpg";
 
 const MarketingArticles = () => {
   const articles = [

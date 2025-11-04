@@ -1,8 +1,8 @@
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import heroImg from "../assets/Group1.png"
-import MarketingArticles from "../components/MarketingArticles";
-import BlogSections from "../components/BlogSections";
+import MarketingArticles from "../components/Blogs/MarketingArticles";
+import BlogSections from "../components/Blogs/BlogSections";
 
 <BlogSections />
 
