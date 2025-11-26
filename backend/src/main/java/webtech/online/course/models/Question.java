@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -20,7 +21,8 @@ public class Question {
     private Long id;
 
     @OneToMany(mappedBy = "question", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<MCPContent> mcpContents;
+    @Builder.Default
+    private List<MCPContent> mcpContents= new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "quiz_id")
@@ -32,13 +34,18 @@ public class Question {
     @Column(name = "question_image")
     private String questionImg;
 
-    @ManyToOne
-    @JoinColumn(name = "segment_id")
-    private Segment segment;
-
     private String level;
 
     private Float score;
 
+    @Column(name = "\"order\"")
     private Integer order;
+
+    @Column(name = "explanation", columnDefinition = "TEXT")
+    private String explanation;
+
+    public void addMcpContent(MCPContent mcpContent){
+        this.mcpContents.add(mcpContent);
+        mcpContent.setQuestion(this);
+    }
 }

@@ -4,6 +4,7 @@ package webtech.online.course.models;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -22,10 +23,12 @@ public class Quiz {
     private Lesson lesson;
     
     @OneToMany(mappedBy = "quiz", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<Question> questions;
+    @Builder.Default
+    private List<Question> questions= new ArrayList<>();
 
     @OneToMany(mappedBy = "quiz", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<QuizAttempt> quizAttempts;
+    @Builder.Default
+    private List<QuizAttempt> quizAttempts=  new ArrayList<>();
 
     private String title;
 
@@ -34,13 +37,18 @@ public class Quiz {
     private String description;
 
     @Column(name = "time_limit_minutes")
-    private String timeLimitMinutes;
+    private Integer timeLimitMinutes;
     
     @Column(name = "difficulty_avg")
     private String difficultyAvg;
     
     @Column(name = "total_score")
     private Integer totalScore;
+
+    public void addQuestion(Question question){
+        this.questions.add(question);
+        question.setQuiz(this);
+    }
 }
 
 

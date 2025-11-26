@@ -8,6 +8,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import webtech.online.course.enums.Gender;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -34,7 +35,7 @@ public class UserProfile {
     private Gender gender;
 
     @Column(name = "date_of_birth")
-    private LocalDateTime birthDate;
+    private LocalDate birthDate;
 
     @Column(name = "address", length = 255)
     private String address;
@@ -52,10 +53,10 @@ public class UserProfile {
     private LocalDateTime lastLogin;
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt= LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(name = "updated_at")
-    private LocalDateTime updatedAt= LocalDateTime.now();
+    private LocalDateTime updatedAt = LocalDateTime.now();
 
     @Column(name = "preferences", columnDefinition = "jsonb")
     @JdbcTypeCode(SqlTypes.JSON)

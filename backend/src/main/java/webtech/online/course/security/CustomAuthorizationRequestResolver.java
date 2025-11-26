@@ -41,7 +41,6 @@ public class CustomAuthorizationRequestResolver implements OAuth2AuthorizationRe
         if (role != null && !role.isEmpty()) {
             additionalParameters.put("OAUTH_ROLE", role);
 
-            // Lưu luôn vào session
             HttpSession session = request.getSession();
             session.setAttribute("OAUTH_ROLE", role);
 

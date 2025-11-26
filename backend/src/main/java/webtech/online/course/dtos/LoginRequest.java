@@ -14,6 +14,6 @@ import java.util.Map;
 public class LoginRequest {
     private String email;
     private String password;
-    public String role;
+    private RoleDTO role;
     private Map<String, Object> deviceInfo;
 }

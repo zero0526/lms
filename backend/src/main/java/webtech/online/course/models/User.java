@@ -9,6 +9,7 @@ import webtech.online.course.enums.AuthProvider;
 import webtech.online.course.enums.UserStatus;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,7 +29,7 @@ public class User {
     @Column(name = "full_name", nullable = false, length = 255)
     private String fullName;
 
-    @Column(name = "picture_url", length = 255)
+    @Column(name = "avatar_url", length = 255)
     private String pictureUrl;
 
     @Column(name = "email", nullable = false, unique = true, length = 255)
@@ -60,7 +61,8 @@ public class User {
 
     // Subscription to usser 1-n
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Subscription> subscription;
+    @Builder.Default
+    private List<Subscription> subscription= new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)

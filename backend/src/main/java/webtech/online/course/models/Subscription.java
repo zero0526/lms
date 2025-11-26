@@ -27,10 +27,10 @@ public class Subscription {
 
     @Column(name = "status")
     @Enumerated(EnumType.STRING)
-    private SubscriptionStatus status= SubscriptionStatus.ACTIVE;
+    private SubscriptionStatus status = SubscriptionStatus.ACTIVE;
 
     @Column(name = "auto_renew")
-    private Boolean autoRenew= Boolean.FALSE;
+    private Boolean autoRenew = Boolean.FALSE;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -39,6 +39,9 @@ public class Subscription {
     private LocalDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name="user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @Column(name = "course_id")
+    private Long courseId;
 }

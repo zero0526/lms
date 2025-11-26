@@ -24,7 +24,7 @@ public class UserSession {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "device_info")
+    @Column(name = "ip_address")
     private String ipAddress;
 
     @Column(name = "refresh_token", nullable = false)
@@ -32,18 +32,18 @@ public class UserSession {
 
     @Column(name = "revoked")
     @Builder.Default
-    private Boolean revoked= Boolean.FALSE;
+    private Boolean revoked = Boolean.FALSE;
 
-    @Column(name= "expires_at")
+    @Column(name = "expires_at")
     private LocalDateTime expiresAt;
 
     @Column(name = "last_active_at")
     @Builder.Default
-    private LocalDateTime lastActiveAt= LocalDateTime.now();
+    private LocalDateTime lastActiveAt = LocalDateTime.now();
 
     @Column(name = "created_at")
     @Builder.Default
-    private LocalDateTime createdAt= LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     @PrePersist
     public void prePersist() {

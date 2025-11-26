@@ -24,6 +24,8 @@ public class Segment {
     private String description;
     @Column(name = "start_at")
     private String startAt;
+    @Column(name = "end_at")
+    private String endAt;
 
     public List<Integer> getStartAtIso(){
         return Arrays.stream(this.startAt.split(":")).map(Integer::parseInt).toList();

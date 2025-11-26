@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,9 +37,10 @@ public class OAuthProvider {
     private String tokenUrl;
     @Column(name = "userinfo_url")
     private String userinfoUrl;
-    @Column(name = "scopes")
+    @Column(name = "scopes", columnDefinition = "text[]")
+    @JdbcTypeCode(SqlTypes.ARRAY)
     private List<String> scopes;
     @Column(name = "created_at")
     @Builder.Default
-    private LocalDateTime createdAt= LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now();
 }

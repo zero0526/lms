@@ -36,11 +36,12 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         OAuth2UserInfo userInfo = OAuth2UserInfoFactory.getOAuth2UserInfo(providerId, oauthUser.getAttributes());
 
         if (roleName == null) roleName = "ROLE_STUDENT";
+        else roleName= "ROLE_%s".formatted(roleName);
         UserDetails userDetails;
         User newUser;
         try {
             userDetails = userDetailsService.loadUserByUsername(userInfo.getEmail());
-            newUser= userService.findByEmail(userInfo.getEmail()).orElseThrow(() -> new UsernameNotFoundException("User not found"));
+            newUser= userService.findByEmail(userInfo.getEmail());
         } catch (UsernameNotFoundException ex) {
             newUser= userService.firstOAuth(userInfo, roleName, providerId);
 

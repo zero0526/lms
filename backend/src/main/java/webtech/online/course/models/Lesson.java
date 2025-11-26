@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -30,11 +31,14 @@ public class Lesson {
     private Video video;
 
     @OneToMany(mappedBy = "lesson",cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<CourseMaterial> courseMaterials;
+    @Builder.Default
+    private List<CourseMaterial> courseMaterials= new ArrayList<>();
 
     @OneToMany(mappedBy = "lesson", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<Quiz> quizzes;
+    @Builder.Default
+    private List<Quiz> quizzes= new ArrayList<>();
 
+    @Column(name = "\"order\"")
     private Integer order;
 
     @Column(name = "description")
@@ -42,4 +46,13 @@ public class Lesson {
 
     @Column(name = "precondition")
     private String precondition;
+
+    public void addQuiz(Quiz quiz){
+        quizzes.add(quiz);
+        quiz.setLesson(this);
+    }
+    public void addCourseMaterials(CourseMaterial courseMaterial){
+        this.courseMaterials.add(courseMaterial);
+        courseMaterial.setLesson(this);
+    }
 }

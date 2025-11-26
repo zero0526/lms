@@ -1,4 +1,6 @@
 spring:
+  main:
+    banner-mode: off
   application:
     name: course
   datasource:
@@ -8,7 +10,7 @@ spring:
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     open-in-view: false
     properties:
@@ -32,7 +34,13 @@ spring:
             required: true
           sll:
             trust: smtp.gmail.com
-
+  servlet:
+    multipart:
+      max-file-size: 2GB
+      max-request-size: 2GB
+      enabled: true
+  liquibase:
+    change-log: classpath:db.changelog/schema.v1_0/db.changelog.xml
 
 server:
   port: 8081
@@ -43,7 +51,21 @@ app:
 
 logging:
   level:
-    root: Warn
+    root: info
   webtech:
     online:
       course: DEBUG
+
+youtube:
+  client:
+    secrets:
+      file: youtubeDriveUpload.json
+  credentials:
+    folder: credentials
+
+google:
+  credentials:
+    folder: ggCredentials
+  drive:
+    folderId: 1mHT6DleGLbKh0-Tvr_iGUzywFQsbbFeF
+

@@ -10,4 +10,7 @@ public interface UserService {
     public User firstOAuth(OAuth2UserInfo oAuth2UserInfo, String roleName, String providerId);
     public VerificationToken createVerificationToken(User user);
     public User save(User user);
+    public User findById(Long id);
+    public User confirmOriginalLogin(String email, String role);
+    public User findByEmail(String email);
 }

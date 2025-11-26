@@ -1,5 +1,6 @@
 package webtech.online.course.services.impl;
 
+import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class UserSessionServiceImpl implements UserSessionService {
     }
 
     @Override
+    @Transactional
     public void enforceMaxSession(User user, int maxSessions) {
         List<UserSession> activeSessions = userSessionReposirory.findActiveSessionByUserId(user.getId());
 

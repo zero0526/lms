@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -24,6 +25,15 @@ public class Video {
     private String videoUrl;
     private Integer duration;
 
+    @Column(name = "thumbnail_url", columnDefinition = "TEXT")
+    private String thumbnailUrl;
+
     @OneToMany(mappedBy = "video", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<Segment> segments;
+    @Builder.Default
+    private List<Segment> segments= new ArrayList<>();
+
+    public void addSegment(Segment segment){
+        segment.setVideo(this);
+        segments.add(segment);
+    }
 }

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -31,7 +32,8 @@ public class QuestionComment {
     private QuestionComment questionComment;
 
     @OneToMany(mappedBy = "questionComment",fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<QuestionComment> childComments;
+    @Builder.Default
+    private List<QuestionComment> childComments=  new ArrayList<>();
 
     @Column(name = "content", columnDefinition = "TEXT")
     private String Content;

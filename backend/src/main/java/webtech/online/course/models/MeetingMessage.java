@@ -5,6 +5,7 @@ import lombok.*;
 import org.springframework.cglib.core.Local;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -39,5 +40,6 @@ public class MeetingMessage {
     private MeetingMessage meetingMessage;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "meetingMessage", cascade = CascadeType.ALL)
-    private List<MeetingMessage> meetingSessions;
+    @Builder.Default
+    private List<MeetingMessage> meetingSessions= new ArrayList<>();
 }

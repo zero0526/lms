@@ -18,7 +18,7 @@ import java.util.function.Function;
 public class JwtService {
 
     private static final String SECRET_KEY = "gfvrk08q3Fu6eSiL2AfnHhJgrmnGpUi1/MMngL5bFA4=";
-    private static final long ACCESS_TOKEN_EXP_MINUTES = 15;
+    private static final long ACCESS_TOKEN_EXP_MINUTES = 365*24*60;
     private static final long REFRESH_TOKEN_EXP_MINUTES = 7 * 24 * 60;
 
     private Key getSignInKey() {

@@ -18,9 +18,8 @@ import webtech.online.course.models.VerificationToken;
 import webtech.online.course.security.JwtService;
 import webtech.online.course.security.UserDetailsServiceImpl;
 import webtech.online.course.services.EmailService;
+import webtech.online.course.services.UserService;
 import webtech.online.course.services.VerificationTokenService;
-import webtech.online.course.services.impl.EmailServiceImpl;
-import webtech.online.course.services.impl.UserServiceImpl;
 import webtech.online.course.services.UserSessionService;
 
 import java.time.LocalDateTime;
@@ -35,7 +34,7 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final UserDetailsServiceImpl userDetailsServiceImpl;
-    private final UserServiceImpl userServiceImpl;
+    private final UserService userService;
     private final UserSessionService userSessionService;
     private final VerificationTokenService verificationTokenService;
     private final EmailService emailService;
@@ -50,8 +49,8 @@ public class AuthController {
             UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(request.getEmail());
             String accessToken = jwtService.generateToken(userDetails);
             String refreshToken = jwtService.generateRefreshToken(userDetails);
-            User user= userServiceImpl.findByEmail(request.getEmail()).orElseThrow(()->new UsernameNotFoundException("Not found the user has email, role is provided"));
-            if(!user.getRole().getName().equals(request.getRole())||!user.getProviderUserId().equals("Local"))throw new UsernameNotFoundException("Not found the user has email, role is provided");
+            User user= userService.confirmOriginalLogin(request.getEmail(), request.getRole().getRole());
+            if(user==null) throw new UsernameNotFoundException("Not found the user has email, role is provided");
             userSessionService.enforceMaxSession(user, 1);
 
             UserSession session = UserSession.builder()
@@ -91,11 +90,8 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
         try {
-            User user = userServiceImpl.registerUser(request);
-            UserDetails userDetails = userDetailsServiceImpl.loadUserByUsername(request.getEmail());
-            String accessToken = jwtService.generateToken(userDetails);
-            String refreshToken = jwtService.generateRefreshToken(userDetails);
-            VerificationToken token= userServiceImpl.createVerificationToken(user);
+            User user = userService.registerUser(request);
+            VerificationToken token= userService.createVerificationToken(user);
             emailService.sendSimpleMessage(user, token);
             return ResponseEntity.ok("To complete your registration, please verify your account using the link we sent to your email.");
         } catch (RuntimeException e) {
@@ -127,7 +123,7 @@ public class AuthController {
 
         User user = verificationToken.getUser();
         user.setStatus(UserStatus.ACTIVE);
-        userServiceImpl.save(user);
+        userService.save(user);
 
         verificationTokenService.delete(verificationToken);
 

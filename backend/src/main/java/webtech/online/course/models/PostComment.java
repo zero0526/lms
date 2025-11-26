@@ -2,7 +2,6 @@ package webtech.online.course.models;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.springframework.cglib.core.Local;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -34,6 +33,7 @@ public class PostComment {
     private PostComment postComment;
 
     @OneToMany(mappedBy = "postComment", cascade = CascadeType.ALL)
+    @Builder.Default
     private List<PostComment> children = new ArrayList<>();
 
     @Column(name = "content", columnDefinition = "TEXT")

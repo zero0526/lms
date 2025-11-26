@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -26,9 +27,16 @@ public class Chapter {
     @Column(name = "title")
     private String title;
 
-    @Column(name = "order")
+    @Column(name = "\"order\"")
     private Integer order;
 
     @OneToMany(mappedBy = "chapter", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<Lesson> lessons;
+    @Builder.Default
+    private List<Lesson> lessons= new ArrayList<>();
+
+    public void addLesson(Lesson lesson){
+        lesson.setChapter(this);
+        lessons.add(lesson);
+    }
+
 }

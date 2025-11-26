@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.cglib.core.Local;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -40,7 +41,8 @@ public class Post {
     private Boolean isPinned= Boolean.FALSE;
 
     @OneToMany(mappedBy = "post", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    private List<PostComment> postComments;
+    @Builder.Default
+    private List<PostComment> postComments= new ArrayList<>();
 
     @Builder.Default
     @Column(name = "created_at")

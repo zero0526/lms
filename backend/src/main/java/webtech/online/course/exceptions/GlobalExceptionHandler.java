@@ -28,7 +28,6 @@ public class GlobalExceptionHandler {
 
         ErrorResponse errorResponse = new ErrorResponse(
                 status.value(),
-                status.getReasonPhrase(),
                 ex.getMessage(),
                 request.getRequestURI()
         );
@@ -45,5 +44,16 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
     }
-
+    @ExceptionHandler(BaseError.class)
+    public ResponseEntity<BaseError> handleBaseError(BaseError ex) {
+        return ResponseEntity
+                .status(ex.getStatus())
+                .body(ex);
+    }
+    @ExceptionHandler(ErrorResponse.class)
+    public ResponseEntity<ErrorResponse> handleErrorResponse(ErrorResponse ex) {
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ex);
+    }
 }

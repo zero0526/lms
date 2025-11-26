@@ -10,6 +10,7 @@ import webtech.online.course.enums.Recurrence;
 
 import java.time.LocalDateTime;
 import java.time.Period;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -33,7 +34,8 @@ public class Meeting {
 
 
     @OneToMany(mappedBy = "meeting", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<MeetingSession> meetingSessions;
+    @Builder.Default
+    private List<MeetingSession> meetingSessions= new ArrayList<>();
 
     private String title;
 

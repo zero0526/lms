@@ -1,5 +1,6 @@
 package webtech.online.course.services.impl;
 
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -8,6 +9,7 @@ import webtech.online.course.dtos.OAuth2UserInfo;
 import webtech.online.course.dtos.RegisterRequest;
 import webtech.online.course.enums.AuthProvider;
 import webtech.online.course.enums.UserStatus;
+import webtech.online.course.exceptions.ErrorResponse;
 import webtech.online.course.models.Role;
 import webtech.online.course.models.User;
 import webtech.online.course.models.VerificationToken;
@@ -95,9 +97,22 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
+    @Override
+    public User findById(Long id) {
+        return userRepository.findById(id).orElseThrow(()-> new ErrorResponse(400, "not found user has id %d".formatted(id), "UserFindById"));
+    }
 
-    public Optional<User> findByEmail(String email){
-        return userRepository.findByEmail(email);
+    @Override
+    @Transactional
+    public User confirmOriginalLogin(String email, String role) {
+        User user= findByEmail(email);
+        if(user.getRole().getName().equals(role)&&user.getAuthProvider().equals(AuthProvider.LOCAL))return user;
+        return null;
+    }
+
+
+    public User findByEmail(String email){
+        return userRepository.findByEmail(email).orElseThrow(()->new UsernameNotFoundException("Not found the user has email, role is provided"));
     }
 
 }

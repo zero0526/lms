@@ -43,4 +43,9 @@ public class Course {
     @Column(name = "last_updated")
     @Builder.Default
     private LocalDateTime updatedAt= LocalDateTime.now();
+
+    public void addChapter(Chapter chapter){
+        chapter.setCourse(this);
+        this.chapters.add(chapter);
+    }
 }

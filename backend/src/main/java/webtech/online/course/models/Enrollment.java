@@ -16,15 +16,16 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Enrollment {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @EmbeddedId
+    private EnrollmentId id;
 
     @ManyToOne
+    @MapsId("userId")
     @JoinColumn(name = "user_id")
     private User user;
 
     @ManyToOne
+    @MapsId("courseId")
     @JoinColumn(name = "course_id")
     private Course course;
 
