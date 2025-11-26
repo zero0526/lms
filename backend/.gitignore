@@ -235,3 +235,5 @@ README.html
 *.iml
 .idea
 .exercism
+
+backend/data
