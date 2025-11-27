@@ -90,13 +90,21 @@ export default function CourseDetail() {
       <main className="max-w-6xl mx-auto px-4 pt-24 pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* --- CỘT TRÁI (Thông tin chi tiết) --- */}
+          {/* Thông tin khóa học */}
           <div className="lg:col-span-2 space-y-8">
-            
-            {/* Header: Tên & Mô tả */}
             <div>
               <h1 className="text-3xl font-bold text-gray-800 mb-4">{courseData.title}</h1>
               <p className="text-gray-600 leading-relaxed">{courseData.description}</p>
+            </div>
+
+            {/* Section: Yêu cầu */}
+            <div>
+               <h2 className="text-xl font-semibold mb-4 text-gray-800">Yêu cầu</h2>
+               <ul className="list-disc list-inside space-y-2 text-gray-600">
+                  {courseData.requirements.map((req, i) => (
+                    <li key={i}>{req}</li>
+                  ))}
+               </ul>
             </div>
 
             {/* Section: Bạn sẽ học được gì? */}
@@ -123,11 +131,11 @@ export default function CourseDetail() {
                 </div>
               </div>
 
-              {/* Danh sách chương (Accordion) */}
+              {/* Danh sách chương */}
               <div className="space-y-3">
                 {courseData.chapters.map((chapter, index) => (
                   <div key={index} className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
-                    {/* Chapter Header (Clickable) */}
+                    {/* Chapter Header */}
                     <div 
                       onClick={() => toggleChapter(index)}
                       className="flex justify-between items-center p-4 bg-gray-50 cursor-pointer hover:bg-gray-100 transition select-none"
@@ -143,7 +151,7 @@ export default function CourseDetail() {
                       <span className="text-xs text-gray-500">{chapter.lessons.length} bài học</span>
                     </div>
 
-                    {/* Chapter Lessons (Collapsible) */}
+                    {/* Chapter Lessons */}
                     {openChapters[index] && (
                       <div className="divide-y divide-gray-100">
                         {chapter.lessons.map((lesson, idx) => (
@@ -161,26 +169,13 @@ export default function CourseDetail() {
                 ))}
               </div>
             </div>
-            
-            {/* Section: Yêu cầu */}
-            <div>
-               <h2 className="text-xl font-semibold mb-4 text-gray-800">Yêu cầu</h2>
-               <ul className="list-disc list-inside space-y-2 text-gray-600">
-                  {courseData.requirements.map((req, i) => (
-                    <li key={i}>{req}</li>
-                  ))}
-               </ul>
-            </div>
-
           </div>
 
           <div className="lg:col-span-1">
             <div className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden sticky top-28">
               
-              {/* Ảnh khóa học (Có hiệu ứng play overlay) */}
               <div className="relative group cursor-pointer">
                 <div className="w-full h-48 bg-gray-200 overflow-hidden">
-                    {/* Placeholder image nếu không có ảnh thật */}
                     <img 
                       src="https://files.fullstack.edu.vn/f8-prod/courses/7.png" 
                       alt="Course Thumbnail" 
@@ -189,7 +184,6 @@ export default function CourseDetail() {
                 </div>
               </div>
 
-              {/* Thông tin đăng ký */}
               <div className="p-6 text-center">
                 <h2 className="text-3xl font-bold text-[#00b6b6] mb-4">Miễn phí</h2>
                 
@@ -222,7 +216,6 @@ export default function CourseDetail() {
         </div>
       </main>
 
-      {/* 3. FOOTER */}
       <Footer />
     </div>
   );

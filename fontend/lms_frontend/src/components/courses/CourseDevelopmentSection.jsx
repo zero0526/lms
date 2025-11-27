@@ -92,11 +92,10 @@ export default function CourseDevelopmentSection() {
     },
   ];
 
-  // 👉 logic cuộn
   const scroll = (direction) => {
     if (!scrollRef.current) return;
     const { scrollLeft, clientWidth } = scrollRef.current;
-    const scrollAmount = clientWidth * 0.9; // cuộn 90% chiều rộng mỗi lần
+    const scrollAmount = clientWidth * 0.9;
     scrollRef.current.scrollTo({
       left: direction === "left" ? scrollLeft - scrollAmount : scrollLeft + scrollAmount,
       behavior: "smooth",
