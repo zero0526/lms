@@ -135,7 +135,7 @@ export default function LessonPage() {
                 `}
               >
                 <HelpCircle size={20}/> 
-                Hỏi đáp với AI (Quiz)
+                Quiz
                 {activeTab === "quiz" && <div className="absolute bottom-0 left-0 w-full h-1 bg-[#00b6b6]"></div>}
               </button>
               <button 

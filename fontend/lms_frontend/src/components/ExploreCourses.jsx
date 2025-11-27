@@ -50,9 +50,12 @@ export default function ExploreCourses() {
               </a>
             </div>
 
-            <div className="flex gap-4 overflow-x-auto pb-4">
+            {/* Thêm scrollbar-hide để ẩn thanh cuộn nếu muốn đẹp hơn */}
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
               {cat.courses.map((course, i) => (
-                <CourseCard key={i} course={course} />
+                <div key={i} className="w-[300px] flex-shrink-0">
+                  <CourseCard course={course} />
+                </div>
               ))}
             </div>
           </div>
