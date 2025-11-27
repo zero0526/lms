@@ -3,7 +3,9 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
 import Blog from "./pages/Blog";
-import Course from "./pages/Course";
+import CourseStudent from "./pages/student/CourseStudent";
+import CourseDetail from "./pages/student/CourseDetail";
+import LessonDetail from "./pages/student/LessonDetail";
 
 
 export default function App() {
@@ -15,8 +17,9 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/blog" element={<Blog />} />
-        <Route path="/courses" element={<Course />} />
-        
+        <Route path="/courses" element={<CourseStudent />} />
+        <Route path="/course/course-detail" element={<CourseDetail />} />
+        <Route path="/course/course-detail/lesson-detail" element={<LessonDetail />} />
       </Routes>
     </BrowserRouter>
   );
