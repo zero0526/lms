@@ -4,11 +4,12 @@ import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
+  const [role, setRole] = useState("Student"); // Mặc định là Student
   const location = useLocation();
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100">
-      <div className="bg-white shadow-lg rounded-2xl flex flex-col md:flex-row max-w-5xl w-full overflow-hidden">
+      <div className="bg-white shadow-lg rounded-2xl flex flex-col md:flex-row max-w-5xl w-full overflow-hidden relative">
         {/* Left Image Section */}
         <div className="hidden md:block md:w-1/2 relative">
           <img
@@ -18,7 +19,9 @@ export default function Register() {
           />
           <div className="absolute bottom-5 left-5 text-white">
             <h2 className="text-2xl font-semibold">Learn at TOTC</h2>
-            <p className="text-sm opacity-90">Learn faster. Grow smarter. Anytime, anywhere.</p>
+            <p className="text-sm opacity-90">
+              Learn faster. Grow smarter. Anytime, anywhere.
+            </p>
           </div>
         </div>
 
@@ -102,9 +105,39 @@ export default function Register() {
               </div>
             </div>
 
+            {/* --- ROLE SELECTION --- */}
+            <div>
+              <label className="block mb-1 text-gray-600">Select Role</label>
+              <div className="flex bg-gray-100 p-1 rounded-full">
+                <button
+                  type="button"
+                  className={`flex-1 py-2 rounded-full font-medium transition duration-300 ${
+                    role === "Student"
+                      ? "bg-teal-500 text-white shadow-md"
+                      : "text-gray-500 hover:text-teal-600"
+                  }`}
+                  onClick={() => setRole("Student")}
+                >
+                  Student
+                </button>
+                <button
+                  type="button"
+                  className={`flex-1 py-2 rounded-full font-medium transition duration-300 ${
+                    role === "Teacher"
+                      ? "bg-teal-500 text-white shadow-md"
+                      : "text-gray-500 hover:text-teal-600"
+                  }`}
+                  onClick={() => setRole("Teacher")}
+                >
+                  Teacher
+                </button>
+              </div>
+            </div>
+            
+            {/* --- Submit Button --- */}
             <button
               type="submit"
-              className="w-full bg-teal-500 text-white py-2 rounded-full font-medium hover:bg-teal-600 transition"
+              className="w-full bg-teal-500 text-white py-2 rounded-full font-medium hover:bg-teal-600 transition shadow-md mt-4"
             >
               Register
             </button>
