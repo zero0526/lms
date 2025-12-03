@@ -1,8 +1,9 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { Eye, EyeOff, ArrowLeft, Github } from "lucide-react"; // Import thêm Github
+import { Eye, EyeOff, ArrowLeft, Github } from "lucide-react";
+import { AxiosError } from "axios";
+import apiClient from "../api/axiosConfig";
 
-// Icon Google chuẩn màu (SVG inline)
 const GoogleIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24">
     <path
@@ -25,8 +26,48 @@ const GoogleIcon = () => (
 );
 
 export default function Login() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [remember, setRemember] = useState(false);
+  const [error, setError] = useState("");
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogin = async (e) => {
+      e.preventDefault();
+      setError("");
+
+      if (!email || !password) {
+        setError("Please fill in all fields");
+        return;
+      }
+      try {
+          const response = await apiClient.post('/auth/login', {
+              email,
+              password,
+          })
+          const responseData = response.data.data;
+          console.log(responseData);
+
+          const accessToken = responseData.access_token;
+          const userObject = responseData.user;
+          const userString = JSON.stringify(userObject);
+          
+          if (remember) {
+              localStorage.setItem('accessToken', accessToken);
+              localStorage.setItem('user', userString);
+          } else {
+              sessionStorage.setItem('accessToken', accessToken);
+              sessionStorage.setItem('user', userString);
+          }
+          console.log(accessToken);
+
+          navigate('/home');
+      } catch (err) {
+          console.log("Error", err);
+      }
+  }
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100">
@@ -91,10 +132,12 @@ export default function Login() {
 
           <form className="space-y-4">
             <div>
-              <label className="block mb-1 text-gray-600">User name</label>
+              <label className="block mb-1 text-gray-600">Email</label>
               <input
-                type="text"
-                placeholder="Enter your User name"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your Email"
                 className="w-full border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400"
               />
             </div>
@@ -104,6 +147,8 @@ export default function Login() {
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your Password"
                   className="w-full border border-gray-300 rounded-full px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-teal-400"
                 />
@@ -119,17 +164,24 @@ export default function Login() {
 
             <div className="flex items-center justify-between text-sm text-gray-600">
               <label className="flex items-center gap-2">
-                <input type="checkbox" className="accent-teal-500" /> Remember
-                me
+                <input type="checkbox" className="accent-teal-500" checked={remember}onChange={(e) => setRemember(e.target.checked)} /> Remember me
               </label>
               <a href="#" className="text-teal-500 hover:underline">
                 Forgot Password?
               </a>
             </div>
 
+            {/* --- ERROR MESSAGE DISPLAY --- */}
+            {error && (
+              <div className="text-red-500 text-sm font-medium mt-2 animate-pulse w-full max-w-md mx-auto text-center">
+                {error}
+              </div>
+            )}
+
             <button
               type="submit"
-              className="w-full bg-teal-500 text-white py-2 rounded-full font-medium hover:bg-teal-600 transition shadow-md"
+              onClick={handleLogin}
+              className="w-full bg-teal-500 text-white py-2 rounded-full font-medium hover:bg-teal-600 transition shadow-md cursor-pointer"
             >
               Login
             </button>
@@ -151,7 +203,7 @@ export default function Login() {
             <div className="flex flex-col gap-3">
               <button
                 type="button"
-                className="w-full flex items-center justify-center gap-3 border border-gray-300 text-gray-700 py-2 rounded-full hover:bg-gray-50 transition"
+                className="w-full flex items-center justify-center gap-3 border border-gray-300 text-gray-700 py-2 rounded-full hover:bg-gray-50 transition cursor-pointer"
               >
                 <GoogleIcon />
                 <span className="font-medium">Google</span>
@@ -159,7 +211,7 @@ export default function Login() {
               
               <button
                 type="button"
-                className="w-full flex items-center justify-center gap-3 border border-gray-300 text-gray-700 py-2 rounded-full hover:bg-gray-50 transition"
+                className="w-full flex items-center justify-center gap-3 border border-gray-300 text-gray-700 py-2 rounded-full hover:bg-gray-50 transition cursor-pointer"
               >
                 <Github size={20} />
                 <span className="font-medium">GitHub</span>
