@@ -1,19 +1,33 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, Bell, User, LogOut } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function Navbar() {
   const [searchTerm, setSearchTerm] = useState("");
-  
-  // --- MOCK USER STATE ---
-  const [user, setUser] = useState({
-    name: "Nguyen Van A",
-    avatar: null // Hoặc link ảnh: "https://i.pravatar.cc/150?img=3"
-  });
-  
+  const [user, setUser] = useState(null); 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  
   const dropdownRef = useRef(null); 
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // --- LOGIC AUTHENTICATION ---
+  useEffect(() => {
+    const checkLoginStatus = () => {
+      const token = localStorage.getItem("accessToken");
+      const storedUser = localStorage.getItem("user");
+
+      if (token && storedUser) {
+        // If both token and user info exist, parse JSON and set state
+        setUser(JSON.parse(storedUser));
+      } else {
+        // If either is missing, consider the user not logged in
+        setUser(null);
+      }
+    };
+
+    checkLoginStatus();
+  }, [location]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -37,8 +51,12 @@ export default function Navbar() {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
+    
     setUser(null);
     setIsDropdownOpen(false);
+    
     navigate("/login");
   };
 
@@ -92,7 +110,7 @@ export default function Navbar() {
       {/* Khu vực User */}
       <div className="flex items-center space-x-4">
         {user ? (
-          // --- TRẠNG THÁI ĐÃ ĐĂNG NHẬP ---
+          // --- Logged In ---
           <>
             {/* Nút thông báo */}
             <button className="relative p-2 hover:bg-white/20 rounded-full transition group">
@@ -120,12 +138,11 @@ export default function Navbar() {
               {/* DROPDOWN MENU */}
               {isDropdownOpen && (
                 <div className="absolute right-0 mt-3 w-48 bg-white rounded-xl shadow-xl py-2 text-gray-700 z-50 border border-gray-100 animate-in fade-in slide-in-from-top-2 duration-200">
-                  {/* Mũi tên trỏ lên (Optional decoration) */}
                   <div className="absolute -top-2 right-3 w-4 h-4 bg-white transform rotate-45 border-l border-t border-gray-100"></div>
 
                   <div className="px-4 py-2 border-b border-gray-100 mb-1">
-                     <p className="text-sm font-bold text-gray-800 truncate">{user.name}</p>
-                     <p className="text-xs text-gray-500">Student</p>
+                      <p className="text-sm font-bold text-gray-800 truncate">{user.name || "User"}</p>
+                      <p className="text-xs text-gray-500">{user.role || "Student"}</p>
                   </div>
 
                   <button 
@@ -148,7 +165,7 @@ export default function Navbar() {
             </div>
           </>
         ) : (
-          // --- TRẠNG THÁI KHÁCH (CHƯA LOGIN) ---
+          // --- Guest State (Not Logged In) ---
           <>
             <a
               href="/login"
