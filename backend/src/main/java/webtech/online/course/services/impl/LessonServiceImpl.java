@@ -4,9 +4,13 @@ import jakarta.transaction.Transactional;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import webtech.online.course.domains.FileInfo;
+import webtech.online.course.dtos.Drive.DriveRequest;
+import webtech.online.course.dtos.Drive.DriveResponse;
 import webtech.online.course.dtos.course.CourseMaterialDTO;
 import webtech.online.course.dtos.course.LessonDTO;
 import webtech.online.course.dtos.course.QuizDTO;
+import webtech.online.course.dtos.course.VideoProgressDTO;
 import webtech.online.course.models.*;
 import webtech.online.course.repositories.LessonRepository;
 import webtech.online.course.services.*;
@@ -20,13 +24,15 @@ public class LessonServiceImpl implements LessonService {
     private final QuizService quizService;
     private final VideoService videoService;
     private final CourseMaterialService courseMaterialService;
+    private final DriveService driveService;
 
     @Override
     public Lesson insert(LessonDTO lessonDTO) throws IOException {
+        FileInfo resp= driveService.uploadFile(new DriveRequest(lessonDTO.thumbnail()));
         Lesson lesson = Lesson.builder()
                 .title(lessonDTO.title())
                 .order(lessonDTO.order())
-                .precondition(lessonDTO.preCond())
+                .thumbnailUrl(resp.urlUploaded())
                 .description(lessonDTO.desc())
                 .build();
 
@@ -46,7 +52,6 @@ public class LessonServiceImpl implements LessonService {
                 lesson.addQuiz(quiz);
             });
         }
-        // lessonRepository.saveAndFlush(lesson);
         return lesson;
     }
 
@@ -56,16 +61,12 @@ public class LessonServiceImpl implements LessonService {
         Lesson lesson = findById(id);
         lesson.setTitle(lessonDTO.title());
         lesson.setOrder(lessonDTO.order());
-        lesson.setPrecondition(lessonDTO.preCond());
         lesson.setDescription(lessonDTO.desc());
 
         if (lessonDTO.videoDTO() != null) {
             Video video = videoService.uploadVideo(lessonDTO.videoDTO());
             lesson.setVideo(video);
         }
-        // Note: Updating quizzes and materials is more complex and might require
-        // specific logic
-        // For now, we update basic info and video if provided.
 
         return lessonRepository.saveAndFlush(lesson);
     }
@@ -105,4 +106,5 @@ public class LessonServiceImpl implements LessonService {
         lesson.addCourseMaterials(cm);
         lessonRepository.saveAndFlush(lesson);
     }
+
 }

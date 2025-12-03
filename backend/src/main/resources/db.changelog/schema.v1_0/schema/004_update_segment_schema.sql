@@ -1,2 +1,0 @@
-ALTER TABLE segments
-ADD COLUMN end_at VARCHAR;

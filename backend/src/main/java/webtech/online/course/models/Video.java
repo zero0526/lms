@@ -25,9 +25,6 @@ public class Video {
     private String videoUrl;
     private Integer duration;
 
-    @Column(name = "thumbnail_url", columnDefinition = "TEXT")
-    private String thumbnailUrl;
-
     @OneToMany(mappedBy = "video", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @Builder.Default
     private List<Segment> segments= new ArrayList<>();

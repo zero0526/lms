@@ -32,7 +32,6 @@ public class QuestionService {
             urlUploaded = fileInfo.urlUploaded();
         }
         return questionRepository.saveAndFlush(Question.builder()
-
                 .questionImg(urlUploaded)
                 .questionText(questionDTO.qText())
                 .build());

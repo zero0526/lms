@@ -26,9 +26,12 @@ public class Lesson {
 
     private String title;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "video_id")
     private Video video;
+
+    @Column(name = "thumbnail_url", columnDefinition = "TEXT")
+    private String thumbnailUrl;
 
     @OneToMany(mappedBy = "lesson",cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @Builder.Default
@@ -43,9 +46,8 @@ public class Lesson {
 
     @Column(name = "description")
     private String description;
-
-    @Column(name = "precondition")
-    private String precondition;
+    @OneToOne(mappedBy = "lesson", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private LessonProgress lessonProgress;
 
     public void addQuiz(Quiz quiz){
         quizzes.add(quiz);

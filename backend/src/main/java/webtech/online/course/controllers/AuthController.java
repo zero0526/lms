@@ -11,7 +11,10 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 import webtech.online.course.dtos.LoginRequest;
 import webtech.online.course.dtos.RegisterRequest;
+import webtech.online.course.dtos.User.BaseUserDTO;
 import webtech.online.course.enums.UserStatus;
+import webtech.online.course.exceptions.BaseError;
+import webtech.online.course.exceptions.WrapperResponse;
 import webtech.online.course.models.User;
 import webtech.online.course.models.UserSession;
 import webtech.online.course.models.VerificationToken;
@@ -39,9 +42,8 @@ public class AuthController {
     private final VerificationTokenService verificationTokenService;
     private final EmailService emailService;
 
-//    @PreAuthorize("hasAuthority('ROLE_TEACHER')")
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody LoginRequest request, HttpServletRequest httpServletRequest) {
+    public ResponseEntity<WrapperResponse> login(@RequestBody LoginRequest request, HttpServletRequest httpServletRequest) {
         try{
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
@@ -59,66 +61,45 @@ public class AuthController {
                     .ipAddress(httpServletRequest.getRemoteAddr())
                     .build();
             userSessionService.save(session);
-            Map<String, String> tokens = new HashMap<>();
-            tokens.put("access_token", accessToken);
-            tokens.put("refresh_token", refreshToken);
 
-            return ResponseEntity.ok(tokens);
-        }
-        catch (BadCredentialsException e) {
-            return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "Invalid email or password"));
-        } catch (UsernameNotFoundException e) {
-            return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("error", "User not found"));
-        } catch (DisabledException e) {
-            return ResponseEntity
-                    .status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Account disabled"));
-        } catch (LockedException e) {
-            return ResponseEntity
-                    .status(HttpStatus.FORBIDDEN)
-                    .body(Map.of("error", "Account locked"));
+            return ResponseEntity.ok(new WrapperResponse(HttpStatus.OK.value(),
+                    new BaseUserDTO(user.getId(), user.getFullName(), user.getEmail(), user.getRole().getName(),
+                            user.getPictureUrl(), accessToken, refreshToken)));
         }
         catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new BaseError(e.getMessage());
         }
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<WrapperResponse> register(@Valid @RequestBody RegisterRequest request) {
         try {
             User user = userService.registerUser(request);
             VerificationToken token= userService.createVerificationToken(user);
             emailService.sendSimpleMessage(user, token);
-            return ResponseEntity.ok("To complete your registration, please verify your account using the link we sent to your email.");
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            return ResponseEntity.ok(new WrapperResponse(HttpStatus.CREATED.value(), "To complete your registration, please verify your account using the link we sent to your email."));
+        } catch (Exception e) {
+            throw new BaseError(e.getMessage());
         }
     }
     @PostMapping("/refresh")
-    public ResponseEntity<Map<String, String>> refresh(@RequestBody Map<String, String> request) {
-        String refreshToken = request.get("refresh_token");
+    public ResponseEntity<WrapperResponse> refresh(@RequestBody String refreshToken) {
         String username = jwtService.extractUsername(refreshToken);
         UserDetails user = userDetailsServiceImpl.loadUserByUsername(username);
 
         if (jwtService.isTokenValid(refreshToken, user)) {
             String newAccessToken = jwtService.generateToken(user);
-            Map<String, String> response = new HashMap<>();
-            response.put("access_token", newAccessToken);
-            return ResponseEntity.ok(response);
+            return ResponseEntity.ok(new WrapperResponse(HttpStatus.OK.value(), newAccessToken));
         } else {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Invalid refresh token"));
+            throw new BaseError(HttpStatus.FORBIDDEN.value(), "YOU DON'T HAVE PERMISSION");
         }
     }
     @GetMapping("/verify")
-    public ResponseEntity<?> verifyAccount(@RequestParam("token") String token) {
+    public ResponseEntity<WrapperResponse> verifyAccount(@RequestParam("token") String token) {
         VerificationToken verificationToken = verificationTokenService.findByToken(token);
 
         if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
-            return ResponseEntity.badRequest().body("Token đã hết hạn");
+            throw new BaseError(HttpStatus.GONE.value(), "Your validate token expired");
         }
 
         User user = verificationToken.getUser();
@@ -127,7 +108,7 @@ public class AuthController {
 
         verificationTokenService.delete(verificationToken);
 
-        return ResponseEntity.ok("Tài khoản đã được xác minh thành công!");
+        return ResponseEntity.ok(new WrapperResponse(HttpStatus.OK.value(), "Your account is verified"));
     }
 
 }

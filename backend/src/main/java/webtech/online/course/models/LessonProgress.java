@@ -15,15 +15,16 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LessonProgress {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @EmbeddedId
+    private LessonProgressId id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY)
+    @MapsId("lessonId")
     @JoinColumn(name = "lesson_id")
     private Lesson lesson;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @MapsId("userId")
     @JoinColumn(name = "user_id")
     private User user;
 
@@ -32,10 +33,14 @@ public class LessonProgress {
     private Course course;
 
     @Column(name = "progress_video")
-    private Float progressVideo;
+    @Builder.Default
+    private Float progressVideo=0.0F;
+    @Builder.Default
+    @Column(name = "progress_quiz")
+    private Float progressQuiz=0.0f;
 
-    @Column(name = "last_watched_at")
-    private LocalDateTime lastWatchedAt;
+    @Column(name = "last_watched_at_second")
+    private Long lastWatchedAtSecond;
 
     @Column(name = "first_watched_at")
     @Builder.Default

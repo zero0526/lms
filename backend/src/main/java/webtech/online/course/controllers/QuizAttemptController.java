@@ -9,6 +9,8 @@ import webtech.online.course.dtos.quiz.QuizAttemptDTO;
 import webtech.online.course.dtos.quiz.QuizSubmissionDTO;
 import webtech.online.course.exceptions.DefaultResponse;
 import webtech.online.course.exceptions.ErrorResponse;
+import webtech.online.course.exceptions.WrapperResponse;
+import webtech.online.course.models.QuizAttempt;
 import webtech.online.course.services.QuizAttemptService;
 
 @RestController
@@ -18,37 +20,37 @@ public class QuizAttemptController {
     private final QuizAttemptService quizAttemptService;
 
     @PostMapping("/start")
-    public ResponseEntity<DefaultResponse> startAttempt(@RequestBody QuizAttemptDTO dto, HttpServletRequest request) {
+    public ResponseEntity<WrapperResponse> startAttempt(@RequestBody QuizAttemptDTO dto, HttpServletRequest request) {
         try {
-            var attempt = quizAttemptService.startAttempt(dto.quizId(), dto.userId());
-            return ResponseEntity.ok(new DefaultResponse(HttpStatus.CREATED.value(), "Quiz attempt started", attempt));
+            QuizAttempt attempt = quizAttemptService.startAttempt(dto.quizId(), dto.userId());
+            return ResponseEntity.ok(new WrapperResponse(HttpStatus.CREATED.value(),attempt));
         } catch (Exception ex) {
             throw new ErrorResponse(500, ex.getMessage(), request.getRequestURI());
         }
     }
 
     @PostMapping("/submit")
-    public ResponseEntity<DefaultResponse> submitAttempt(@RequestBody QuizSubmissionDTO submission,
+    public ResponseEntity<WrapperResponse> submitAttempt(@RequestBody QuizSubmissionDTO submission,
             HttpServletRequest request) {
         try {
             var attempt = quizAttemptService.submitAttempt(submission);
-            return ResponseEntity.ok(new DefaultResponse(HttpStatus.OK.value(), "Quiz submitted and graded", attempt));
+            return ResponseEntity.ok(new WrapperResponse(HttpStatus.OK.value(), attempt));
         } catch (Exception ex) {
             throw new ErrorResponse(500, ex.getMessage(), request.getRequestURI());
         }
     }
 
     @GetMapping("/{attemptId}")
-    public ResponseEntity<DefaultResponse> getAttempt(@PathVariable Long attemptId) {
+    public ResponseEntity<WrapperResponse> getAttempt(@PathVariable Long attemptId) {
         var attempt = quizAttemptService.getAttemptById(attemptId);
-        return ResponseEntity.ok(new DefaultResponse(HttpStatus.OK.value(), "success", attempt));
+        return ResponseEntity.ok(new WrapperResponse(HttpStatus.OK.value(), attempt));
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<DefaultResponse> getUserAttempts(
+    public ResponseEntity<WrapperResponse> getUserAttempts(
             @PathVariable Long userId,
             @RequestParam(required = false) Long quizId) {
         var attempts = quizAttemptService.getUserAttempts(userId, quizId);
-        return ResponseEntity.ok(new DefaultResponse(HttpStatus.OK.value(), "success", attempts));
+        return ResponseEntity.ok(new WrapperResponse(HttpStatus.OK.value(),attempts));
     }
 }

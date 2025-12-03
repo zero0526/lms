@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import webtech.online.course.dtos.video.VideoDTO;
 import webtech.online.course.exceptions.DefaultResponse;
 import webtech.online.course.exceptions.ErrorResponse;
+import webtech.online.course.exceptions.WrapperResponse;
 import webtech.online.course.services.VideoService;
 
 import java.io.IOException;
@@ -15,40 +16,40 @@ import java.io.IOException;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/video")
-public class VideoController {
+public class  VideoController {
     private final VideoService videoService;
 
     @PostMapping
-    public ResponseEntity<DefaultResponse> uploadVideo(@ModelAttribute VideoDTO videoDTO, HttpServletRequest request) {
+    public ResponseEntity<WrapperResponse> uploadVideo(@ModelAttribute VideoDTO videoDTO, HttpServletRequest request) {
         try {
             videoService.uploadVideo(videoDTO);
-            return ResponseEntity.ok(new DefaultResponse(HttpStatus.CREATED.value()));
+            return ResponseEntity.ok(new WrapperResponse(HttpStatus.CREATED.value(), "created"));
         } catch (Exception ex) {
             throw new ErrorResponse(500, ex.getMessage(), request.getRequestURI());
         }
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<DefaultResponse> getVideoById(@PathVariable Long id) {
-        return ResponseEntity.ok(new DefaultResponse(HttpStatus.OK.value()));
+    public ResponseEntity<WrapperResponse> getVideoById(@PathVariable Long id) {
+        return ResponseEntity.ok(new WrapperResponse(HttpStatus.OK.value(), ""));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<DefaultResponse> updateVideo(@PathVariable Long id, @ModelAttribute VideoDTO videoDTO,
+    public ResponseEntity<WrapperResponse> updateVideo(@PathVariable Long id, @ModelAttribute VideoDTO videoDTO,
             HttpServletRequest request) {
         try {
             videoService.update(id, videoDTO);
-            return ResponseEntity.ok(new DefaultResponse(HttpStatus.OK.value()));
+            return ResponseEntity.ok(new WrapperResponse(HttpStatus.OK.value(), "successfully"));
         } catch (Exception ex) {
             throw new ErrorResponse(500, ex.getMessage(), request.getRequestURI());
         }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<DefaultResponse> deleteVideo(@PathVariable Long id, HttpServletRequest request) {
+    public ResponseEntity<WrapperResponse> deleteVideo(@PathVariable Long id, HttpServletRequest request) {
         try {
             videoService.delete(id);
-            return ResponseEntity.ok(new DefaultResponse(HttpStatus.OK.value()));
+            return ResponseEntity.ok(new WrapperResponse(HttpStatus.OK.value(), "successfully"));
         } catch (Exception ex) {
             throw new ErrorResponse(500, ex.getMessage(), request.getRequestURI());
         }

@@ -20,21 +20,6 @@ import java.io.IOException;
 public class LessonController {
     private final LessonService lessonService;
 
-    @PostMapping
-    public ResponseEntity<DefaultResponse> createLesson(@ModelAttribute LessonDTO lessonDTO,
-            HttpServletRequest request) {
-        try {
-            lessonService.insert(lessonDTO);
-            return ResponseEntity.ok(new DefaultResponse(HttpStatus.CREATED.value()));
-        } catch (Exception ex) {
-            throw new ErrorResponse(500, ex.getMessage(), request.getRequestURI());
-        }
-    }
-
-    @GetMapping
-    public ResponseEntity<DefaultResponse> getAllLessons() {
-        return ResponseEntity.ok(new DefaultResponse(HttpStatus.OK.value()));
-    }
 
     @GetMapping("/{id}")
     public ResponseEntity<DefaultResponse> getLessonById(@PathVariable Long id) {
@@ -73,7 +58,7 @@ public class LessonController {
         }
     }
 
-    @PutMapping("/{id}/add-material")
+    @PutMapping("/add-material/{id}")
     public ResponseEntity<DefaultResponse> addCourseMaterial(@PathVariable Long id,
             @ModelAttribute CourseMaterialDTO courseMaterialDTO, HttpServletRequest request) {
         try {

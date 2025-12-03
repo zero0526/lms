@@ -3,11 +3,8 @@ spring:
     banner-mode: off
   application:
     name: course
-  datasource:
-    url: jdbc:postgresql://localhost:5434/mydatabase
-    username: root
-    password: 123
-    driver-class-name: org.postgresql.Driver
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -16,10 +13,6 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-  security:
-    user:
-      name: admin
-      password: 123
   mail:
     host: smtp.gmail.com
     port: 587
@@ -41,6 +34,8 @@ spring:
       enabled: true
   liquibase:
     change-log: classpath:db.changelog/schema.v1_0/db.changelog.xml
+  lucene:
+    index_dir: lucene-course-index
 
 server:
   port: 8081
@@ -48,6 +43,10 @@ server:
 app:
   token:
     expire-seconds: 604800
+
+scheduler:
+  course-suggest: 3600000
+
 
 logging:
   level:

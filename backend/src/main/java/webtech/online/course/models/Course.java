@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -36,6 +37,12 @@ public class Course {
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Chapter> chapters;
 
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ReviewCourse> reviewCourses;
+
+    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Enrollment> enrollments;
+
     @Column(name = "created_at")
     @Builder.Default
     private LocalDateTime createdAt= LocalDateTime.now();
@@ -44,6 +51,30 @@ public class Course {
     @Builder.Default
     private LocalDateTime updatedAt= LocalDateTime.now();
 
+    @Column(name = "course_target")
+    private String courseTarget;
+
+    @Column(name = "precondition")
+    private String precondition;
+
+    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+            name = "course_tag",
+            joinColumns = @JoinColumn(name = "course_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    @Builder.Default
+    private List<Tag> tags = new ArrayList<>();
+
+    public void addTag(Tag tag) {
+        tags.add(tag);
+        tag.getCourses().add(this);
+    }
+
+    public void removeTag(Tag tag) {
+        tags.remove(tag);
+        tag.getCourses().remove(this);
+    }
     public void addChapter(Chapter chapter){
         chapter.setCourse(this);
         this.chapters.add(chapter);

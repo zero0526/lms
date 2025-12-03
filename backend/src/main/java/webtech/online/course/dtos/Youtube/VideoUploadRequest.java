@@ -31,6 +31,8 @@ public class VideoUploadRequest {
     private MultipartFile videoFile;
     @Getter
     private List<SegmentDTO> segmentDTOs;
+    @Getter
+    private Long duaration;
     public List<String> getTags() {
         if (tags == null || tags.isEmpty()) {
             return List.of();

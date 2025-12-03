@@ -186,9 +186,23 @@ CREATE TABLE IF NOT EXISTS courses (
   description TEXT,
   thumbnail_url VARCHAR(255),
   created_at TIMESTAMP DEFAULT now(),
-  last_updated TIMESTAMP
+  last_updated TIMESTAMP,
+  precondition  TEXT,
+  course_target TEXT
+);
+CREATE TABLE IF NOT EXISTS tag (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL UNIQUE
 );
 
+--Many-to-Many
+CREATE TABLE IF NOT EXISTS course_tag (
+    course_id BIGINT NOT NULL,
+    tag_id BIGINT NOT NULL,
+    PRIMARY KEY (course_id, tag_id),
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    FOREIGN KEY (tag_id) REFERENCES tag(id) ON DELETE CASCADE
+);
 -- ========== REVIEWS ==========
 CREATE TABLE IF NOT EXISTS review_courses (
   id BIGSERIAL PRIMARY KEY,
@@ -225,7 +239,7 @@ CREATE TABLE IF NOT EXISTS lessons (
   video_id BIGINT,
   "order" INT,
   description TEXT,
-  precondition TEXT
+  thumbnail_url TEXT
 );
 
 -- ========== VIDEOS ==========
@@ -239,7 +253,8 @@ CREATE TABLE IF NOT EXISTS segments(
 id BIGSERIAL PRIMARY KEY,
 video_id BIGINT REFERENCES videos(id),
 description TEXT,
-start_at VARCHAR(20)
+start_at VARCHAR(20),
+end_at VARCHAR(20)
 );
 ALTER TABLE lessons
 ADD FOREIGN KEY (video_id) REFERENCES videos(id);
@@ -255,13 +270,14 @@ CREATE TABLE IF NOT EXISTS course_materials (
 
 -- ========== LESSON PROGRESS ==========
 CREATE TABLE IF NOT EXISTS lesson_progress (
-  id BIGSERIAL PRIMARY KEY,
   lesson_id BIGINT REFERENCES lessons(id),
   user_id BIGINT REFERENCES users(id),
   course_id BIGINT REFERENCES courses(id),
   progress_video FLOAT,
-  last_watched_at TIMESTAMP,
-  first_watched_at TIMESTAMP
+  progress_quiz FLOAT,
+  last_watched_at_second BIGINT,
+  first_watched_at TIMESTAMP,
+  PRIMARY KEY (lesson_id, user_id)
 );
 
 -- ========== QUIZZES ==========

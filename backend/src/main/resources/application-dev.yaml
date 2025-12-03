@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5434/mydatabase
+    username: root
+    password: 123
+    driver-class-name: org.postgresql.Driver
+  redis:
+    host: localhost
+    post: 6380
+  elasticsearch:
+    uris: http://localhost:9201
+    connection-timeout: 5s
+    socket-timeout: 3s

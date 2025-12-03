@@ -1,5 +1,6 @@
 package webtech.online.course.services.impl;
 
+import com.coremedia.iso.IsoFile;
 import com.google.api.client.http.InputStreamContent;
 import com.google.api.services.youtube.YouTube;
 import com.google.api.services.youtube.model.Video;
@@ -17,8 +18,11 @@ import webtech.online.course.services.DriveService;
 import webtech.online.course.services.YoutubeService;
 import webtech.online.course.utils.Common;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.channels.FileChannel;
 import java.time.Duration;
 import java.util.List;
 
@@ -75,11 +79,7 @@ public class YouTubeServiceImpl implements YoutubeService {
                 .insert(List.of("snippet", "status"), video, mediaContent);
         Video uploadedVideo = videoInsert.execute();
         String videoId = uploadedVideo.getId();
-
-        Video info= getVideoDetails(videoId);
-        String isoDuration= info.getContentDetails().getDuration();
-        Duration duration = Duration.parse(isoDuration);
-        long seconds = duration.getSeconds();
+        long seconds = request.getDuaration();
         log.info("Upload video thành công! Video ID: {}", videoId);
 
         String videoUrl = "https://www.youtube.com/watch?v=" + videoId;

@@ -21,3 +21,42 @@ services:
       POSTGRES_PASSWORD: 123
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.1.4
+    container_name: elasticsearch_course
+    user: "1000:1000"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    ports:
+      - "9201:9200"
+    volumes:
+      - ./data/es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -s http://localhost:9200 >/dev/null || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.1.4
+    container_name: kibana_course
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_HOST=0.0.0.0
+    ports:
+      - "5602:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    volumes:
+      - ./data/kibana:/usr/share/kibana/data
+#  app:
+#    image: myapp
+#    build: .
+#    environment:
+#      SPRING_PROFILES_ACTIVE: prod
+#    ports:
+#      - "8080:8081"
+

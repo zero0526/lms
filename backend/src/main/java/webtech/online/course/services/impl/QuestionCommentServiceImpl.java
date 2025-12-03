@@ -53,7 +53,7 @@ public class QuestionCommentServiceImpl implements QuestionCommentService {
                 notificationService.createNotification(
                         parentComment.getUser().getId(),
                         "New Reply",
-                        user.getUsername() + " replied to your comment",
+                        user.getFullName() + " replied to your comment",
                         "/question/" + dto.questionId() + "/comment/" + dto.parentCommentId());
             }
         } else {
@@ -69,7 +69,7 @@ public class QuestionCommentServiceImpl implements QuestionCommentService {
                 notificationService.createNotification(
                         userIdToNotify,
                         "New Comment on Question",
-                        user.getUsername() + " commented on a question you're following",
+                        user.getFullName() + " commented on a question you're following",
                         "/question/" + dto.questionId());
             }
         }
