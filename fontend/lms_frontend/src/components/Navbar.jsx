@@ -11,17 +11,26 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // --- LOGIC AUTHENTICATION ---
+  // LOGIC AUTHENTICATION
   useEffect(() => {
     const checkLoginStatus = () => {
-      const token = localStorage.getItem("accessToken");
-      const storedUser = localStorage.getItem("user");
+      let token = localStorage.getItem("accessToken");
+      let storedUser = localStorage.getItem("user");
+
+      if (!token) {
+        token = sessionStorage.getItem("accessToken");
+        storedUser = sessionStorage.getItem("user");
+      }
 
       if (token && storedUser) {
-        // If both token and user info exist, parse JSON and set state
-        setUser(JSON.parse(storedUser));
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+        } catch (error) {
+          console.error("Lỗi parse user data:", error);
+          setUser(null);
+        }
       } else {
-        // If either is missing, consider the user not logged in
         setUser(null);
       }
     };
@@ -53,6 +62,8 @@ export default function Navbar() {
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("user");
+    sessionStorage.removeItem("accessToken");
+    sessionStorage.removeItem("user");
     
     setUser(null);
     setIsDropdownOpen(false);
@@ -78,7 +89,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Thanh tìm kiếm */}
+      {/* Search Bar */}
       <form
         onSubmit={handleSearch}
         className="hidden md:flex items-center bg-white rounded-full overflow-hidden mx-6 w-96 focus-within:ring-2 ring-teal-200 transition shadow-inner"
@@ -107,12 +118,11 @@ export default function Navbar() {
         <li><a href="#about" className="hover:text-yellow-200 transition">About Us</a></li>
       </ul>
 
-      {/* Khu vực User */}
+      {/* User */}
       <div className="flex items-center space-x-4">
         {user ? (
-          // --- Logged In ---
           <>
-            {/* Nút thông báo */}
+            {/* Notification */}
             <button className="relative p-2 hover:bg-white/20 rounded-full transition group">
               <Bell className="w-6 h-6 text-white group-hover:text-yellow-200 transition cursor-pointer" />
               <span className="absolute top-1.5 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border border-[#00b6b6]"></span>
@@ -127,11 +137,11 @@ export default function Navbar() {
                 {user.avatar ? (
                   <img 
                     src={user.avatar} 
-                    alt={user.name} 
+                    alt={user.userName} 
                     className="w-full h-full object-cover" 
                   />
                 ) : (
-                  <span>{getAvatarLabel(user.name)}</span>
+                  <span>{getAvatarLabel(user.userName)}</span>
                 )}
               </div>
 
@@ -141,8 +151,12 @@ export default function Navbar() {
                   <div className="absolute -top-2 right-3 w-4 h-4 bg-white transform rotate-45 border-l border-t border-gray-100"></div>
 
                   <div className="px-4 py-2 border-b border-gray-100 mb-1">
-                      <p className="text-sm font-bold text-gray-800 truncate">{user.name || "User"}</p>
-                      <p className="text-xs text-gray-500">{user.role || "Student"}</p>
+                      <p className="text-sm font-bold text-gray-800 truncate" title={user.userName}>
+                        {user.userName || "User"}
+                      </p>
+                      <p className="text-xs text-gray-500 font-medium text-teal-600">
+                        {user.role === "ROLE_STUDENT" ? "Student" : user.role === "ROLE_TEACHER" ? "Teacher" : "Admin"}
+                      </p>
                   </div>
 
                   <button 
