@@ -1,7 +1,7 @@
 import React from "react";
 //import avatar from "../assets/lina.png";
 
-export default function LearningCard({ course }) {
+export default function StudentLearningCard({ course }) {
   const progressPercent = (course.progress / course.totalLessons) * 100;
 
   return (
