@@ -20,9 +20,9 @@ export default function CourseRecommendationSection() {
     const firstCard = scrollRef.current.children[0];
     if (!firstCard) return;
 
-    const cardWidth = firstCard.offsetWidth; // Chiều rộng thẻ
-    const gap = 24; // gap-6 trong Tailwind tương đương 24px
-    const scrollAmount = cardWidth + gap; // Tổng khoảng cách cần cuộn (Thẻ + Gap)
+    const cardWidth = firstCard.offsetWidth;
+    const gap = 24;
+    const scrollAmount = cardWidth + gap;
 
     scrollRef.current.scrollBy({
       left: direction === "left" ? -scrollAmount : scrollAmount,
