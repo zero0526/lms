@@ -3,11 +3,11 @@ import { useNavigate } from "react-router-dom";
 import student from "../../assets/person.svg";
 import lesson from "../../assets/lesson.svg";
 
-export default function TeacherCourseCard({ course }) {
+export default function StudentCourseCard({ course }) {
   const navigate = useNavigate();
 
   const handleCardClick = () => {
-    navigate("/course/course-detail");
+    navigate("course/course-detail");
   };
 
   return (

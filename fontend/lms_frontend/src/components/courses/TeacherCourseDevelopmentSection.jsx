@@ -92,9 +92,6 @@ export default function TeacherCourseDevelopmentSection() {
     },
   ];
 
-  // Logic cắt danh sách khóa học
-  // Nếu đang mở rộng (isExpanded = true) -> lấy hết
-  // Nếu đang thu gọn (isExpanded = false) -> chỉ lấy 4 phần tử đầu
   const displayedCourses = isExpanded ? recommendedCourses : recommendedCourses.slice(0, 4);
 
   return (
@@ -106,7 +103,6 @@ export default function TeacherCourseDevelopmentSection() {
             Courses in Development
           </h2>
           
-          {/* Chỉ hiện nút bấm nếu tổng số khóa học lớn hơn 4 */}
           {recommendedCourses.length > 4 && (
             <button 
               onClick={() => setIsExpanded(!isExpanded)}
@@ -118,7 +114,6 @@ export default function TeacherCourseDevelopmentSection() {
           )}
         </div>
 
-        {/* Course Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {displayedCourses.map((course) => (
             <div key={course.id} className="w-full">
@@ -127,7 +122,6 @@ export default function TeacherCourseDevelopmentSection() {
           ))}
         </div>
 
-        {/* Nút Create New Course */}
         <div className="flex justify-end mt-8">
           <button className="bg-[#00b6b6] hover:bg-[#009e9e] text-white px-6 py-3 rounded-full font-bold shadow-lg transition flex items-center gap-2 transform active:scale-95 cursor-pointer">
             <Plus size={20} />

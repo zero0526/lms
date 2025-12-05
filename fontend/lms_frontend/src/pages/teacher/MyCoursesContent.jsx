@@ -1,5 +1,5 @@
 import React from "react";
-import StudentCourseCard from "../../components/courses/StudentCourseCard"; 
+import TeacherCourseCard from "../../components/courses/TeacherCourseCard"; 
 import { BookOpen } from "lucide-react";
 
 export default function MyCoursesContent() {
@@ -54,7 +54,7 @@ export default function MyCoursesContent() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {myCourses.map((course) => (
             <div key={course.id} className="w-full">
-              <StudentCourseCard course={course} />
+              <TeacherCourseCard course={course} />
             </div>
           ))}
         </div>

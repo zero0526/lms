@@ -16,53 +16,52 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-
 const courseData = {
-  title: "Kiến Thức Nhập Môn IT",
-  description: "Để có cái nhìn tổng quan về ngành IT - Lập trình web các bạn nên xem các videos tại khóa này trước nhé.",
+  title: "Introductory IT Knowledge",
+  description: "To get an overview of the IT field and web development, watch the videos in this course first.",
   whatYouWillLearn: [
-    "Các kiến thức cơ bản, nền móng của ngành IT",
-    "Các mô hình, kiến trúc cơ bản khi triển khai ứng dụng",
-    "Các khái niệm, thuật ngữ cốt lõi khi triển khai ứng dụng",
-    "Hiểu hơn về cách internet và máy vi tính hoạt động",
+    "Basic foundational IT concepts",
+    "Common application architectures and deployment patterns",
+    "Core concepts and terminology used in application development",
+    "A better understanding of how the internet and computers work",
   ],
   requirements: [
-    "Máy tính kết nối internet",
-    "Ý thức tự học cao, trách nhiệm với bản thân",
+    "Computer with internet access",
+    "Strong self-learning mindset and personal responsibility",
   ],
   stats: {
     chapters: 4,
     lessons: 12,
-    duration: "03 giờ 26 phút",
+    duration: "03 hours 26 minutes",
   },
   chapters: [
     {
-      title: "1. Khái niệm kỹ thuật cần biết",
+      title: "1. Technical concepts to know",
       lessons: [
-        { title: "1. Mô hình Client - Server là gì?", time: "11:35" },
-        { title: "2. Domain là gì? Tên miền là gì?", time: "10:34" },
-        { title: "3. Server là gì? Web Server là gì?", time: "08:12" },
+        { title: "1. What is the Client-Server model?", time: "11:35" },
+        { title: "2. What is a Domain? What is a hostname?", time: "10:34" },
+        { title: "3. What is a Server? What is a Web Server?", time: "08:12" },
       ]
     },
     {
-      title: "2. Môi trường, con người IT",
+      title: "2. IT environment and roles",
       lessons: [
-        { title: "4. Front-end, Back-end là gì?", time: "15:20" },
-        { title: "5. Dev là gì? Tester là gì?", time: "09:45" },
-        { title: "6. Quy trình làm phần mềm", time: "12:10" },
+        { title: "4. What are Front-end and Back-end?", time: "15:20" },
+        { title: "5. What is a Developer? What is a Tester?", time: "09:45" },
+        { title: "6. Software development process", time: "12:10" },
       ]
     },
     {
-      title: "3. Phương pháp, định hướng",
+      title: "3. Methods and learning paths",
       lessons: [
-        { title: "7. Tư duy lập trình", time: "20:05" },
-        { title: "8. Lộ trình học Web Developer", time: "18:30" },
+        { title: "7. Programming mindset", time: "20:05" },
+        { title: "8. Web Developer learning roadmap", time: "18:30" },
       ]
     },
   ]
 };
 
-export default function TeacherCourseDetail() {
+export default function StudentCourseDetail() {
   const [openChapters, setOpenChapters] = useState(false);
   const navigate = useNavigate();
 
@@ -74,10 +73,10 @@ export default function TeacherCourseDetail() {
   };
 
   const handleLessonClick = () => {
-    // Cách 1: Nếu bạn muốn chuyển đến trang chi tiết chung (demo)
-    navigate("/course/course-detail/lesson-detail");
+    // Option 1: Navigate to a general demo lesson detail page
+    navigate("lesson-detail");
     
-    // Cách 2: Nếu bạn muốn chuyển đến ID cụ thể (thực tế)
+    // Option 2: Navigate to a specific lesson by ID (real implementation)
     // navigate(`/courses/${course.id}/lessons/${lesson.id}`); 
   };
 
@@ -97,19 +96,19 @@ export default function TeacherCourseDetail() {
               <p className="text-gray-600 leading-relaxed">{courseData.description}</p>
             </div>
 
-            {/* Section: Yêu cầu */}
-            <div>
-               <h2 className="text-xl font-semibold mb-4 text-gray-800">Yêu cầu</h2>
-               <ul className="list-disc list-inside space-y-2 text-gray-600">
+             {/* Section: Requirements */}
+              <div>
+                <h2 className="text-xl font-semibold mb-4 text-gray-800">Requirements</h2>
+                <ul className="list-disc list-inside space-y-2 text-gray-600">
                   {courseData.requirements.map((req, i) => (
                     <li key={i}>{req}</li>
                   ))}
-               </ul>
-            </div>
+                </ul>
+              </div>
 
-            {/* Section: Bạn sẽ học được gì? */}
+            {/* Section: What you'll learn */}
             <div className="bg-white border border-gray-200 p-6 rounded-xl shadow-sm">
-              <h2 className="text-xl font-semibold mb-4 text-gray-800">Bạn sẽ học được gì?</h2>
+              <h2 className="text-xl font-semibold mb-4 text-gray-800">What you'll learn</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {courseData.whatYouWillLearn.map((item, index) => (
                   <div key={index} className="flex items-start gap-2">
@@ -120,18 +119,18 @@ export default function TeacherCourseDetail() {
               </div>
             </div>
 
-            {/* Section: Nội dung khóa học */}
+            {/* Section: Course content */}
             <div>
               <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-800">Nội dung khóa học</h2>
+                <h2 className="text-xl font-semibold text-gray-800">Course Content</h2>
                 <div className="text-sm text-gray-500 font-medium">
-                  <span className="font-bold">{courseData.stats.chapters}</span> chương •{" "}
-                  <span className="font-bold">{courseData.stats.lessons}</span> bài học •{" "}
-                  Thời lượng <span className="font-bold">{courseData.stats.duration}</span>
+                  <span className="font-bold">{courseData.stats.chapters}</span> chapters •{" "}
+                  <span className="font-bold">{courseData.stats.lessons}</span> lessons •{" "}
+                  Duration <span className="font-bold">{courseData.stats.duration}</span>
                 </div>
               </div>
 
-              {/* Danh sách chương */}
+              {/* Chapters list */}
               <div className="space-y-3">
                 {courseData.chapters.map((chapter, index) => (
                   <div key={index} className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
@@ -148,7 +147,7 @@ export default function TeacherCourseDetail() {
                         )}
                         <h3 className="font-semibold text-gray-700">{chapter.title}</h3>
                       </div>
-                      <span className="text-xs text-gray-500">{chapter.lessons.length} bài học</span>
+                      <span className="text-xs text-gray-500">{chapter.lessons.length} lessons</span>
                     </div>
 
                     {/* Chapter Lessons */}
@@ -185,28 +184,28 @@ export default function TeacherCourseDetail() {
               </div>
 
               <div className="p-6 text-center">
-                <h2 className="text-3xl font-bold text-[#00b6b6] mb-4">Miễn phí</h2>
+                <h2 className="text-3xl font-bold text-[#00b6b6] mb-4">Free</h2>
                 
                 <button className="w-full bg-[#00b6b6] text-white font-bold text-lg py-3 rounded-full hover:bg-[#009e9e] transition shadow-lg mb-6 transform active:scale-95">
-                  ĐĂNG KÝ HỌC
+                  Enroll Now
                 </button>
 
                 <ul className="text-left space-y-4 text-sm text-gray-600">
                   <li className="flex items-center gap-3">
                     <Award className="w-5 h-5 text-gray-400" />
-                    <span>Trình độ cơ bản</span>
+                    <span>Beginner level</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <Film className="w-5 h-5 text-gray-400" />
-                    <span>Tổng số <strong>{courseData.stats.lessons}</strong> bài học</span>
+                    <span>Total <strong>{courseData.stats.lessons}</strong> lessons</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <Clock className="w-5 h-5 text-gray-400" />
-                    <span>Thời lượng <strong>{courseData.stats.duration}</strong></span>
+                    <span>Duration <strong>{courseData.stats.duration}</strong></span>
                   </li>
                   <li className="flex items-center gap-3">
                     <Battery className="w-5 h-5 text-gray-400" />
-                    <span>Học mọi lúc, mọi nơi</span>
+                    <span>Learn anytime, anywhere</span>
                   </li>
                 </ul>
               </div>

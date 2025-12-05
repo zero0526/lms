@@ -19,30 +19,30 @@ import Footer from "../../components/Footer";
 // --- MOCK DATA ---
 const lessonData = {
   id: 1,
-  title: "Bài 1: Tổng quan về ReactJS và mô hình Component",
+  title: "Lesson 1: Overview of ReactJS and the Component Model",
   videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
   duration: "12:30",
   views: 1250,
-  description: "Trong bài này chúng ta sẽ tìm hiểu về khái niệm Component, JSX và Virtual DOM."
+  description: "In this lesson we will learn about Components, JSX and the Virtual DOM."
 };
 
 const courseContent = [
   {
     id: 1,
-    title: "Chương 1: Giới thiệu",
+    title: "Chapter 1: Introduction",
     lessons: [
-      { id: 101, title: "1. Tổng quan ReactJS", duration: "12:30", isCompleted: true },
-      { id: 102, title: "2. Cài đặt môi trường", duration: "08:15", isCompleted: true },
-      { id: 103, title: "3. JSX là gì?", duration: "15:00", isCompleted: false, isActive: true }, // Bài đang học
+      { id: 101, title: "1. ReactJS Overview", duration: "12:30", isCompleted: true },
+      { id: 102, title: "2. Setting up the environment", duration: "08:15", isCompleted: true },
+      { id: 103, title: "3. What is JSX?", duration: "15:00", isCompleted: false, isActive: true }, // current lesson
     ]
   },
   {
     id: 2,
-    title: "Chương 2: Components & Props",
+    title: "Chapter 2: Components & Props",
     lessons: [
       { id: 201, title: "4. Function Component", duration: "10:20", isCompleted: false },
-      { id: 202, title: "5. Props là gì?", duration: "14:10", isCompleted: false, isLocked: true },
-      { id: 203, title: "6. Thực hành Props", duration: "20:00", isCompleted: false, isLocked: true },
+      { id: 202, title: "5. What are Props?", duration: "14:10", isCompleted: false, isLocked: true },
+      { id: 203, title: "6. Props Practice", duration: "20:00", isCompleted: false, isLocked: true },
     ]
   }
 ];
@@ -50,36 +50,36 @@ const courseContent = [
 const quizData = [
   {
     id: 1,
-    question: "ReactJS là gì?",
-    options: ["Một Framework", "Một Library", "Một Ngôn ngữ", "Một Database"],
+    question: "What is ReactJS?",
+    options: ["A Framework", "A Library", "A Programming Language", "A Database"],
   },
   {
     id: 2,
-    question: "Hàm nào được sử dụng để tạo state trong Functional Component?",
+    question: "Which function is used to create state in a Functional Component?",
     options: ["useState", "useEffect", "useReducer", "useRef"],
   },
   {
     id: 3,
-    question: "JSX là viết tắt của từ gì?",
+    question: "What does JSX stand for?",
     options: ["Java XML", "JavaScript XML", "JSON XML", "Java Syntax Extension"],
   }
 ];
 
 const documentsData = [
-  { id: 1, title: "Slide bài giảng (PDF)", link: "#", type: "PDF" },
-  { id: 2, title: "Source code mẫu (Zip)", link: "#", type: "ZIP" },
-  { id: 3, title: "Tài liệu tham khảo React Docs", link: "#", type: "LINK" },
+  { id: 1, title: "Lecture Slides (PDF)", link: "#", type: "PDF" },
+  { id: 2, title: "Sample Source Code (Zip)", link: "#", type: "ZIP" },
+  { id: 3, title: "Reference: React Docs", link: "#", type: "LINK" },
 ];
 
-// --- MAIN COMPONENT: LESSON PAGE ---
+// MAIN COMPONENT: LESSON PAGE
 export default function LessonPage() {
   const [activeTab, setActiveTab] = useState("quiz"); // 'quiz' | 'document'
-  const [completedLessons, setCompletedLessons] = useState([101, 102]); // ID các bài đã học
-  const [sidebarOpen, setSidebarOpen] = useState({ 1: true, 2: true }); // Trạng thái đóng mở chương
+  const [completedLessons, setCompletedLessons] = useState([101, 102]); // IDs of completed lessons
+  const [sidebarOpen, setSidebarOpen] = useState({ 1: true, 2: true }); // Chapter open/close state
   
-  // Xử lý video kết thúc -> Đánh dấu hoàn thành
+  // Handle video ended -> mark as completed
   const handleVideoEnded = () => {
-    // Giả sử bài hiện tại có ID là 103
+    // Assume current lesson has ID 103
     if (!completedLessons.includes(103)) {
       setCompletedLessons([...completedLessons, 103]);
 
@@ -117,9 +117,9 @@ export default function LessonPage() {
             <div className="flex items-center text-sm text-gray-500 gap-4 mb-4 flex-wrap">
                <span className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded"><Clock size={16}/> {lessonData.duration}</span>
                <span className={`flex items-center gap-1 px-2 py-1 rounded ${completedLessons.includes(103) ? "bg-teal-50 text-[#00b6b6]" : "bg-gray-100 text-gray-500"}`}>
-                 <CheckCircle size={16}/> {completedLessons.includes(103) ? "Đã hoàn thành" : "Chưa hoàn thành"}
+                 <CheckCircle size={16}/> {completedLessons.includes(103) ? "Completed" : "Not completed"}
                </span>
-               <span className="px-2 py-1">{lessonData.views} lượt xem</span>
+               <span className="px-2 py-1">{lessonData.views} views</span>
             </div>
             <p className="text-gray-600 leading-relaxed">{lessonData.description}</p>
           </div>
@@ -145,7 +145,7 @@ export default function LessonPage() {
                 `}
               >
                 <FileText size={20}/> 
-                Tài liệu khóa học
+                Course Documents
                 {activeTab === "document" && <div className="absolute bottom-0 left-0 w-full h-1 bg-[#00b6b6]"></div>}
               </button>
             </div>
@@ -158,12 +158,12 @@ export default function LessonPage() {
 
         </div>
 
-        {/* === CỘT PHẢI (Nội dung khóa học) === */}
+        {/* === RIGHT COLUMN (Course content) === */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-xl shadow-md border border-gray-100 sticky top-28 overflow-hidden flex flex-col max-h-[calc(100vh-140px)]">
             <div className="p-4 bg-[#00b6b6] text-white font-bold text-lg flex justify-between items-center flex-shrink-0">
-              <span>Nội dung khóa học</span>
-              <span className="text-xs font-medium bg-white/20 px-2 py-1 rounded">3/12 bài</span>
+              <span>Course Content</span>
+              <span className="text-xs font-medium bg-white/20 px-2 py-1 rounded">3/12 lessons</span>
             </div>
             
             <div className="overflow-y-auto custom-scrollbar flex-1">
@@ -239,8 +239,8 @@ export default function LessonPage() {
 // --- SUB-COMPONENT: QUIZ ---
 function QuizComponent() {
   const [started, setStarted] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(600); // 10 phút = 600 giây
-  const [answers, setAnswers] = useState({}); // Lưu câu trả lời { questionId: optionIndex }
+  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes = 600 seconds
+  const [answers, setAnswers] = useState({}); // Store answers { questionId: optionIndex }
   const [submitted, setSubmitted] = useState(false);
 
   // Timer logic
@@ -252,7 +252,7 @@ function QuizComponent() {
     return () => clearInterval(timer);
   }, [started, timeLeft, submitted]);
 
-  // Format thời gian MM:SS
+  // Format time MM:SS
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -275,43 +275,43 @@ function QuizComponent() {
     // Check if all questions answered (optional)
     const answeredCount = Object.keys(answers).length;
     if (answeredCount < quizData.length) {
-      if(!window.confirm(`Bạn mới trả lời ${answeredCount}/${quizData.length} câu hỏi. Bạn có chắc muốn nộp bài?`)) {
+      if(!window.confirm(`You have answered ${answeredCount}/${quizData.length} questions. Are you sure you want to submit?`)) {
         return;
       }
     }
     setSubmitted(true);
-    alert("Nộp bài thành công! Xem kết quả...");
+    alert("Submission successful! View results...");
   };
 
-  // Màn hình bắt đầu
+  // Start screen
   if (!started) {
     return (
       <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center space-y-5 animate-in fade-in zoom-in duration-300">
         <div className="bg-teal-100 p-4 rounded-full">
            <HelpCircle size={48} className="text-[#00b6b6]"/>
         </div>
-        <h3 className="text-2xl font-bold text-gray-800">Bài kiểm tra trắc nghiệm</h3>
+        <h3 className="text-2xl font-bold text-gray-800">Multiple-choice Quiz</h3>
         <p className="text-gray-500 max-w-md">
-          Bài kiểm tra gồm <strong className="text-gray-700">{quizData.length} câu hỏi</strong>. 
-          Bạn có <strong className="text-gray-700">10 phút</strong> để hoàn thành. 
-          Hãy chắc chắn rằng bạn đã hiểu rõ nội dung bài học trước khi bắt đầu.
+          This quiz contains <strong className="text-gray-700">{quizData.length} questions</strong>.
+          You have <strong className="text-gray-700">10 minutes</strong> to complete it.
+          Make sure you understand the lesson content before starting.
         </p>
         <button 
           onClick={() => setStarted(true)}
           className="bg-[#00b6b6] hover:bg-[#009e9e] text-white px-8 py-3 rounded-full font-bold shadow-lg transition transform hover:scale-105 active:scale-95 cursor-pointer"
         >
-          Bắt đầu làm bài
+          Start Quiz
         </button>
       </div>
     );
   }
 
-  // Màn hình làm bài
+  // Quiz screen
   return (
     <div className="relative animate-in slide-in-from-right-4 duration-300">
       {/* Timer Header */}
       <div className="flex justify-between items-center bg-gray-50 p-4 rounded-xl mb-6 sticky top-0 z-10 shadow-sm border border-gray-100">
-        <span className="font-bold text-gray-700">Tiến độ: <span className="text-[#00b6b6]">{Object.keys(answers).length}/{quizData.length}</span></span>
+        <span className="font-bold text-gray-700">Progress: <span className="text-[#00b6b6]">{Object.keys(answers).length}/{quizData.length}</span></span>
         <div className={`flex items-center gap-2 font-mono font-bold text-lg bg-white px-3 py-1 rounded shadow-sm ${timeLeft < 60 ? "text-red-500 animate-pulse" : "text-[#00b6b6]"}`}>
           <Clock size={20}/> {formatTime(timeLeft)}
         </div>
@@ -362,7 +362,7 @@ function QuizComponent() {
                   onClick={() => clearChoice(q.id)}
                   className="text-sm text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded-full flex items-center gap-1 font-medium transition"
                 >
-                  <RotateCcw size={14} /> Xóa lựa chọn
+                  <RotateCcw size={14} /> Clear choice
                 </button>
               </div>
             )}
@@ -381,7 +381,7 @@ function QuizComponent() {
             }
           `}
         >
-          {submitted ? "Đã nộp bài" : "Nộp bài thi"}
+          {submitted ? "Submitted" : "Submit Test"}
         </button>
       </div>
     </div>
@@ -392,7 +392,7 @@ function QuizComponent() {
 function DocumentComponent() {
   return (
     <div className="space-y-4 animate-in fade-in duration-300">
-      <h3 className="font-bold text-gray-800 mb-4 text-lg border-l-4 border-[#00b6b6] pl-3">Tài liệu học tập</h3>
+      <h3 className="font-bold text-gray-800 mb-4 text-lg border-l-4 border-[#00b6b6] pl-3">Study Materials</h3>
       {documentsData.map((doc) => (
         <a 
           key={doc.id} 
@@ -410,7 +410,7 @@ function DocumentComponent() {
             <div>
               <h4 className="font-semibold text-gray-700 group-hover:text-[#00b6b6] transition">{doc.title}</h4>
               <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                {doc.type} • Nhấn để xem chi tiết
+                {doc.type} • Click to view details
               </p>
             </div>
           </div>
@@ -420,7 +420,7 @@ function DocumentComponent() {
       
       <div className="mt-8 bg-amber-50 p-4 rounded-xl border border-amber-200 text-sm text-amber-800 flex gap-3 items-start">
          <div className="bg-amber-100 p-1 rounded-full mt-0.5"><Lock size={14}/></div>
-         <p><strong>Lưu ý:</strong> Các tài liệu được lưu trữ trên hệ thống bảo mật. Vui lòng đăng nhập tài khoản học viên để có quyền truy cập và tải xuống tài liệu.</p>
+         <p><strong>Note:</strong> Documents are stored on a secure system. Please sign in with a student account to access and download materials.</p>
       </div>
     </div>
   );

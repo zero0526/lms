@@ -5,8 +5,9 @@ import Register from "./pages/Register";
 import Blog from "./pages/Blog";
 import CourseStudent from "./pages/student/CourseStudent";
 import TeacherStudio from "./pages/teacher/TeacherStudio";
-import CourseDetail from "./pages/student/CourseDetail";
-import TeacherCourseDetail from "./pages/teacher/CourseDetail";
+import StudentCourseDetail from "./pages/student/StudentCourseDetail";
+import TeacherCourseDetail from "./pages/teacher/TeacherCourseDetail";
+import EditCourse from "./pages/teacher/EditCourse";
 import LessonDetail from "./pages/student/LessonDetail";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -15,7 +16,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Redirect mặc định */}
+        {/* Public Routes */}
         <Route path="/" element={<Navigate to="/home" />} />
         
         {/* Public Routes */}
@@ -25,7 +26,6 @@ export default function App() {
         <Route path="/blog" element={<Blog />} />
         
         {/* --- STUDENT ROUTES --- */}
-        {/* Đổi từ /courses sang /student/courses cho rõ ràng */}
         <Route 
           path="/student/courses" 
           element={
@@ -34,11 +34,24 @@ export default function App() {
             </ProtectedRoute>
           } 
         />
-        
-        {/* Các trang chi tiết có thể cho cả 2 role xem hoặc cần logic riêng */}
-        <Route path="/course/course-detail" element={<CourseDetail />} />
-        <Route path="/course/course-detail/lesson-detail" element={<LessonDetail />} />
 
+        <Route 
+          path="/student/courses/course/course-detail" 
+          element={
+            <ProtectedRoute allowedRoles={["ROLE_STUDENT"]}>
+              <StudentCourseDetail />
+            </ProtectedRoute>
+          } 
+        />
+        <Route
+          path="/student/courses/course/course-detail/lesson-detail" 
+          element={
+            <ProtectedRoute allowedRoles={["ROLE_STUDENT"]}>
+              <LessonDetail />
+            </ProtectedRoute>
+          } 
+        />
+        
         {/* --- TEACHER ROUTES --- */}
         <Route 
           path="/teacher/courses" 
@@ -48,6 +61,24 @@ export default function App() {
             </ProtectedRoute>
           } 
         />
+
+          <Route 
+            path="/teacher/courses/course/course-detail" 
+            element={
+              <ProtectedRoute allowedRoles={["ROLE_TEACHER"]}>
+                <TeacherCourseDetail />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/teacher/courses/course/course-detail/edit/:courseId" 
+            element={
+              <ProtectedRoute allowedRoles={["ROLE_TEACHER"]}>
+                <EditCourse />
+              </ProtectedRoute>
+            } 
+          />
 
       </Routes>
     </BrowserRouter>
