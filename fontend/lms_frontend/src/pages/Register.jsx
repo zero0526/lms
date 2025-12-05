@@ -5,39 +5,46 @@ import { AxiosError } from "axios";
 import apiClient from "../api/axiosConfig";
 
 export default function Register() {
-  const [fullName, setFullName] = useState("");
+  const [fullName, setFullName] = useState(""); 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [roleName, setRoleName] = useState("ROLE_STUDENT"); // Mặc định là Student
+  
   const location = useLocation();
   const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
     setError("");
-
+    
     if (!fullName || !email || !password || !confirmPassword) {
       setError("Please fill in all fields");
       return;
     }
-    
+
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
     }
 
     try {
-      await apiClient.post("/auth/register", {
+      const payload = {
         fullName,
-        email,
+        email,   
         password,
-        roleName,
-      });
+        roleName, 
+      };
+      
+      console.log("Register Payload:", payload);
+      await apiClient.post("/auth/register", payload);
+      alert("Registration successful! Please login.");
       navigate("/login");
+
     } catch (error) {
+      console.error("Register Error:", error);
       if (error instanceof AxiosError) {
         setError(error.response?.data?.message || "Registration failed");
       } else {
@@ -107,14 +114,15 @@ export default function Register() {
             Empowering your learning journey with modern online courses.
           </p>
 
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={handleRegister}>
+            {/* SỬA: Đổi nhãn từ Username thành Full Name cho khớp với ý nghĩa fullName */}
             <div>
-              <label className="block mb-1 text-gray-600">Username</label>
+              <label className="block mb-1 text-gray-600">Full Name</label>
               <input
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                placeholder="Enter your Username"
+                placeholder="Ex: Nguyễn Văn A"
                 className="w-full border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400"
               />
             </div>
@@ -201,7 +209,7 @@ export default function Register() {
 
             {/* --- ERROR MESSAGE DISPLAY --- */}
             {error && (
-              <div className="text-red-500 text-sm font-medium mt-2 animate-pulse w-full max-w-md mx-auto text-center">
+              <div className="text-red-500 text-sm font-medium mt-2 animate-pulse w-full max-w-md mx-auto text-center p-2 bg-red-50 rounded">
                 {error}
               </div>
             )}
@@ -210,7 +218,6 @@ export default function Register() {
             <button
               type="submit"
               className="w-full bg-teal-500 text-white py-2 rounded-full font-medium hover:bg-teal-600 transition shadow-md mt-4 cursor-pointer"
-              onClick={handleRegister}
             >
               Register
             </button>

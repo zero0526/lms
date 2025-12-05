@@ -30,11 +30,13 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(false);
+  const [roleName, setRoleName] = useState("ROLE_STUDENT");
   const [error, setError] = useState("");
+  
   const location = useLocation();
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+    const handleLogin = async (e) => {
       e.preventDefault();
       setError("");
 
@@ -42,18 +44,36 @@ export default function Login() {
         setError("Please fill in all fields");
         return;
       }
-      try {
-          const response = await apiClient.post('/auth/login', {
-              email,
-              password,
-          })
-          const responseData = response.data.data;
-          console.log(responseData);
 
-          const accessToken = responseData.access_token;
-          const userObject = responseData.user;
-          const userString = JSON.stringify(userObject);
+      // DEBUG: Kiểm tra dữ liệu gửi đi
+      const payload = {
+        email: email.trim(),
+        password: password,
+        role: roleName, 
+      };
+      console.log("🚀 Sending Login Payload:", payload);
+
+      try {
+          const response = await apiClient.post('/auth/login', payload);
+          const responseData = response.data.data; // Dữ liệu thô từ BE
+          console.log("✅ Login Success Raw Data:", responseData);
+
+          // 1. Lấy Token (đúng key accessToken từ JSON)
+          const accessToken = responseData.accessToken; 
+
+          // 2. Tạo object User từ các trường phẳng (Flat fields)
+          // Vì API trả về userId, userName... nằm ngang hàng với accessToken
+          const userToSave = {
+              userId: responseData.userId,
+              userName: responseData.userName,
+              email: responseData.email,
+              role: responseData.role,
+              avatar: responseData.avatar
+          };
           
+          const userString = JSON.stringify(userToSave);
+          
+          // 3. Lưu vào Storage
           if (remember) {
               localStorage.setItem('accessToken', accessToken);
               localStorage.setItem('user', userString);
@@ -61,11 +81,24 @@ export default function Login() {
               sessionStorage.setItem('accessToken', accessToken);
               sessionStorage.setItem('user', userString);
           }
-          console.log(accessToken);
 
           navigate('/home');
       } catch (err) {
-          console.log("Error", err);
+          console.error("❌ Login Error:", err);
+          
+          if (err instanceof AxiosError) {
+             if (err.response) {
+                if (err.response.status === 500) {
+                    setError("Server Error (500). Please check Backend logs.");
+                } else {
+                    setError(err.response.data?.message || "Login failed. Please check your credentials.");
+                }
+             } else {
+                 setError("Network Error. Cannot connect to server.");
+             }
+          } else {
+             setError("An unexpected error occurred");
+          }
       }
   }
 
@@ -130,7 +163,7 @@ export default function Login() {
             Empowering your learning journey with modern online courses.
           </p>
 
-          <form className="space-y-4">
+          <form className="space-y-4" onSubmit={handleLogin}>
             <div>
               <label className="block mb-1 text-gray-600">Email</label>
               <input
@@ -162,9 +195,39 @@ export default function Login() {
               </div>
             </div>
 
+            {/* --- ROLE SELECTION (Thêm mới) --- */}
+            <div>
+              <label className="block mb-1 text-gray-600">Login as</label>
+              <div className="flex bg-gray-100 p-1 rounded-full">
+                <button
+                  type="button"
+                  className={`flex-1 py-2 rounded-full font-medium transition duration-300 ${
+                    roleName === "ROLE_STUDENT"
+                      ? "bg-teal-500 text-white shadow-md"
+                      : "text-gray-500 hover:text-teal-600"
+                  }`}
+                  onClick={() => setRoleName("ROLE_STUDENT")}
+                >
+                  Student
+                </button>
+                <button
+                  type="button"
+                  className={`flex-1 py-2 rounded-full font-medium transition duration-300 ${
+                    roleName === "ROLE_TEACHER"
+                      ? "bg-teal-500 text-white shadow-md"
+                      : "text-gray-500 hover:text-teal-600"
+                  }`}
+                  onClick={() => setRoleName("ROLE_TEACHER")}
+                >
+                  Teacher
+                </button>
+              </div>
+            </div>
+            {/* -------------------------------- */}
+
             <div className="flex items-center justify-between text-sm text-gray-600">
               <label className="flex items-center gap-2">
-                <input type="checkbox" className="accent-teal-500" checked={remember}onChange={(e) => setRemember(e.target.checked)} /> Remember me
+                <input type="checkbox" className="accent-teal-500" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Remember me
               </label>
               <a href="#" className="text-teal-500 hover:underline">
                 Forgot Password?
@@ -180,7 +243,6 @@ export default function Login() {
 
             <button
               type="submit"
-              onClick={handleLogin}
               className="w-full bg-teal-500 text-white py-2 rounded-full font-medium hover:bg-teal-600 transition shadow-md cursor-pointer"
             >
               Login
