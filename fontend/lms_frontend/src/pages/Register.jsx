@@ -11,7 +11,7 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [roleName, setRoleName] = useState("ROLE_STUDENT"); // Mặc định là Student
+  const [roleName, setRoleName] = useState("ROLE_STUDENT");
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -115,7 +115,6 @@ export default function Register() {
           </p>
 
           <form className="space-y-4" onSubmit={handleRegister}>
-            {/* SỬA: Đổi nhãn từ Username thành Full Name cho khớp với ý nghĩa fullName */}
             <div>
               <label className="block mb-1 text-gray-600">Full Name</label>
               <input
@@ -178,7 +177,7 @@ export default function Register() {
               </div>
             </div>
 
-            {/* --- ROLE SELECTION --- */}
+            {/* ROLE SELECTION */}
             <div>
               <label className="block mb-1 text-gray-600">Select Role</label>
               <div className="flex bg-gray-100 p-1 rounded-full">
@@ -207,14 +206,14 @@ export default function Register() {
               </div>
             </div>
 
-            {/* --- ERROR MESSAGE DISPLAY --- */}
+            {/* ERROR MESSAGE DISPLAY */}
             {error && (
               <div className="text-red-500 text-sm font-medium mt-2 animate-pulse w-full max-w-md mx-auto text-center p-2 bg-red-50 rounded">
                 {error}
               </div>
             )}
             
-            {/* --- Submit Button --- */}
+            {/* Submit Button */}
             <button
               type="submit"
               className="w-full bg-teal-500 text-white py-2 rounded-full font-medium hover:bg-teal-600 transition shadow-md mt-4 cursor-pointer"

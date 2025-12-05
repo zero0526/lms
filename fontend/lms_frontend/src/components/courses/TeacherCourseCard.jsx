@@ -3,12 +3,8 @@ import { useNavigate } from "react-router-dom";
 import student from "../../assets/person.svg";
 import lesson from "../../assets/lesson.svg";
 
-export default function CourseCard({ course }) {
+export default function TeacherCourseCard({ course }) {
   const navigate = useNavigate();
-
-  const priceCheck = (price) => {
-    return price > 0 ? `${price}$` : "Free";
-  };
 
   const handleCardClick = () => {
     navigate("/course/course-detail");
@@ -41,11 +37,11 @@ export default function CourseCard({ course }) {
                 <img className="w-4 h-4 opacity-70" src={lesson} alt="lesson" />
                 {course.lessonNums}
             </span>
-            <span className="font-bold text-teal-600 text-sm">{priceCheck(course.price)}</span>
+            <span className="font-bold text-teal-600 text-sm">Free</span>
             </div>
 
             <button className="w-full border border-[#00b6b6] text-[#00b6b6] rounded-lg py-2 text-sm font-semibold hover:bg-[#00b6b6] hover:text-white transition duration-300">
-            Explore
+            View
             </button>
         </div>
       </div>

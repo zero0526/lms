@@ -1,8 +1,8 @@
 import React, { useRef } from "react";
-import LearningCard from "./LearningCard";
+import LearningCard from "./StudentLearningCard";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export default function LearningSection() {
+export default function StudentLearningSection() {
   const scrollRef = useRef(null);
 
   const courses = [

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, Bell, User, LogOut } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 
 export default function Navbar() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -11,7 +11,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // LOGIC AUTHENTICATION
+  // --- LOGIC AUTHENTICATION ---
   useEffect(() => {
     const checkLoginStatus = () => {
       let token = localStorage.getItem("accessToken");
@@ -80,8 +80,18 @@ export default function Navbar() {
     return name ? name.charAt(0).toUpperCase() : "U";
   };
 
+  const getCoursesPath = () => {
+    if (user?.role === "ROLE_TEACHER") {
+      return "/teacher/courses"; 
+    }
+    if (user?.role === "ROLE_STUDENT") {
+      return "/student/courses"; // Changed from /courses to /student/courses for consistency
+    }
+    return "/login"; // If not logged in, clicking will go to login
+  };
+
   return (
-    <nav className="flex justify-between items-center px-4 md:px-10 py-4 bg-[#00b6b6] text-white fixed top-0 w-full z-50">
+    <nav className="flex justify-between items-center px-4 md:px-10 py-4 bg-[#00b6b6] text-white fixed top-0 w-full z-50 shadow-md">
       {/* Logo */}
       <div className="flex items-center space-x-2 cursor-pointer" onClick={handleLogoClick}>
         <div className="bg-white text-[#00b6b6] font-bold text-lg px-2 py-1 rounded shadow-sm">
@@ -111,10 +121,19 @@ export default function Navbar() {
 
       {/* Menu */}
       <ul className="hidden md:flex space-x-8 font-medium">
-        <li><a href="/home" className="hover:text-yellow-200 transition">Home</a></li>
-        <li><a href="/courses" className="hover:text-yellow-200 transition">Courses</a></li>
+        <li>
+          <Link to="/home" className="hover:text-yellow-200 transition">Home</Link>
+        </li>
+        <li>
+          {/* Changed from /courses to dynamic path based on role */}
+          <Link to={getCoursesPath()} className="hover:text-yellow-200 transition">
+            Courses
+          </Link>
+        </li>
         <li><a href="#careers" className="hover:text-yellow-200 transition">Careers</a></li>
-        <li><a href="/blog" className="hover:text-yellow-200 transition">Blog</a></li>
+        <li>
+          <Link to="/blog" className="hover:text-yellow-200 transition">Blog</Link>
+        </li>
         <li><a href="#about" className="hover:text-yellow-200 transition">About Us</a></li>
       </ul>
 
@@ -179,20 +198,20 @@ export default function Navbar() {
             </div>
           </>
         ) : (
-          // --- Guest State (Not Logged In) ---
+          // --- Guest State ---
           <>
-            <a
-              href="/login"
+            <Link
+              to="/login"
               className="bg-white text-[#00b6b6] px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition shadow-sm"
             >
               Login
-            </a>
-            <a
-              href="/register"
+            </Link>
+            <Link
+              to="/register"
               className="bg-[#00b6b6] border border-white text-white px-4 py-2 rounded-lg font-medium hover:bg-white hover:text-[#00b6b6] transition shadow-sm"
             >
               Register
-            </a>
+            </Link>
           </>
         )}
       </div>

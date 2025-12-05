@@ -36,70 +36,66 @@ export default function Login() {
   const location = useLocation();
   const navigate = useNavigate();
 
-    const handleLogin = async (e) => {
-      e.preventDefault();
-      setError("");
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError("");
 
-      if (!email || !password) {
-        setError("Please fill in all fields");
-        return;
-      }
+    if (!email || !password) {
+      setError("Please fill in all fields");
+      return;
+    }
 
-      // DEBUG: Kiểm tra dữ liệu gửi đi
-      const payload = {
-        email: email.trim(),
-        password: password,
-        role: roleName, 
+    // DEBUG: Kiểm tra dữ liệu gửi đi
+    const payload = {
+      email: email.trim(),
+      password: password,
+      role: roleName, 
+    };
+    console.log("🚀 Sending Login Payload:", payload);
+
+    try {
+      const response = await apiClient.post('/auth/login', payload);
+      const responseData = response.data.data;
+      console.log("✅ Login Success Raw Data:", responseData);
+
+      const accessToken = responseData.accessToken; 
+
+      const userToSave = {
+          userId: responseData.userId,
+          userName: responseData.userName,
+          email: responseData.email,
+          role: responseData.role,
+          avatar: responseData.avatar
       };
-      console.log("🚀 Sending Login Payload:", payload);
-
-      try {
-          const response = await apiClient.post('/auth/login', payload);
-          const responseData = response.data.data; // Dữ liệu thô từ BE
-          console.log("✅ Login Success Raw Data:", responseData);
-
-          // 1. Lấy Token (đúng key accessToken từ JSON)
-          const accessToken = responseData.accessToken; 
-
-          // 2. Tạo object User từ các trường phẳng (Flat fields)
-          // Vì API trả về userId, userName... nằm ngang hàng với accessToken
-          const userToSave = {
-              userId: responseData.userId,
-              userName: responseData.userName,
-              email: responseData.email,
-              role: responseData.role,
-              avatar: responseData.avatar
-          };
-          
-          const userString = JSON.stringify(userToSave);
-          
-          // 3. Lưu vào Storage
-          if (remember) {
-              localStorage.setItem('accessToken', accessToken);
-              localStorage.setItem('user', userString);
-          } else {
-              sessionStorage.setItem('accessToken', accessToken);
-              sessionStorage.setItem('user', userString);
-          }
-
-          navigate('/home');
-      } catch (err) {
-          console.error("❌ Login Error:", err);
-          
-          if (err instanceof AxiosError) {
-             if (err.response) {
-                if (err.response.status === 500) {
-                    setError("Server Error (500). Please check Backend logs.");
-                } else {
-                    setError(err.response.data?.message || "Login failed. Please check your credentials.");
-                }
-             } else {
-                 setError("Network Error. Cannot connect to server.");
-             }
-          } else {
-             setError("An unexpected error occurred");
-          }
+      
+      const userString = JSON.stringify(userToSave);
+      
+      if (remember) {
+          localStorage.setItem('accessToken', accessToken);
+          localStorage.setItem('user', userString);
+      } else {
+          sessionStorage.setItem('accessToken', accessToken);
+          sessionStorage.setItem('user', userString);
       }
+
+      navigate('/home');
+    } catch (err) {
+      console.error("❌ Login Error:", err);
+      
+      if (err instanceof AxiosError) {
+          if (err.response) {
+            if (err.response.status === 500) {
+                setError("Server Error (500). Please check Backend logs.");
+            } else {
+                setError(err.response.data?.message || "Login failed. Please check your credentials.");
+            }
+          } else {
+              setError("Network Error. Cannot connect to server.");
+          }
+      } else {
+          setError("An unexpected error occurred");
+      }
+    }
   }
 
   return (
@@ -195,7 +191,7 @@ export default function Login() {
               </div>
             </div>
 
-            {/* --- ROLE SELECTION (Thêm mới) --- */}
+            {/* ROLE SELECTION */}
             <div>
               <label className="block mb-1 text-gray-600">Login as</label>
               <div className="flex bg-gray-100 p-1 rounded-full">
@@ -223,7 +219,6 @@ export default function Login() {
                 </button>
               </div>
             </div>
-            {/* -------------------------------- */}
 
             <div className="flex items-center justify-between text-sm text-gray-600">
               <label className="flex items-center gap-2">
@@ -234,7 +229,7 @@ export default function Login() {
               </a>
             </div>
 
-            {/* --- ERROR MESSAGE DISPLAY --- */}
+            {/* ERROR MESSAGE DISPLAY */}
             {error && (
               <div className="text-red-500 text-sm font-medium mt-2 animate-pulse w-full max-w-md mx-auto text-center">
                 {error}
@@ -248,7 +243,7 @@ export default function Login() {
               Login
             </button>
 
-            {/* --- DIVIDER START --- */}
+            {/* DIVIDER */}
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
@@ -259,9 +254,9 @@ export default function Login() {
                 </span>
               </div>
             </div>
-            {/* --- DIVIDER END --- */}
+            {/* DIVIDER END */}
 
-            {/* --- SOCIAL BUTTONS START --- */}
+            {/* SOCIAL BUTTONS */}
             <div className="flex flex-col gap-3">
               <button
                 type="button"
@@ -279,7 +274,7 @@ export default function Login() {
                 <span className="font-medium">GitHub</span>
               </button>
             </div>
-            {/* --- SOCIAL BUTTONS END --- */}
+            {/* SOCIAL BUTTONS END */}
 
           </form>
         </div>
