@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import CourseCard from "./StudentCourseCard";
+import CourseCard from "../students/StudentCourseCard";
 
 export default function CourseRecommendationSection() {
   const scrollRef = useRef(null);

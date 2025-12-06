@@ -7,7 +7,7 @@ export default function StudentCourseCard({ course }) {
   const navigate = useNavigate();
 
   const handleCardClick = () => {
-    navigate("course/course-detail");
+    navigate(`/student/courses/${course.id}`);
   };
 
   return (
@@ -41,7 +41,7 @@ export default function StudentCourseCard({ course }) {
             </div>
 
             <button className="w-full border border-[#00b6b6] text-[#00b6b6] rounded-lg py-2 text-sm font-semibold hover:bg-[#00b6b6] hover:text-white transition duration-300">
-            View
+            Explore
             </button>
         </div>
       </div>

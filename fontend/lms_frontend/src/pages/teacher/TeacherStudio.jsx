@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import Navbar from "../../components/Navbar"; 
-import Footer from "../../components/Footer"; 
 import Sidebar from "../../components/teachers/Sidebar";
 import CourseDevelopmentContent from "./CourseDevelopmentContent";
 import MyCoursesContent from "./MyCoursesContent";

@@ -1,6 +1,6 @@
 import React from "react";
 import Navbar from "../../components/Navbar";
-import StudentLearningSection from "../../components/courses/StudentLearningSection";
+import StudentLearningSection from "../../components/students/StudentLearningSection";
 import CourseRecommendationSection from "../../components/courses/CourseRecommendationSection";
 import Footer from "../../components/Footer";
 

@@ -1,5 +1,5 @@
 import { ArrowRight } from "lucide-react";
-import CourseCard from "./courses/StudentCourseCard";
+import CourseCard from "./students/StudentCourseCard";
 
 const categories = [
   {
