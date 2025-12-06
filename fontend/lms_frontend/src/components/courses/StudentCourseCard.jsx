@@ -7,7 +7,9 @@ export default function StudentCourseCard({ course }) {
   const navigate = useNavigate();
 
   const handleCardClick = () => {
-    navigate("course/course-detail");
+    // Giả sử đường dẫn bạn muốn là /course/123
+    // Dấu / ở đầu để đảm bảo nó là đường dẫn tuyệt đối
+    navigate(`/student/courses/${course.id}`);
   };
 
   return (

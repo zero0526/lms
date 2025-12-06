@@ -7,7 +7,7 @@ export default function StudentCourseCard({ course }) {
   const navigate = useNavigate();
 
   const handleCardClick = () => {
-    navigate("course/course-detail");
+    navigate(`/teacher/courses/${course.id}`);
   };
 
   return (

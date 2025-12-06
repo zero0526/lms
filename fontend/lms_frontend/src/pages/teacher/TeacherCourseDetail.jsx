@@ -96,7 +96,7 @@ export default function TeacherCourseDetail() {
 
   const handleEditCourse = () => {
     // Navigate to course edit page
-    navigate(`/teacher/courses/course/course-detail/edit/${courseData.id}`);
+    navigate(`/teacher/courses/${courseData.id}/edit`);
   };
 
   const handleLessonPreview = (lessonId) => {

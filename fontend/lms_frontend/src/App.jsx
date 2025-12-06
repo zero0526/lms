@@ -1,25 +1,27 @@
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Blog from "./pages/Blog";
+
+// Student Pages
 import CourseStudent from "./pages/student/CourseStudent";
+import StudentCourseDetail from "./pages/student/StudentCourseDetail"; // Lưu ý tên file
+import LessonDetail from "./pages/student/LessonDetail";
+
+// Teacher Pages
 import TeacherStudio from "./pages/teacher/TeacherStudio";
-import StudentCourseDetail from "./pages/student/StudentCourseDetail";
 import TeacherCourseDetail from "./pages/teacher/TeacherCourseDetail";
 import EditCourse from "./pages/teacher/EditCourse";
-import LessonDetail from "./pages/student/LessonDetail";
-import ProtectedRoute from "./components/ProtectedRoute";
 
+import ProtectedRoute from "./components/ProtectedRoute";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Routes */}
+        {/* --- PUBLIC ROUTES --- */}
         <Route path="/" element={<Navigate to="/home" />} />
-        
-        {/* Public Routes */}
         <Route path="/home" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -35,16 +37,19 @@ export default function App() {
           } 
         />
 
+        {/* Chi tiết khóa học: /student/courses/1 */}
         <Route 
-          path="/student/courses/course/course-detail" 
+          path="/student/courses/:courseId" 
           element={
             <ProtectedRoute allowedRoles={["ROLE_STUDENT"]}>
               <StudentCourseDetail />
             </ProtectedRoute>
           } 
         />
+
+        {/* Chi tiết bài học: /student/courses/1/lessons/101 */}
         <Route
-          path="/student/courses/course/course-detail/lesson-detail" 
+          path="/student/courses/:courseId/lessons/:lessonId" 
           element={
             <ProtectedRoute allowedRoles={["ROLE_STUDENT"]}>
               <LessonDetail />
@@ -62,23 +67,25 @@ export default function App() {
           } 
         />
 
-          <Route 
-            path="/teacher/courses/course/course-detail" 
-            element={
-              <ProtectedRoute allowedRoles={["ROLE_TEACHER"]}>
-                <TeacherCourseDetail />
-              </ProtectedRoute>
-            } 
-          />
+        {/* Chi tiết khóa học của GV: /teacher/courses/1 */}
+        <Route 
+          path="/teacher/courses/:courseId" 
+          element={
+            <ProtectedRoute allowedRoles={["ROLE_TEACHER"]}>
+              <TeacherCourseDetail />
+            </ProtectedRoute>
+          } 
+        />
 
-          <Route 
-            path="/teacher/courses/course/course-detail/edit/:courseId" 
-            element={
-              <ProtectedRoute allowedRoles={["ROLE_TEACHER"]}>
-                <EditCourse />
-              </ProtectedRoute>
-            } 
-          />
+        {/* Chỉnh sửa khóa học: /teacher/courses/1/edit */}
+        <Route 
+          path="/teacher/courses/:courseId/edit" 
+          element={
+            <ProtectedRoute allowedRoles={["ROLE_TEACHER"]}>
+              <EditCourse />
+            </ProtectedRoute>
+          } 
+        />
 
       </Routes>
     </BrowserRouter>
