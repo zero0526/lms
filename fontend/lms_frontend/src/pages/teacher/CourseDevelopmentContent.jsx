@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Plus } from "lucide-react";
-import DevelopmentCourseGrid from "../../components/teachers/DevelopmentCourseGrid"; // 1. Import Component con
+import DevelopmentCourseGrid from "../../components/teachers/DevelopmentCourseGrid";
 
 export default function CourseDevelopmentContent() {
   const [developmentCourses, setDevelopmentCourses] = useState([
@@ -55,7 +55,6 @@ export default function CourseDevelopmentContent() {
       {developmentCourses.length === 0 ? (
         <EmptyStateCard />
       ) : (
-        // 2. Sử dụng Component DevelopmentCourseGrid và truyền dữ liệu courses
         <DevelopmentCourseGrid courses={developmentCourses} />
       )}
     </div>

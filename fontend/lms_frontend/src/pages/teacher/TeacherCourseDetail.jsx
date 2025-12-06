@@ -22,7 +22,7 @@ const mockCourseDetail = {
   id: 1,
   title: "Introductory IT Knowledge",
   description: "To get an overview of the IT field and web development, watch the videos in this course first. The course is designed for beginners.",
-  price: 0, // 0 = Free
+  price: 0,
   oldPrice: 100,
   thumbnail: "https://files.fullstack.edu.vn/f8-prod/courses/7.png",
   instructor: {

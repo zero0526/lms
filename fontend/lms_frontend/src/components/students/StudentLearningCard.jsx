@@ -1,25 +1,23 @@
 import React from "react";
-import { useNavigate } from "react-router-dom"; // 1. Import useNavigate
-// import avatar from "../assets/lina.png";
+import { useNavigate } from "react-router-dom";
 
 export default function StudentLearningCard({ course }) {
-  const navigate = useNavigate(); // 2. Khởi tạo hook
+  const navigate = useNavigate();
 
   const progressPercent = (course.progress / course.totalLessons) * 100;
 
-  // 3. Hàm xử lý click
   const handleCardClick = () => {
     navigate(`/student/courses/${course.id}`, { 
       state: { 
-        isRegistered: true, // Cờ đánh dấu đã đăng ký
-        progress: course.progress // (Tùy chọn) Truyền thêm tiến độ nếu muốn hiển thị ngay
+        isRegistered: true,
+        progress: course.progress
       } 
     });
   };
 
   return (
     <div 
-      onClick={handleCardClick} // 4. Gắn sự kiện vào div cha
+      onClick={handleCardClick}
       className="bg-white shadow-lg rounded-xl overflow-hidden hover:scale-105 transform transition duration-300 cursor-pointer"
     >
       <img

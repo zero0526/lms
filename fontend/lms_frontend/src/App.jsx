@@ -6,7 +6,7 @@ import Blog from "./pages/Blog";
 
 // Student Pages
 import CourseStudent from "./pages/student/CourseStudent";
-import StudentCourseDetail from "./pages/student/StudentCourseDetail"; // Lưu ý tên file
+import StudentCourseDetail from "./pages/student/StudentCourseDetail";
 import LessonDetail from "./pages/student/LessonDetail";
 
 // Teacher Pages
@@ -37,7 +37,6 @@ export default function App() {
           } 
         />
 
-        {/* Chi tiết khóa học: /student/courses/1 */}
         <Route 
           path="/student/courses/:courseId" 
           element={
@@ -47,7 +46,6 @@ export default function App() {
           } 
         />
 
-        {/* Chi tiết bài học: /student/courses/1/lessons/101 */}
         <Route
           path="/student/courses/:courseId/lessons/:lessonId" 
           element={
@@ -67,7 +65,6 @@ export default function App() {
           } 
         />
 
-        {/* Chi tiết khóa học của GV: /teacher/courses/1 */}
         <Route 
           path="/teacher/courses/:courseId" 
           element={
@@ -77,7 +74,6 @@ export default function App() {
           } 
         />
 
-        {/* Chỉnh sửa khóa học: /teacher/courses/1/edit */}
         <Route 
           path="/teacher/courses/:courseId/edit" 
           element={

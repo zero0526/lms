@@ -1,5 +1,5 @@
 import React from "react";
-import TeacherCourseCard from "../../components/courses/TeacherCourseCard"; 
+import TeacherCourseCard from "../../components/teachers/TeacherCourseCard"; 
 import { BookOpen } from "lucide-react";
 
 export default function MyCoursesContent() {
