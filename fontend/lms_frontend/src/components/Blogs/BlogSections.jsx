@@ -45,7 +45,9 @@ const BlogSections = () => {
 
   const handleCategoryClick = (category) => {
     // Navigate to a category page (or use filtering)
-    navigate(`/blog?category=${category.toLowerCase()}`);
+    navigate(`/blog/${category.toLowerCase().replace("/", "-")}`);
+
+
   };
 
   return (
