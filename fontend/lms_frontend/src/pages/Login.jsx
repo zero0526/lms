@@ -51,12 +51,12 @@ export default function Login() {
       password: password,
       role: roleName, 
     };
-    console.log("🚀 Sending Login Payload:", payload);
+    console.log("Sending Login Payload:", payload);
 
     try {
       const response = await apiClient.post('/auth/login', payload);
       const responseData = response.data.data;
-      console.log("✅ Login Success Raw Data:", responseData);
+      console.log("Login Success Raw Data:", responseData);
 
       const accessToken = responseData.accessToken; 
 
@@ -80,7 +80,7 @@ export default function Login() {
 
       navigate('/home');
     } catch (err) {
-      console.error("❌ Login Error:", err);
+      console.error("Login Error:", err);
       
       if (err instanceof AxiosError) {
           if (err.response) {
