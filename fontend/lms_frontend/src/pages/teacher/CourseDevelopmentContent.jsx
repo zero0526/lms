@@ -1,25 +1,74 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import DevelopmentCourseGrid from "../../components/teachers/DevelopmentCourseGrid";
 import CreateCourseModal from "../../components/teachers/CreateCourseModal";
-import apiClient from "../../api/axiosConfig"; // Import apiClient để gọi API
+import apiClient from "../../api/axiosConfig";
+import courseplaceholder from "../../assets/courseplaceholder.png";
 
 export default function CourseDevelopmentContent() {
-  // Giả sử đây là list khóa học lấy từ API về (hiện tại đang rỗng để test Empty State)
   const [developmentCourses, setDevelopmentCourses] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const imgplaceholder = courseplaceholder;
 
-  // --- HÀM TẠO KHÓA HỌC (Logic giống bên Grid) ---
+  const getDirectGoogleDriveLink = (url) => {
+    if (!url || typeof url !== 'string') return "";
+    if (!url.includes("drive.google.com")) return url;
+
+    try {
+      const idMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+      if (idMatch && idMatch[1]) {
+        return `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w1000`;
+      }
+      return url; 
+    } catch (e) {
+      return url;
+    }
+  };
+
+  useEffect(() => {
+    setIsLoading(true);
+    const userIdStr = localStorage.getItem("user") || sessionStorage.getItem("user");
+    const userId = userIdStr ? JSON.parse(userIdStr).userId : null;
+    
+    if (!userId) {
+      setIsLoading(false);
+      return;
+    }
+
+    const fetchDevelopmentCourses = async () => {
+      try {
+        const response = await apiClient.get(`/course/develop_course/${userId}`);
+        if (response.status === 200) {
+          const coursesData = response.data.data || [];
+          const formattedCourses = coursesData.map(course => ({
+            courseId: course.courseId,
+            title: course.title,
+            description: course.description,
+            thumbnailUrl: getDirectGoogleDriveLink(course.thumbnailUrl) || imgplaceholder,
+            numOfChapter: course.numOfChapter || 0,
+          }));
+          setDevelopmentCourses(formattedCourses);
+        }
+      } catch (error) {
+        console.error("Error fetching development courses:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchDevelopmentCourses();
+  }, []);
+
   const handleCreateCourse = async (data) => {
+    // Bật loading để Grid hiển thị hiệu ứng xoay
     setIsLoading(true);
     try {
       const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
       const user = userStr ? JSON.parse(userStr) : null;
       
       if (!user || !user.userId) {
-        alert("Instructor ID not found. Please login again.");
-        return;
+          alert("Bạn chưa đăng nhập hoặc phiên đăng nhập hết hạn.");
+          return;
       }
 
       const formData = new FormData();
@@ -31,45 +80,64 @@ export default function CourseDevelopmentContent() {
       formData.append("tags", data.tags);
       formData.append("thumbnail", data.thumbnail); 
 
-      // Gọi API tạo khóa học
-      const response = await apiClient.post("/course/post", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const response = await apiClient.post("/course/post", formData);
 
       if (response.status === 200 || response.status === 201) {
-        console.log("✅ Course Created from Empty State:", response.data);
-        
+        console.log("Create Response Data:", response.data); 
+
+        const realId = response.data?.data?.id 
+                    || response.data?.id 
+                    || response.data?.courseId 
+                    || response.data?.data?.courseId;
+
         const newCourse = {
-          id: response.data.data?.id || Date.now(), 
+          courseId: realId || Date.now(), 
           title: data.title,
-          img: data.preview, 
-          lastEdited: "Just now",
+          description: data.desc,
+          thumbnailUrl: data.preview, 
+          numOfChapter: 0,
         };
         
-        // Cập nhật state để giao diện chuyển sang Grid
         setDevelopmentCourses([newCourse, ...developmentCourses]);
         setIsModalOpen(false); 
+
+        if (!realId) {
+            console.warn("CẢNH BÁO: Không tìm thấy ID thật.");
+        }
       }
     } catch (error) {
-      console.error("❌ Error creating course:", error);
+      console.error("Error creating course:", error);
+      
       if (error.response) {
-          alert(`Server Error: ${error.response.data.message || "Something went wrong"}`);
+          if (error.response.status === 403) {
+              alert("Lỗi 403: Server từ chối. Vui lòng kiểm tra quyền Teacher hoặc xóa Cookie JSESSIONID cũ.");
+          } else {
+              alert(`Lỗi tạo khóa học: ${error.response.data.message || error.message}`);
+          }
       } else {
-          alert("Failed to create course. Please try again.");
+          alert("Lỗi kết nối server.");
       }
     } finally {
+      // Tắt loading sau khi hoàn tất
       setIsLoading(false);
     }
   };
 
-  // Thẻ Create New lớn (Dành cho Empty State)
+  const handleDeleteSuccess = (deletedCourseId) => {
+    setDevelopmentCourses((prevCourses) => 
+      prevCourses.filter(course => course.courseId !== deletedCourseId)
+    );
+  };
+
   const EmptyStateCard = () => (
     <div className="min-h-[500px] flex flex-col items-center justify-center bg-white rounded-xl border border-gray-100 shadow-sm">
       <div 
-        onClick={() => setIsModalOpen(true)} // <-- Thêm sự kiện mở Modal
-        className="w-64 h-48 border-2 border-dashed border-[#00b6b6] bg-teal-50/30 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-teal-50 transition group"
+        onClick={() => !isLoading && setIsModalOpen(true)}
+        className={`w-64 h-48 border-2 border-dashed border-[#00b6b6] bg-teal-50/30 rounded-xl flex flex-col items-center justify-center transition group ${
+            isLoading ? 'cursor-not-allowed opacity-80' : 'cursor-pointer hover:bg-teal-50'
+        }`}
       >
-        <div className={`w-14 h-14 bg-[#00b6b6] rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition duration-300 ${isLoading ? 'animate-spin' : ''}`}>
+        <div className={`w-14 h-14 bg-[#00b6b6] rounded-full flex items-center justify-center shadow-lg transition duration-300 ${!isLoading && 'group-hover:scale-110'} ${isLoading ? 'animate-spin' : ''}`}>
           <Plus size={28} className="text-white" />
         </div>
         <p className="mt-4 font-bold text-gray-700 group-hover:text-[#00b6b6]">
@@ -84,14 +152,17 @@ export default function CourseDevelopmentContent() {
 
   return (
     <div className="p-6">
-        {/* Nếu có khóa học thì hiện Grid, nếu không thì hiện Empty State */}
         {developmentCourses.length > 0 ? (
-            <DevelopmentCourseGrid courses={developmentCourses} />
+            <DevelopmentCourseGrid 
+              courses={developmentCourses} 
+              onOpenModal={() => setIsModalOpen(true)}
+              onDeleteSuccess={handleDeleteSuccess}
+              isLoading={isLoading}
+            />
         ) : (
             <EmptyStateCard />
         )}
-
-        {/* Modal dùng chung cho Empty State */}
+        
         <CreateCourseModal 
             isOpen={isModalOpen}
             onClose={() => setIsModalOpen(false)}

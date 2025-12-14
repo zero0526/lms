@@ -1,4 +1,4 @@
-import React from "react";
+import apiClient from "../../api/axiosConfig";
 import TeacherCourseCard from "../../components/teachers/TeacherCourseCard"; 
 import { BookOpen } from "lucide-react";
 
