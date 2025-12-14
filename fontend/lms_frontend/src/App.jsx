@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Blog from "./pages/Blog";
 import BlogDetail from "./pages/BlogDetail";
+import Profile from "./pages/Profile";
 
 // Student Pages
 import CourseStudent from "./pages/student/CourseStudent";
@@ -28,6 +29,15 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/blog" element={<Blog />} />
         <Route path="/blog/:category"element={<BlogDetail/>} />
+
+        <Route 
+          path="/profile" 
+          element={
+            <ProtectedRoute allowedRoles={["ROLE_STUDENT", "ROLE_TEACHER"]}>
+              <Profile />
+            </ProtectedRoute>
+          } 
+        />
         
         {/* --- STUDENT ROUTES --- */}
         <Route 

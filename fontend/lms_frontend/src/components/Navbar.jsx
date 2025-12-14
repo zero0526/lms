@@ -85,9 +85,9 @@ export default function Navbar() {
       return "/teacher/courses"; 
     }
     if (user?.role === "ROLE_STUDENT") {
-      return "/student/courses"; // Changed from /courses to /student/courses for consistency
+      return "/student/courses";
     }
-    return "/login"; // If not logged in, clicking will go to login
+    return "/login";
   };
 
   return (
@@ -198,7 +198,7 @@ export default function Navbar() {
             </div>
           </>
         ) : (
-          // --- Guest State ---
+          // Guest State
           <>
             <Link
               to="/login"
