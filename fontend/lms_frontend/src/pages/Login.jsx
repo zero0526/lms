@@ -1,8 +1,12 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Eye, EyeOff, ArrowLeft, Github } from "lucide-react";
 import { AxiosError } from "axios";
 import apiClient from "../api/axiosConfig";
+
+// --- CẤU HÌNH URL BACKEND ---
+// Đảm bảo URL này trùng với backend của bạn (như trong file html mẫu)
+const BACKEND_URL = "http://localhost:8081";
 
 const GoogleIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -36,6 +40,87 @@ export default function Login() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  // --- XỬ LÝ OAUTH2 CALLBACK ---
+  // useEffect này sẽ chạy khi Backend redirect ngược lại trang Login kèm accessToken
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const token = params.get("accessToken");
+    const errorMsg = params.get("error");
+
+    if (errorMsg) {
+      setError("Login failed: " + errorMsg);
+      // Xóa query param trên URL cho sạch
+      window.history.replaceState({}, document.title, location.pathname);
+      return;
+    }
+
+    if (token) {
+      console.log("OAuth2 Success. Token received:", token);
+      
+      // 1. Lưu token tạm thời
+      if (remember) {
+        localStorage.setItem('accessToken', token);
+      } else {
+        sessionStorage.setItem('accessToken', token);
+        // Lưu tạm vào localStorage để apiClient có thể dùng ngay cho request tiếp theo
+        // (Tùy logic axiosConfig của bạn, ở đây tôi giả sử bạn ưu tiên localStorage)
+        localStorage.setItem('accessToken', token); 
+      }
+
+      // 2. Gọi API lấy thông tin User (Profile)
+      // Vì OAuth chỉ trả về token, ta cần fetch info để lưu vào localStorage 'user' 
+      // để Navbar hiển thị được Avatar/Name
+      fetchUserProfile(token);
+    }
+  }, [location, remember]);
+
+  const fetchUserProfile = async (token) => {
+    try {
+      // Gửi request lấy thông tin user hiện tại. 
+      // LƯU Ý: Bạn cần hỏi BE endpoint chính xác là gì (ví dụ: /auth/me, /users/profile, /auth/profile)
+      // Ở đây tôi ví dụ là `/auth/profile` hoặc `/user/me`
+      const response = await apiClient.get('/auth/profile'); // <-- CẦN CẬP NHẬT ENDPOINT NÀY THEO BE
+      
+      const responseData = response.data.data || response.data;
+      
+      const userToSave = {
+          userId: responseData.userId || responseData.id,
+          userName: responseData.userName || responseData.name || responseData.email,
+          email: responseData.email,
+          role: responseData.role || "ROLE_STUDENT",
+          avatar: responseData.avatar || null
+      };
+
+      const userString = JSON.stringify(userToSave);
+      
+      if (remember) {
+          localStorage.setItem('user', userString);
+      } else {
+          sessionStorage.setItem('user', userString);
+          // Dọn dẹp localStorage nếu không chọn remember (vì ở trên đã set tạm)
+          localStorage.removeItem('accessToken');
+          sessionStorage.setItem('accessToken', token);
+      }
+
+      // Xóa query param và chuyển hướng
+      window.history.replaceState({}, document.title, location.pathname);
+      navigate('/home');
+
+    } catch (err) {
+      console.error("Failed to fetch user profile after OAuth:", err);
+      setError("Login successful but failed to load user profile.");
+      // Vẫn cho vào nhưng có thể thiếu info user
+      navigate('/home'); 
+    }
+  };
+
+  // 3rd party login handler
+  const handleSocialLogin = (provider) => {
+    const targetUrl = `${BACKEND_URL}/oauth2/authorization/${provider}?role=${encodeURIComponent(roleName)}`;
+    // Navigate to backend OAuth2 endpoint
+    window.location.href = targetUrl;
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
@@ -45,7 +130,6 @@ export default function Login() {
       return;
     }
 
-    // DEBUG: Kiểm tra dữ liệu gửi đi
     const payload = {
       email: email.trim(),
       password: password,
@@ -260,6 +344,7 @@ export default function Login() {
             <div className="flex flex-col gap-3">
               <button
                 type="button"
+                onClick={() => handleSocialLogin('google')}
                 className="w-full flex items-center justify-center gap-3 border border-gray-300 text-gray-700 py-2 rounded-full hover:bg-gray-50 transition cursor-pointer"
               >
                 <GoogleIcon />
@@ -268,6 +353,7 @@ export default function Login() {
               
               <button
                 type="button"
+                onClick={() => handleSocialLogin('github')}
                 className="w-full flex items-center justify-center gap-3 border border-gray-300 text-gray-700 py-2 rounded-full hover:bg-gray-50 transition cursor-pointer"
               >
                 <Github size={20} />
