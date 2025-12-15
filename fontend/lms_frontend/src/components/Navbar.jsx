@@ -125,9 +125,12 @@ export default function Navbar() {
           <Link to="/home" className="hover:text-yellow-200 transition">Home</Link>
         </li>
         <li>
+          <Link to="/courses" className="hover:text-yellow-200 transition">Courses</Link>
+        </li>
+        <li>
           {/* Changed from /courses to dynamic path based on role */}
           <Link to={getCoursesPath()} className="hover:text-yellow-200 transition">
-            Courses
+            My Courses
           </Link>
         </li>
         <li><a href="#careers" className="hover:text-yellow-200 transition">Careers</a></li>
