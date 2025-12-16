@@ -4,8 +4,6 @@ import { Eye, EyeOff, ArrowLeft, Github } from "lucide-react";
 import { AxiosError } from "axios";
 import apiClient from "../api/axiosConfig";
 
-// --- CẤU HÌNH URL BACKEND ---
-// Đảm bảo URL này trùng với backend của bạn (như trong file html mẫu)
 const BACKEND_URL = "http://localhost:8081";
 
 const GoogleIcon = () => (

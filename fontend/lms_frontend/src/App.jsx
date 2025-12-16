@@ -5,10 +5,13 @@ import Register from "./pages/Register";
 import Blog from "./pages/Blog";
 import BlogDetail from "./pages/BlogDetail";
 import Profile from "./pages/Profile";
+import CourseList from "./pages/CourseList";
+
+// Shared Pages (Now Public)
+import CourseDetail from "./pages/CourseDetail"; // Import component mới đổi tên
 
 // Student Pages
 import CourseStudent from "./pages/student/CourseStudent";
-import StudentCourseDetail from "./pages/student/StudentCourseDetail";
 import LessonDetail from "./pages/student/LessonDetail";
 
 // Teacher Pages
@@ -22,14 +25,19 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* --- PUBLIC ROUTES --- */}
+        {/* --- PUBLIC ROUTES (Ai cũng xem được) --- */}
         <Route path="/" element={<Navigate to="/home" />} />
         <Route path="/home" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/blog" element={<Blog />} />
-        <Route path="/blog/:category"element={<BlogDetail/>} />
+        <Route path="/blog/:category" element={<BlogDetail/>} />
+        <Route path="/courses" element={<CourseList />} />
+        
+        {/* Trang chi tiết khóa học giờ là Public Route */}
+        <Route path="/courses/:courseId" element={<CourseDetail />} /> 
 
+        {/* --- PROTECTED ROUTES --- */}
         <Route 
           path="/profile" 
           element={
@@ -49,13 +57,10 @@ export default function App() {
           } 
         />
 
+        {/* Giữ lại route cũ nếu cần backward compatibility, nhưng redirect về route public mới */}
         <Route 
           path="/student/courses/:courseId" 
-          element={
-            <ProtectedRoute allowedRoles={["ROLE_STUDENT"]}>
-              <StudentCourseDetail />
-            </ProtectedRoute>
-          } 
+          element={<Navigate to={(location) => `/courses/${location.pathname.split('/').pop()}`} replace />} 
         />
 
         <Route
