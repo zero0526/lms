@@ -6,88 +6,115 @@ import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import SimpleModal from "../../components/teachers/SimpleModal";
 import ContentModal from "../../components/teachers/ContentModal";
-import LessonModal from "../../components/teachers/LessonModal";
 import { ChapterItem } from "../../components/teachers/CourseListComponents";
 import apiClient from "../../api/axiosConfig";
 
 export default function EditCourse() {
-  const { courseId } = useParams(); // Lấy courseId từ URL (VD: /teacher/courses/14/edit)
-  const [activeMainTab, setActiveMainTab] = useState("curriculum"); 
-  const [isLoading, setIsLoading] = useState(false); // Thêm loading state
-    const [lessonModal, setLessonModal] = useState({
-    isOpen: false,
-    chapterId: null
-  });
+  const { courseId } = useParams();
+  const [activeMainTab, setActiveMainTab] = useState("curriculum");
+  const [isLoading, setIsLoading] = useState(false);
 
   // --- STATE DỮ LIỆU ---
   const [chapters, setChapters] = useState([]);
 
-  // --- STATE QUẢN LÝ UI (Expand/Collapse) ---
+  // --- STATE QUẢN LÝ UI ---
   const [expandedChapters, setExpandedChapters] = useState({});
   const [expandedLessons, setExpandedLessons] = useState({});
 
-  // --- STATE QUẢN LÝ MODAL ---
-  const [simpleModal, setSimpleModal] = useState({ 
-    isOpen: false, 
-    type: null, 
-    title: "", 
+  // --- STATE MODALS ---
+  const [simpleModal, setSimpleModal] = useState({
+    isOpen: false,
+    type: null,
+    title: "",
     placeholder: "",
     initialValue: "",
     targetId: null,
-    parentId: null 
+    parentId: null,
   });
 
   const [contentModal, setContentModal] = useState({
-    isOpen: false, type: null, initialData: null, chapterId: null, lessonId: null, contentId: null
+    isOpen: false,
+    type: null,
+    initialData: null,
+    chapterId: null,
+    lessonId: null,
+    contentId: null,
   });
 
-  // --- FETCH DATA BAN ĐẦU ---
+  const [lessonModal, setLessonModal] = useState({
+    isOpen: false,
+    chapterId: null,
+  });
+
+  // --- HELPER: GET USER ID ---
+  const getUserId = () => {
+    const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
+    return userStr ? JSON.parse(userStr).userId : null;
+  };
+
+  // --- API: FETCH COURSE OUTLINE ---
   const fetchCourseData = useCallback(async () => {
     if (!courseId) return;
 
-    // Lấy userId từ localStorage
-    const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
-    const user = userStr ? JSON.parse(userStr) : null;
-    const userId = user?.userId;
-
+    const userId = getUserId();
     if (!userId) {
-        console.warn("User ID not found, cannot fetch course outline.");
-        return;
+      console.warn("User ID not found.");
+      return;
     }
 
     try {
-        console.log(`Fetching outline for userId: ${userId}, courseId: ${courseId}`);
-        // Gọi API lấy outline theo yêu cầu của BE
-        const res = await apiClient.get(`/course/outline`, {
-            params: { userId, courseId }
-        });
-        
-        console.log("Course Outline Response:", res.data);
+      console.log(`Fetching outline for userId: ${userId}, courseId: ${courseId}`);
+      const res = await apiClient.get(`/course/outline`, {
+        params: { userId, courseId },
+      });
 
-        // Backend trả về: { status: 200, data: [ { chapterId, title, lessons: [...] } ] }
-        const rawChapters = res.data.data || [];
-        
-        // --- MAP DỮ LIỆU BACKEND -> FRONTEND ---
-        // Frontend dùng 'id', Backend dùng 'chapterId'/'lessonId'
-        const mappedChapters = rawChapters.map(ch => ({
-            id: ch.chapterId,       // Map chapterId -> id
+      console.log("Course Outline Response (Raw):", res.data);
+
+      const rawChapters = res.data.data || [];
+
+      // ← LOG ALL CHAPTER & LESSON IDS
+      console.log("=== COURSE STRUCTURE ===");
+      rawChapters.forEach((ch, chIdx) => {
+        console.log(`Chapter ${chIdx + 1}: ID=${ch.chapterId}, Title="${ch.title}", Order=${ch.order}`);
+        (ch.lessons || []).forEach((ls, lsIdx) => {
+          console.log(`  └─ Lesson ${lsIdx + 1}: ID=${ls.lessonId}, Title="${ls.title}", Order=${ls.order}`);
+        });
+      });
+
+      // ← CẬP NHẬT CHAPTERS VỚI CURRENT STATE
+      setChapters((prevChapters) => {
+        return rawChapters.map((ch) => {
+          // TÌM CHAPTER CŨ
+          const oldChapter = prevChapters.find(oldCh => oldCh.id === ch.chapterId);
+          
+          return {
+            id: ch.chapterId,
             title: ch.title,
             order: ch.order,
-            lessons: (ch.lessons || []).map(ls => ({
-                id: ls.lessonId,    // Map lessonId -> id
+            lessons: (ch.lessons || []).map((ls) => {
+              // TÌM LESSON CŨ ĐỂ PRESERVE DETAILS
+              const oldLesson = oldChapter?.lessons.find(oldL => oldL.id === ls.lessonId);
+              
+              return {
+                id: ls.lessonId,
                 title: ls.title,
                 order: ls.order,
                 duration: ls.duration,
-                // LƯU Ý: JSON mẫu không có field 'contents'. 
-                // Nếu BE chưa trả về, ta để mảng rỗng để tránh lỗi crash, 
-                // nhưng giáo viên sẽ không thấy nội dung đã tạo trước đó.
-                contents: ls.contents || [] 
-            }))
-        }));
-        
-        setChapters(mappedChapters);
+                // ← PRESERVE: isDetailsLoaded, urlVideo, docs, quizzes
+                isDetailsLoaded: oldLesson?.isDetailsLoaded || false,
+                urlVideo: oldLesson?.urlVideo || null,
+                docs: oldLesson?.docs || null,
+                quizzes: oldLesson?.quizzes || [],
+                description: oldLesson?.description || "",
+              };
+            }),
+          };
+        });
+      });
+
+      console.log("Mapped Structure Updated");
     } catch (error) {
-        console.error("Error fetching course:", error);
+      console.error("Error fetching course:", error);
     }
   }, [courseId]);
 
@@ -95,349 +122,503 @@ export default function EditCourse() {
     fetchCourseData();
   }, [fetchCourseData]);
 
-  // --- HANDLERS: EXPAND / COLLAPSE ---
-  const toggleChapter = (id) => setExpandedChapters(prev => ({...prev, [id]: !prev[id]}));
-  const toggleLesson = (id) => setExpandedLessons(prev => ({...prev, [id]: !prev[id]}));
+  // --- API: FETCH LESSON DETAILS ---
+  const fetchLessonDetails = async (lessonId, chapterId) => {
+    const userId = getUserId();
+    if (!userId) return;
 
-  // ==========================================
-  // LOGIC: CHAPTERS
-  // ==========================================
-  const openAddChapter = () => {
-    setSimpleModal({ isOpen: true, type: 'add_chapter', title: "Add New Chapter", placeholder: "Enter chapter title...", initialValue: "" });
+    try {
+      console.log(`Fetching details for lessonID: ${lessonId} (in chapterID: ${chapterId})...`);
+      const res = await apiClient.get(`/lesson/details`, {
+        params: { userId, lessonId },
+      });
+
+      const details = res.data.data;
+      
+      // --- LOG DEBUG: CHI TIẾT NỘI DUNG & ID ---
+      console.log(`=== LESSON DETAILS: ${lessonId} ===`);
+      console.log(`Lesson ID: ${lessonId}`);
+      console.log(`Chapter ID: ${chapterId}`);
+      if (details) {
+          console.log(`Title: "${details.title}"`);
+          console.log(`Duration: ${details.duration}`);
+          
+          // ← LOG VIDEO DETAILS
+          if (details.urlVideo) {
+              console.log(`=== VIDEO ===`);
+              console.log(`Video URL: ${details.urlVideo}`);
+              if (typeof details.urlVideo === 'object') {
+                  console.log(`Video ID: ${details.urlVideo.videoId || details.urlVideo.id || "N/A"}`);
+                  console.log(`Video Title: ${details.urlVideo.title || "N/A"}`);
+                  console.log(`Video Duration: ${details.urlVideo.duration || "N/A"}`);
+                  console.log(`Full Video Object:`, details.urlVideo);
+              }
+          } else {
+              console.log(`Video: NULL`);
+          }
+          
+          // ← LOG DOCS DETAILS
+          if (details.docs) {
+              console.log(`=== DOCUMENTS ===`);
+              if (Array.isArray(details.docs)) {
+                  console.log(`Document Count: ${details.docs.length}`);
+                  details.docs.forEach((doc, dIdx) => {
+                      console.log(`  Doc ${dIdx + 1}:`);
+                      console.log(`    ID: ${doc.id || doc.docId || doc.materialId || "N/A"}`);
+                      console.log(`    Title: ${doc.title || "N/A"}`);
+                      console.log(`    URL: ${doc.url || doc.docUrl || "N/A"}`);
+                      console.log(`    Full Doc Object:`, doc);
+                  });
+              } else if (typeof details.docs === 'object') {
+                  console.log(`Document (Single Object):`);
+                  console.log(`  ID: ${details.docs.id || details.docs.docId || details.docs.materialId || "N/A"}`);
+                  console.log(`  Title: ${details.docs.title || "N/A"}`);
+                  console.log(`  URL: ${details.docs.url || details.docs.docUrl || "N/A"}`);
+                  console.log(`  Full Doc Object:`, details.docs);
+              } else {
+                  console.log(`Docs: ${details.docs}`);
+              }
+          } else {
+              console.log(`Documents: NULL`);
+          }
+          
+          if (details.quizzes && details.quizzes.length > 0) {
+              console.log(`=== QUIZZES (${details.quizzes.length}) ===`);
+              details.quizzes.forEach((q, qIdx) => {
+                console.log(`  Quiz ${qIdx + 1}: ID=${q.quizId}, Title="${q.titleQuiz}"`);
+              });
+          } else {
+              console.log(`Quizzes: Empty`);
+          }
+      }
+
+      if (details) {
+        setChapters((prev) =>
+          prev.map((ch) => {
+            if (ch.id !== chapterId) return ch;
+            return {
+              ...ch,
+              lessons: ch.lessons.map((ls) => {
+                if (ls.id !== lessonId) return ls;
+                return {
+                  ...ls,
+                  isDetailsLoaded: true,
+                  urlVideo: details.urlVideo,
+                  docs: details.docs,
+                  quizzes: details.quizzes || [],
+                  description: details.description,
+                  duration: details.duration,
+                  title: details.title || ls.title,
+                  order: details.order || ls.order,
+                };
+              }),
+            };
+          })
+        );
+      }
+    } catch (error) {
+      console.error(`Failed to fetch details for lesson ${lessonId}`, error);
+    }
   };
 
-  const openEditChapter = (chapter) => {
-    setSimpleModal({ 
-        isOpen: true, 
-        type: 'edit_chapter', 
-        title: "Edit Chapter Title", 
-        placeholder: "Enter chapter title...", 
-        initialValue: chapter.title, 
-        targetId: chapter.id,
-        extraData: { order: chapter.order } 
+  // --- UI HANDLERS ---
+  const toggleChapter = (id) => {
+    setExpandedChapters((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleLesson = (lessonId, chapterId) => {
+    const isExpanding = !expandedLessons[lessonId];
+    setExpandedLessons((prev) => ({ ...prev, [lessonId]: isExpanding }));
+
+    if (isExpanding) {
+      const chapter = chapters.find((c) => c.id === chapterId);
+      const lesson = chapter?.lessons.find((l) => l.id === lessonId);
+      if (lesson && !lesson.isDetailsLoaded) {
+        fetchLessonDetails(lessonId, chapterId);
+      }
+    }
+  };
+
+  // --- MODAL OPENERS ---
+  const openAddChapter = () => {
+    setSimpleModal({
+      isOpen: true,
+      type: "add_chapter",
+      title: "Add New Chapter",
+      placeholder: "Chapter title...",
+      initialValue: "",
     });
   };
 
-  const deleteChapter = async (id) => {
-    if (!window.confirm("Are you sure? This will delete all lessons inside.")) return;
-
-    setIsLoading(true);
-    try {
-        await apiClient.delete(`/chapter/${id}`);
-        // Xóa thành công thì fetch lại để đảm bảo đồng bộ
-        // Hoặc xóa optimistic update
-        setChapters(chapters.filter(c => c.id !== id));
-    } catch (error) {
-        console.error("Failed to delete chapter:", error);
-        alert("Failed to delete chapter. " + (error.response?.data?.message || error.message));
-        
-        // Nếu lỗi do ID sai (404/500), load lại dữ liệu để lấy ID mới nhất
-        if (error.response && (error.response.status === 404 || error.response.status === 500)) {
-            console.log("ID not found on server, refreshing data...");
-            fetchCourseData();
-        }
-    } finally {
-        setIsLoading(false);
-    }
+  const openEditChapter = (chapter) => {
+    setSimpleModal({
+      isOpen: true,
+      type: "edit_chapter",
+      title: "Edit Chapter",
+      placeholder: "Chapter title...",
+      initialValue: chapter.title,
+      targetId: chapter.id,
+      extraData: { order: chapter.order },
+    });
   };
 
-  // ==========================================
-  // LOGIC: LESSONS
-  // ==========================================
   const openAddLesson = (chapterId) => {
-    setLessonModal({ isOpen: true, chapterId });
+    setSimpleModal({
+      isOpen: true,
+      type: "add_lesson",
+      title: "Add New Lesson",
+      placeholder: "Lesson title...",
+      initialValue: "",
+      parentId: chapterId,
+    });
   };
 
   const openEditLesson = (lesson, chapterId) => {
-    setSimpleModal({ isOpen: true, type: 'edit_lesson', title: "Edit Lesson Title", placeholder: "Enter lesson title...", initialValue: lesson.title, targetId: lesson.id, parentId: chapterId });
+    setSimpleModal({
+      isOpen: true,
+      type: "edit_lesson",
+      title: "Edit Lesson",
+      placeholder: "Lesson title...",
+      initialValue: lesson.title,
+      targetId: lesson.id,
+      parentId: chapterId,
+    });
   };
 
-  const deleteLesson = (chapterId, lessonId) => {
-    if (window.confirm("Delete this lesson and its content?")) {
-      // Logic tạm thời ở FE, sau này cần gọi API delete lesson
-      setChapters(chapters.map(ch => 
-        ch.id === chapterId ? { ...ch, lessons: ch.lessons.filter(l => l.id !== lessonId) } : ch
-      ));
-    }
-  };
-
-    const handleSaveLesson = async (payload) => {
-    const { chapterId } = lessonModal;
-    setIsLoading(true);
-
-    try {
-        const formData = new FormData();
-        
-        // 1. Basic Fields
-        formData.append("title", payload.title);
-        formData.append("desc", payload.description);
-        // Tự động tính Order cho Lesson (Lấy số bài hiện tại + 1)
-        const currentChapter = chapters.find(c => c.id === chapterId);
-        const newOrder = (currentChapter?.lessons?.length || 0) + 1;
-        formData.append("order", newOrder.toString());
-        formData.append("preCond", "None"); // Mặc định hoặc thêm field nhập nếu cần
-        
-        // Cần gửi chapterId để BE biết bài học thuộc chương nào (dựa theo request mẫu của bạn thấy có field chapterId)
-        // Tuy nhiên, request mẫu bạn gửi KHÔNG THẤY field 'chapterId' ở cấp ngoài cùng body form-data.
-        // NHƯNG thường API add-lesson phải biết chapterId.
-        // Dựa vào URL: /api/course/add-lesson -> Có vẻ nó thiếu context chapter.
-        // Kiểm tra kỹ lại ảnh Postman: À, tôi thấy "key": "chapterId", "value": "3" ở gần cuối ảnh!
-        formData.append("chapterId", chapterId.toString());
-
-
-        // 2. Content Fields (Dựa vào contentType)
-        if (payload.contentType === "video") {
-            const { fileName, file, duration } = payload.data;
-            formData.append("videoDTO.title", fileName);
-            if (file) formData.append("videoDTO.video", file); // File object
-            formData.append("videoDTO.duration", duration || "0");
-            
-            // Dummy segments (để tránh lỗi null nếu BE bắt buộc)
-            formData.append("videoDTO.segmentDTOs[0].startAtSeconds", "0");
-            formData.append("videoDTO.segmentDTOs[0].endAtSeconds", "10");
-            formData.append("videoDTO.segmentDTOs[0].description", "Intro");
-        } 
-        else if (payload.contentType === "doc") {
-            const { title, file } = payload.data;
-            formData.append("courseMaterialDTOs[0].title", title);
-            if (file) formData.append("courseMaterialDTOs[0].doc", file);
-        }
-        else if (payload.contentType === "quiz") {
-            const { questions, settings } = payload.data;
-            
-            // Map Settings
-            formData.append("quizDTOs[0].title", payload.title + " Quiz");
-            formData.append("quizDTOs[0].desc", "Quiz for " + payload.title);
-            formData.append("quizDTOs[0].timeLimitMinutes", settings.timeLimit.toString());
-            formData.append("quizDTOs[0].difficultyAvg", settings.difficulty);
-            formData.append("quizDTOs[0].score", settings.passScore.toString());
-            formData.append("quizDTOs[0].precondition", "None");
-
-            // Map Questions
-            questions.forEach((q, qIdx) => {
-                formData.append(`quizDTOs[0].questions[${qIdx}].qText`, q.question);
-                formData.append(`quizDTOs[0].questions[${qIdx}].explanation`, "Explanation");
-                formData.append(`quizDTOs[0].questions[${qIdx}].level`, settings.difficulty);
-                formData.append(`quizDTOs[0].questions[${qIdx}].score`, q.score.toString());
-                formData.append(`quizDTOs[0].questions[${qIdx}].order`, (qIdx + 1).toString());
-                
-                // Map Options (Answers)
-                q.options.forEach((opt, oIdx) => {
-                    formData.append(`quizDTOs[0].questions[${qIdx}].mcqContents[${oIdx}].cText`, opt.text);
-                    formData.append(`quizDTOs[0].questions[${qIdx}].mcqContents[${oIdx}].isCorrect`, opt.isCorrect.toString());
-                });
-            });
-        }
-
-        // Gọi API
-        // Lưu ý: Content-Type phải là undefined để trình duyệt tự thêm boundary
-        const res = await apiClient.post("/course/add-lesson", formData, {
-            headers: { "Content-Type": undefined }
-        });
-
-        if (res.status === 200 || res.status === 201) {
-            console.log("Add Lesson Success:", res.data);
-            alert("Lesson added successfully!");
-            // Load lại dữ liệu để cập nhật ID và cấu trúc
-            fetchCourseData();
-        }
-
-    } catch (error) {
-        console.error("Add Lesson Error:", error);
-        alert("Failed to add lesson. " + (error.response?.data?.message || error.message));
-    } finally {
-        setIsLoading(false);
-    }
-  };
-
-  // ==========================================
-  // LOGIC: CONTENT
-  // ==========================================
   const openAddContent = (chapterId, lessonId) => {
-    setContentModal({ isOpen: true, type: 'add', initialData: null, chapterId, lessonId });
+    setContentModal({
+      isOpen: true,
+      type: "add",
+      initialData: null,
+      chapterId,
+      lessonId,
+    });
   };
 
   const openEditContent = (chapterId, lessonId, content) => {
-    setContentModal({ isOpen: true, type: 'edit', initialData: content, chapterId, lessonId, contentId: content.id });
+    setContentModal({
+      isOpen: true,
+      type: "edit",
+      initialData: content,
+      chapterId,
+      lessonId,
+      contentId: content.id,
+    });
   };
 
-  const deleteContent = (chapterId, lessonId, contentId) => {
-    if (window.confirm("Remove this content?")) {
-      setChapters(chapters.map(ch => 
-        ch.id === chapterId ? {
-          ...ch,
-          lessons: ch.lessons.map(ls => 
-            ls.id === lessonId ? { ...ls, contents: ls.contents.filter(c => c.id !== contentId) } : ls
-          )
-        } : ch
-      ));
+  // --- DELETE ACTIONS ---
+  const deleteChapter = async (id) => {
+    if (!window.confirm("Delete this chapter? All lessons inside will be lost.")) return;
+    setIsLoading(true);
+    try {
+      await apiClient.delete(`/chapter/${id}`);
+      setChapters(chapters.filter((c) => c.id !== id));
+    } catch (error) {
+      if (error.response?.status === 404 || error.response?.status === 500) {
+        fetchCourseData();
+      } else {
+        alert("Error deleting chapter");
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
+  const deleteLesson = async (chapterId, lessonId) => {
+    if (!window.confirm("Delete this lesson?")) return;
+    setIsLoading(true);
+    try {
+      await apiClient.delete(`/lesson/${lessonId}`);
+      setChapters(
+        chapters.map((ch) =>
+          ch.id === chapterId
+            ? { ...ch, lessons: ch.lessons.filter((l) => l.id !== lessonId) }
+            : ch
+        )
+      );
+    } catch (error) {
+      if (error.response?.status === 404 || error.response?.status === 500) {
+        fetchCourseData();
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const deleteContent = (chapterId, lessonId, contentId) => {
+    alert("Delete content feature coming soon.");
+  };
+
   // ==========================================
-  // HANDLERS: SAVE MODALS
+  // HANDLERS: SAVE SIMPLE MODAL
   // ==========================================
-  
   const handleSaveSimpleModal = async (value) => {
     const { type, targetId, parentId, extraData } = simpleModal;
     setIsLoading(true);
 
     try {
-        // --- 1. ADD NEW CHAPTER ---
-        if (type === 'add_chapter') {
-            const newOrder = chapters.length + 1;
-            const payload = {
-                courseId: parseInt(courseId),
-                title: value,
-                order: newOrder
-            };
+      // 1. ADD CHAPTER
+      if (type === "add_chapter") {
+        const newOrder = chapters.length + 1;
+        const res = await apiClient.post("/course/add-chapter", {
+          courseId: parseInt(courseId),
+          title: value,
+          order: newOrder,
+        });
+        if (res.status === 200 || res.status === 201) fetchCourseData();
+      }
+      
+      // 2. EDIT CHAPTER
+      else if (type === "edit_chapter") {
+        await apiClient.put(`/chapter/${targetId}`, {
+          title: value,
+          order: extraData?.order || 1,
+        });
+        fetchCourseData();
+      }
+      
+      // 3. ADD LESSON (Basic Info)
+      else if (type === "add_lesson") {
+        const currentChapter = chapters.find((c) => c.id === parentId);
+        const newOrder = (currentChapter?.lessons?.length || 0) + 1;
 
-            const res = await apiClient.post("/course/add-chapter", payload);
-            
-            if (res.status === 200 || res.status === 201) {
-                console.log("Add Chapter Response:", res.data);
+        const formData = new FormData();
+        formData.append("title", value);
+        formData.append("desc", "");
+        formData.append("order", newOrder.toString());
+        formData.append("preCond", "None");
+        formData.append("chapterId", parentId.toString());
 
-                // Kiểm tra response
-                const responseData = res.data; // Có thể là {status: 200, data: 'successfully'}
-                let realId = null;
-                let createdChapterData = {};
+        await apiClient.post("/course/add-lesson", formData, {
+          headers: { "Content-Type": undefined },
+        });
+        fetchCourseData();
+      }
+      
+      // 4. EDIT LESSON (Rename)
+      else if (type === "edit_lesson") {
+        console.log("=== EDIT LESSON ===");
+        console.log("LessonID:", targetId);
+        const formData = new FormData();
+        formData.append("title", value);
 
-                // ... Logic tìm ID cũ ...
-                if (responseData.data && (responseData.data.id || responseData.data.chapterId)) {
-                    realId = responseData.data.id || responseData.data.chapterId;
-                    createdChapterData = responseData.data;
-                } else if (responseData.id || responseData.chapterId) {
-                    realId = responseData.id || responseData.chapterId;
-                    createdChapterData = responseData;
-                } else if (typeof responseData === 'number') {
-                    realId = responseData;
-                }
-
-                if (realId) {
-                    // Update UI ngay lập tức
-                    const newChapterState = {
-                        id: realId,
-                        title: createdChapterData.title || value,
-                        order: createdChapterData.order || newOrder,
-                        lessons: []
-                    };
-                    setChapters([...chapters, newChapterState]);
-                    setExpandedChapters(prev => ({...prev, [realId]: true}));
-                } else {
-                    // FALLBACK QUAN TRỌNG:
-                    // Backend trả text 'successfully' -> Không có ID.
-                    console.warn("Server response doesn't contain ID. Fetching outline from server...");
-                    
-                    // Thêm delay nhỏ 500ms để đảm bảo DB đã cập nhật xong trước khi gọi GET
-                    setTimeout(() => {
-                        fetchCourseData();
-                    }, 500);
-                }
-            }
-        } 
+        let currentOrder = "1";
+        let currentDesc = "";
         
-        // --- 2. UPDATE CHAPTER ---
-        else if (type === 'edit_chapter') {
-            const payload = {
-                title: value,
-                order: extraData?.order || 1
-            };
-            const res = await apiClient.put(`/chapter/${targetId}`, payload);
-            if (res.status === 200) {
-                 // Update optimistic
-                 setChapters(chapters.map(c => c.id === targetId ? { ...c, title: value } : c));
-                 // Cẩn thận fetch lại để chắc chắn
-                 fetchCourseData();
+        const chapter = chapters.find((c) => c.id === parentId);
+        if (chapter) {
+            const lesson = chapter.lessons.find((l) => l.id === targetId);
+            if (lesson) {
+                if (lesson.order) currentOrder = lesson.order.toString();
+                if (lesson.description) currentDesc = lesson.description;
             }
-        } 
-        
-        // --- 3. LESSON LOGIC ---
-        else if (type === 'add_lesson') {
-            const newLesson = { id: Date.now(), title: value, contents: [] };
-            setChapters(chapters.map(c => c.id === parentId ? { ...c, lessons: [...c.lessons, newLesson] } : c));
-            setExpandedLessons(prev => ({...prev, [newLesson.id]: true}));
-        } 
-        else if (type === 'edit_lesson') {
-            setChapters(chapters.map(c => 
-                c.id === parentId ? {
-                  ...c, lessons: c.lessons.map(l => l.id === targetId ? { ...l, title: value } : l)
-                } : c
-            ));
         }
+        formData.append("order", currentOrder);
+        formData.append("desc", currentDesc);
 
-        setSimpleModal({ ...simpleModal, isOpen: false });
+        const res = await apiClient.put(`/lesson/${targetId}`, formData, {
+            headers: { "Content-Type": undefined }
+        });
 
+        if (res.status === 200) fetchCourseData();
+      }
+
+      setSimpleModal({ ...simpleModal, isOpen: false });
     } catch (error) {
-        console.error("Error saving:", error);
-        alert("Failed to save. " + (error.response?.data?.message || error.message));
+      console.error("Save Simple Modal Error:", error);
+      if (error.response) {
+        alert(`Failed to save (Error ${error.response.status}): ${JSON.stringify(error.response.data)}`);
+      } else {
+        alert("Failed to save. Network error.");
+      }
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const handleSaveContentModal = (contentPayload) => {
-    const { type, chapterId, lessonId, contentId } = contentModal;
-    setChapters(chapters.map(ch => {
-      if (ch.id !== chapterId) return ch;
-      return {
-        ...ch,
-        lessons: ch.lessons.map(ls => {
-          if (ls.id !== lessonId) return ls;
-          if (type === 'add') {
-            return { ...ls, contents: [...ls.contents, { id: Date.now(), ...contentPayload }] };
-          } else {
-            return { 
-              ...ls, 
-              contents: ls.contents.map(c => c.id === contentId ? { ...c, ...contentPayload, id: contentId } : c) 
-            };
-          }
-        })
-      };
-    }));
+  // ==========================================
+  // HANDLERS: SAVE CONTENT (VIDEO / DOC / QUIZ)
+  // ==========================================
+  const handleSaveContentModal = async (payload) => {
+    const { lessonId } = contentModal;
+    const { contentType, data } = payload;
+    
+    let chapterId = null;
+    chapters.forEach(ch => {
+        if (ch.lessons.some(l => l.id === lessonId)) {
+            chapterId = ch.id;
+        }
+    });
+
+    console.log("=== SAVE CONTENT ===");
+    console.log(`Chapter ID: ${chapterId}`);
+    console.log(`Lesson ID: ${lessonId}`);
+    console.log(`Content Type: ${contentType}`);
+
+    setIsLoading(true);
+
+    try {
+      // --- CASE A: VIDEO hoặc DOC (PUT Lesson) ---
+      if (contentType === "video" || contentType === "doc") {
+        const formData = new FormData();
+        let currentTitle = "Lesson";
+        let currentOrder = "1";
+        let currentDesc = "";
+
+        const chapter = chapters.find((c) => c.id === chapterId);
+        if (chapter) {
+             const l = chapter.lessons.find((ls) => ls.id === lessonId);
+             if (l) {
+                currentTitle = l.title;
+                currentOrder = l.order.toString();
+                currentDesc = l.description || "";
+             }
+        }
+
+        formData.append("title", currentTitle);
+        formData.append("order", currentOrder);
+        formData.append("desc", currentDesc);
+
+        if (contentType === "video") {
+          formData.append("videoDTO.title", data.fileName);
+          if (data.file) formData.append("videoDTO.video", data.file);
+          formData.append("videoDTO.duration", data.duration || "0");
+          formData.append("videoDTO.segmentDTOs[0].startAtSeconds", "0");
+          formData.append("videoDTO.segmentDTOs[0].endAtSeconds", "10");
+          formData.append("videoDTO.segmentDTOs[0].description", "Intro");
+        } 
+        else if (contentType === "doc") {
+          formData.append("courseMaterialDTOs[0].title", data.title);
+          if (data.file) formData.append("courseMaterialDTOs[0].doc", data.file);
+        }
+
+        await apiClient.put(`/lesson/${lessonId}`, formData, {
+          headers: { "Content-Type": undefined },
+        });
+        alert(`${contentType} updated successfully!`);
+      } 
+      
+      // --- CASE B: QUIZ (PUT Add Quiz) ---
+      else if (contentType === "quiz") {
+        const formData = new FormData();
+        const { questions, settings } = data;
+
+        console.log("=== QUIZ DATA ===");
+        console.log(`Chapter ID: ${chapterId}`);
+        console.log(`Lesson ID: ${lessonId}`);
+        console.log(`Quiz Title: ${settings.title || "Quiz"}`);
+        console.log(`Question Count: ${questions.length}`);
+        questions.forEach((q, qIdx) => {
+          console.log(`  Question ${qIdx + 1}: "${q.question}" (Score: ${q.score})`);
+          q.options.forEach((opt, oIdx) => {
+            console.log(`    Option ${oIdx + 1}: "${opt.text}" (Correct: ${opt.isCorrect})`);
+          });
+        });
+        
+        // Cần confirm URL này với BE, hiện tại dùng theo giả định sửa ở bước trước
+        const ADD_QUIZ_URL = `/lesson/${lessonId}/add-quiz`;
+
+        formData.append("lessonId", lessonId.toString());
+        formData.append("title", "Quiz");
+        formData.append("desc", "Quiz description");
+        formData.append("timeLimitMinutes", settings.timeLimit.toString());
+        formData.append("difficultyAvg", settings.difficulty);
+        formData.append("score", settings.passScore.toString());
+        formData.append("precondition", "None");
+
+        questions.forEach((q, qIdx) => {
+          formData.append(`questions[${qIdx}].qText`, q.question);
+          formData.append(`questions[${qIdx}].explanation`, "Exp");
+          formData.append(`questions[${qIdx}].level`, settings.difficulty);
+          formData.append(`questions[${qIdx}].score`, q.score.toString());
+          formData.append(`questions[${qIdx}].order`, (qIdx + 1).toString());
+
+          q.options.forEach((opt, oIdx) => {
+            formData.append(`questions[${qIdx}].mcqContents[${oIdx}].cText`, opt.text);
+            formData.append(`questions[${qIdx}].mcqContents[${oIdx}].isCorrect`, opt.isCorrect.toString());
+          });
+        });
+
+        await apiClient.put(ADD_QUIZ_URL, formData, {
+          headers: { "Content-Type": undefined },
+        });
+        alert("Quiz added successfully!");
+      }
+
+      fetchCourseData();
+      if (chapterId) fetchLessonDetails(lessonId, chapterId);
+
+    } catch (error) {
+      console.error("Save Content Error:", error);
+      if (error.response) {
+        alert(`Failed (Error ${error.response.status}): ${JSON.stringify(error.response.data)}`);
+      } else {
+        alert("Network Error.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="bg-gray-50 min-h-screen font-sans flex flex-col">
       <Navbar />
+
       <div className="pt-[72px] flex-1 flex flex-col">
         {/* TOP BAR */}
         <div className="bg-white border-b border-gray-200 sticky top-[72px] z-30 shadow-sm">
           <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
             <div className="flex items-center gap-4">
-              <button className="p-2 hover:bg-gray-100 rounded-full text-gray-500"><ArrowLeft size={24}/></button>
+              <button className="p-2 hover:bg-gray-100 rounded-full text-gray-500">
+                <ArrowLeft size={24} />
+              </button>
               <h1 className="text-xl font-bold text-gray-800">Edit Course</h1>
               {isLoading && <Loader2 className="animate-spin text-[#00b6b6]" />}
             </div>
             <div className="flex gap-3">
-              <button className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition">Save Draft</button>
-              <button className="px-6 py-2 bg-[#00b6b6] text-white rounded-lg font-bold shadow-md hover:bg-[#009e9e] transition">Publish</button>
+              <button className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition">
+                Save Draft
+              </button>
+              <button className="px-6 py-2 bg-[#00b6b6] text-white rounded-lg font-bold shadow-md hover:bg-[#009e9e] transition">
+                Publish
+              </button>
             </div>
           </div>
-          
+
           <div className="max-w-7xl mx-auto px-6 flex gap-8">
-            {['curriculum', 'info', 'settings', 'students'].map(tab => (
-              <button 
-                key={tab} 
+            {["curriculum", "info", "settings", "students"].map((tab) => (
+              <button
+                key={tab}
                 onClick={() => setActiveMainTab(tab)}
-                className={`pb-3 text-sm font-bold border-b-2 transition capitalize ${activeMainTab === tab ? "border-[#00b6b6] text-[#00b6b6]" : "border-transparent text-gray-500 hover:text-gray-700"}`}
+                className={`pb-3 text-sm font-bold border-b-2 transition capitalize ${
+                  activeMainTab === tab
+                    ? "border-[#00b6b6] text-[#00b6b6]"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}
               >
-                {tab === 'curriculum' ? "Curriculum" : tab === 'info' ? "Basic Info" : tab === 'settings' ? "Settings" : "Students & Reviews"}
+                {tab}
               </button>
             ))}
           </div>
         </div>
 
+        {/* MAIN CONTENT */}
         <main className="max-w-5xl mx-auto w-full px-6 py-8 flex-1">
-          {activeMainTab === 'curriculum' && (
+          {activeMainTab === "curriculum" && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <h2 className="text-lg font-bold text-gray-800">Course Content</h2>
-                <button onClick={openAddChapter} className="text-[#00b6b6] font-medium flex items-center gap-1 hover:underline"><Plus size={18}/> Add Chapter</button>
+                <button
+                  onClick={openAddChapter}
+                  className="text-[#00b6b6] font-medium flex items-center gap-1 hover:underline"
+                >
+                  <Plus size={18} /> Add Chapter
+                </button>
               </div>
-              
+
               <div className="space-y-4">
                 {chapters.map((chapter, cIndex) => (
-                  <ChapterItem 
+                  <ChapterItem
                     key={chapter.id}
                     index={cIndex}
                     chapter={chapter}
@@ -446,14 +627,14 @@ export default function EditCourse() {
                     onEdit={openEditChapter}
                     onDelete={deleteChapter}
                     onAddLesson={openAddLesson}
-                    // Lesson Props
                     expandedLessons={expandedLessons}
-                    toggleLesson={toggleLesson}
+                    toggleLesson={(lessonId) => toggleLesson(lessonId, chapter.id)}
                     onEditLesson={(lesson) => openEditLesson(lesson, chapter.id)}
-                    onDeleteLesson={deleteLesson}
-                    // Content Props
+                    onDeleteLesson={(lessonId) => deleteLesson(chapter.id, lessonId)}
                     onAddContent={(lessonId) => openAddContent(chapter.id, lessonId)}
-                    onEditContent={(chapterId, lessonId, content) => openEditContent(chapterId, lessonId, content)}
+                    onEditContent={(chapterId, lessonId, content) =>
+                      openEditContent(chapterId, lessonId, content)
+                    }
                     onDeleteContent={deleteContent}
                   />
                 ))}
@@ -461,32 +642,27 @@ export default function EditCourse() {
             </div>
           )}
 
-          {activeMainTab === 'info' && <div className="text-center py-20 text-gray-500">Basic Info Placeholder</div>}
-          {activeMainTab === 'settings' && <div className="text-center py-20 text-gray-500">Settings Placeholder</div>}
-          {activeMainTab === 'students' && <div className="text-center py-20 text-gray-500">Students & Reviews Placeholder</div>}
+          {activeMainTab !== "curriculum" && (
+            <div className="text-center py-20 text-gray-500">
+              {activeMainTab} Placeholder
+            </div>
+          )}
         </main>
       </div>
       <Footer />
-      
-      {/* MODALS */}
-      <SimpleModal 
-        isOpen={simpleModal.isOpen} 
-        onClose={() => setSimpleModal({...simpleModal, isOpen: false})} 
-        onSave={handleSaveSimpleModal} 
-        title={simpleModal.title} 
+
+      <SimpleModal
+        isOpen={simpleModal.isOpen}
+        onClose={() => setSimpleModal({ ...simpleModal, isOpen: false })}
+        onSave={handleSaveSimpleModal}
+        title={simpleModal.title}
         placeholder={simpleModal.placeholder}
-        initialValue={simpleModal.initialValue} 
+        initialValue={simpleModal.initialValue}
       />
 
-      <LessonModal 
-        isOpen={lessonModal.isOpen}
-        onClose={() => setLessonModal({ ...lessonModal, isOpen: false })}
-        onSave={handleSaveLesson}
-      />
-      
-      <ContentModal 
-        isOpen={contentModal.isOpen} 
-        onClose={() => setContentModal({...contentModal, isOpen: false})} 
+      <ContentModal
+        isOpen={contentModal.isOpen}
+        onClose={() => setContentModal({ ...contentModal, isOpen: false })}
         onSave={handleSaveContentModal}
         initialData={contentModal.initialData}
       />

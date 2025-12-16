@@ -99,26 +99,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Search Bar */}
-      <form
-        onSubmit={handleSearch}
-        className="hidden md:flex items-center bg-white rounded-full overflow-hidden mx-6 w-96 focus-within:ring-2 ring-teal-200 transition shadow-inner"
-      >
-        <input
-          type="text"
-          placeholder="Search courses..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-2 text-gray-700 outline-none"
-        />
-        <button
-          type="submit"
-          className="px-3 py-2 transition hover:bg-gray-100"
-        >
-          <Search className="w-5 h-5 text-[#00b6b6]" />
-        </button>
-      </form>
-
       {/* Menu */}
       <ul className="hidden md:flex space-x-8 font-medium">
         <li>
