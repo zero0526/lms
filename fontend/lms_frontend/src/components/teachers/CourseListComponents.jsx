@@ -34,13 +34,11 @@ const ContentRow = ({ icon: Icon, color, title, subtitle, onEdit, onDelete, isEd
 export const LessonItem = ({ 
   lesson, index, isExpanded, onToggle, 
   onEdit, onDelete, 
-  // Các prop xử lý content
   onAddContent, onEditContent, onDeleteContent 
 }) => {
   
-  // Helpers để parse dữ liệu
   const hasVideo = !!lesson.urlVideo;
-  const hasDoc = !!lesson.docs; // Giả sử docs là string URL hoặc object
+  const hasDoc = !!lesson.docs;
   const quizzes = lesson.quizzes || [];
 
   return (
@@ -56,7 +54,6 @@ export const LessonItem = ({
         </div>
         
         <div className="flex items-center gap-2">
-          {/* Nút + Content: Chỉ hiện nếu chưa đủ content, hoặc logic tùy ý */}
           <button 
             onClick={(e) => { e.stopPropagation(); onAddContent(lesson.id); }} 
             className="text-xs bg-[#00b6b6] text-white px-2 py-1 rounded hover:bg-[#009e9e] font-medium hidden group-hover:block"
@@ -78,36 +75,52 @@ export const LessonItem = ({
       {isExpanded && (
         <div className="border-t border-gray-100 p-3 bg-gray-50/50 space-y-2 pl-8">
           
-          {/* Loading State */}
           {!lesson.isDetailsLoaded && (
              <div className="text-xs text-gray-400 italic py-1">Loading details...</div>
           )}
 
-          {/* 1. VIDEO */}
+          {/* 1. VIDEO - ← SỬA: Thêm edit callback */}
           {hasVideo && (
             <ContentRow 
                 icon={PlayCircle} 
                 color="black"
                 title="Lesson Video"
                 subtitle={lesson.urlVideo}
-                onEdit={(e) => { e.stopPropagation(); alert('Edit Video feature coming soon'); }}
+                onEdit={(e) => { 
+                  e.stopPropagation(); 
+                  // ← GỌI: onEditContent với type="video" và data
+                  onEditContent(lesson.id, "video", {
+                    videoUrl: lesson.urlVideo,
+                    title: lesson.title,
+                    duration: lesson.duration || 0
+                  });
+                }}
                 onDelete={(e) => { e.stopPropagation(); onDeleteContent(lesson.id, 'video'); }}
             />
           )}
 
-          {/* 2. DOCUMENT */}
+          {/* 2. DOCUMENT - ← SỬA: Thêm edit callback */}
           {hasDoc && (
             <ContentRow 
                 icon={File} 
                 color="text-yellow-500"
                 title="Lesson Document"
                 subtitle={typeof lesson.docs === 'string' ? lesson.docs : "Document attached"}
-                onEdit={(e) => { e.stopPropagation(); alert('Edit Doc feature coming soon'); }}
+                onEdit={(e) => { 
+                  e.stopPropagation(); 
+                  // ← GỌI: onEditContent với type="doc" và data
+                  const doc = Array.isArray(lesson.docs) ? lesson.docs[0] : lesson.docs;
+                  onEditContent(lesson.id, "doc", {
+                    id: doc?.id,
+                    docUrl: doc?.docUrl || (typeof lesson.docs === 'string' ? lesson.docs : ''),
+                    title: doc?.title || "Document"
+                  });
+                }}
                 onDelete={(e) => { e.stopPropagation(); onDeleteContent(lesson.id, 'doc'); }}
             />
           )}
 
-          {/* 3. QUIZZES */}
+          {/* 3. QUIZZES - ← GIỮ NGUYÊN */}
           {quizzes.map((quiz, idx) => (
             <ContentRow 
                 key={quiz.quizId || idx}
@@ -120,9 +133,8 @@ export const LessonItem = ({
             />
           ))}
 
-          {/* Empty State */}
           {lesson.isDetailsLoaded && !hasVideo && !hasDoc && quizzes.length === 0 && (
-            <p className="text-xs text-gray-400 italic">No content content added yet.</p>
+            <p className="text-xs text-gray-400 italic">No content added yet.</p>
           )}
 
         </div>
@@ -157,7 +169,15 @@ export const ChapterItem = ({
           <button onClick={(e) => { e.stopPropagation(); onEdit(chapter); }} className="p-2 text-gray-500 hover:text-blue-600 rounded-full">
             <Edit2 size={16} />
           </button>
-          <button onClick={(e) => { e.stopPropagation(); onDelete(chapter.id); }} className="p-2 text-gray-500 hover:text-red-600 rounded-full">
+          <button 
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              console.log(`=== DELETE CHAPTER CLICKED ===`);
+              console.log(`Chapter ID: ${chapter.id}`);
+              console.log(`Chapter Title: ${chapter.title}`);
+              onDelete(chapter.id);  // ← GỌI onDelete với chapter.id
+            }}
+            className="p-2 text-gray-500 hover:text-red-600 rounded-full">
             <Trash2 size={16} />
           </button>
         </div>
@@ -174,7 +194,11 @@ export const ChapterItem = ({
               isExpanded={expandedLessons[lesson.id]}
               onToggle={(lessonId) => toggleLesson(lessonId)} // Pass ID lên trên
               onEdit={onEditLesson}
-              onDelete={(lid) => onDeleteLesson(lid)}
+              onDelete={(lessonId) => {
+                console.log(`=== CHAPTER ITEM: onDelete callback ===`);
+                console.log(`Calling onDeleteLesson with lessonId: ${lessonId}`);
+                onDeleteLesson(lessonId);  // ← GỌI onDeleteLesson (deleteLesson function)
+              }}
               onAddContent={onAddContent}
               onEditContent={onEditContent}
               onDeleteContent={onDeleteContent}
