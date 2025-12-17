@@ -58,7 +58,7 @@ export const LessonItem = ({
             onClick={(e) => { e.stopPropagation(); onAddContent(lesson.id); }} 
             className="text-xs bg-[#00b6b6] text-white px-2 py-1 rounded hover:bg-[#009e9e] font-medium hidden group-hover:block"
           >
-            + Add More
+            + Content
           </button>
           
           <div className="w-[1px] h-4 bg-gray-300 mx-1"></div>

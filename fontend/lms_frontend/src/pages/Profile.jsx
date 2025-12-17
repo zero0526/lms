@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
-  User, Mail, Phone, MapPin, Calendar, Edit2, Save, X, Camera, Loader2 
+  User, Phone, MapPin, Calendar, Edit2, Save, X, Loader2, Lock, Key
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -8,11 +8,20 @@ import apiClient from "../api/axiosConfig";
 
 export default function Profile() {
   const [loading, setLoading] = useState(true);
+  
+  // Profile Update State
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState(null);
   const [formData, setFormData] = useState({});
   const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
+
+  // Password Change State
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: ""
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
 
   // HELPER: FORMAT DATE
   const formatDate = (dateArray) => {
@@ -52,7 +61,7 @@ export default function Profile() {
     fetchProfile();
   }, []);
 
-  // HANDLERS
+  // HANDLERS - PROFILE
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -73,7 +82,7 @@ export default function Profile() {
     }
   };
 
-  const handleSave = async () => {
+  const handleSaveProfile = async () => {
     try {
       setLoading(true);
       const storedUser = JSON.parse(localStorage.getItem("user") || sessionStorage.getItem("user"));
@@ -121,7 +130,6 @@ export default function Profile() {
     } catch (error) {
       console.error("Failed to update profile:", error);
       if (error.response) {
-        console.log("Backend error details:", error.response.data);
         alert(`Error: ${error.response.data.message || "Update failed"}`);
       } else {
         alert("An unexpected error occurred during update.");
@@ -131,11 +139,56 @@ export default function Profile() {
     }
   };
 
-  const handleCancel = () => {
+  const handleCancelEdit = () => {
     setFormData(profileData);
     setSelectedFile(null);
     setIsEditing(false);
   };
+
+  // HANDLERS - PASSWORD
+  const handlePasswordInput = (e) => {
+    const { name, value } = e.target;
+    setPasswordForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handlePasswordSave = async () => {
+    if (!passwordForm.currentPassword || !passwordForm.newPassword) return;
+
+    try {
+      setPasswordLoading(true);
+      const storedUser = JSON.parse(localStorage.getItem("user") || sessionStorage.getItem("user"));
+      const currentUserId = storedUser?.userId || profileData?.userId;
+
+      if (!currentUserId) {
+        alert("User ID not found.");
+        return;
+      }
+
+      const payload = {
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword
+      };
+
+      const res = await apiClient.post(`/user/update/password/${currentUserId}`, payload);
+
+      if (res.status === 200) {
+        alert("Password updated successfully!");
+        setPasswordForm({ currentPassword: "", newPassword: "" }); // Reset form
+      }
+    } catch (error) {
+      console.error("Failed to change password:", error);
+      if (error.response) {
+        // Backend often returns meaningful error messages (e.g., "Wrong password")
+        alert(`Error: ${error.response.data.message || error.response.data || "Failed to update password"}`);
+      } else {
+        alert("An unexpected error occurred. Please try again.");
+      }
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const isPasswordSaveDisabled = !passwordForm.currentPassword || !passwordForm.newPassword || passwordLoading;
 
   const getAvatarLabel = (name) => {
     return name ? name.charAt(0).toUpperCase() : "U";
@@ -182,27 +235,6 @@ export default function Profile() {
                   <span className="text-[#00b6b6]">{getAvatarLabel(formData.fullName)}</span>
                 )}
               </div>
-              
-              {/* Edit Avatar */}
-              {/* {isEditing && (
-                <>
-                    <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handleFileChange} 
-                        className="hidden" 
-                        accept="image/png, image/jpeg, image/jpg"
-                    />
-                    <button 
-                        type="button"
-                        onClick={handleCameraClick}
-                        className="absolute bottom-0 right-0 bg-gray-800 text-white p-2 rounded-full hover:bg-black transition shadow-sm cursor-pointer z-10" 
-                        title="Upload new photo"
-                    >
-                        <Camera size={16} />
-                    </button>
-                </>
-              )} */}
             </div>
 
             {/* Name & Role */}
@@ -224,14 +256,14 @@ export default function Profile() {
               <p className="text-gray-500 font-medium">{profileData.role}</p>
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Buttons (Profile) */}
             <div className="flex gap-3">
               {isEditing ? (
                 <>
-                  <button onClick={handleCancel} className="px-4 py-2 rounded-lg bg-gray-100 text-gray-600 font-medium hover:bg-gray-200 transition flex items-center gap-2">
+                  <button onClick={handleCancelEdit} className="px-4 py-2 rounded-lg bg-gray-100 text-gray-600 font-medium hover:bg-gray-200 transition flex items-center gap-2">
                     <X size={18} /> Cancel
                   </button>
-                  <button onClick={handleSave} className="px-4 py-2 rounded-lg bg-[#00b6b6] text-white font-medium hover:bg-[#009e9e] transition flex items-center gap-2 shadow-sm">
+                  <button onClick={handleSaveProfile} className="px-4 py-2 rounded-lg bg-[#00b6b6] text-white font-medium hover:bg-[#009e9e] transition flex items-center gap-2 shadow-sm">
                     <Save size={18} /> Save Changes
                   </button>
                 </>
@@ -334,8 +366,9 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Right Column: Account Info (Read Only) */}
+          {/* Right Column: Account Info & Password Change */}
           <div className="space-y-6">
+            {/* Account Activity */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
               <h3 className="text-lg font-bold text-gray-800 mb-4">Account Activity</h3>
               <div className="space-y-4">
@@ -361,13 +394,66 @@ export default function Profile() {
               </div>
             </div>
             
-            <div className="bg-gradient-to-br from-[#00b6b6] to-teal-600 rounded-xl shadow-md p-6 text-white">
-               <h3 className="font-bold text-lg mb-2">Ready to learn?</h3>
-               <p className="text-sm text-teal-100 mb-4">Check out new courses and expand your skills today.</p>
-               <button className="w-full bg-white text-[#00b6b6] font-bold py-2 rounded-lg hover:bg-gray-50 transition">
-                 Browse Courses
-               </button>
+            {/* CHANGE PASSWORD SECTION (Replaced "Ready to learn") */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 relative">
+               <div className="flex justify-between items-start mb-4">
+                 <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                   <Lock size={20} className="text-[#00b6b6]" /> Security
+                 </h3>
+                 
+                 {/* Save Password Button - Top Right */}
+                 <button 
+                   onClick={handlePasswordSave}
+                   disabled={isPasswordSaveDisabled}
+                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
+                     isPasswordSaveDisabled 
+                       ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
+                       : "bg-[#00b6b6] text-white hover:bg-[#009e9e] shadow-sm cursor-pointer"
+                   }`}
+                   title={isPasswordSaveDisabled ? "Enter both fields to save" : "Save new password"}
+                 >
+                    {passwordLoading ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                    Save
+                 </button>
+               </div>
+
+               <div className="space-y-4">
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Current Password</label>
+                    <div className="relative">
+                      <div className="absolute left-3 top-2.5 text-gray-400">
+                        <Key size={16} />
+                      </div>
+                      <input 
+                        type="password"
+                        name="currentPassword"
+                        value={passwordForm.currentPassword}
+                        onChange={handlePasswordInput}
+                        placeholder="••••••••"
+                        className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#00b6b6] focus:ring-1 focus:ring-[#00b6b6] outline-none transition-colors placeholder:text-gray-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">New Password</label>
+                    <div className="relative">
+                      <div className="absolute left-3 top-2.5 text-gray-400">
+                        <Lock size={16} />
+                      </div>
+                      <input 
+                        type="password"
+                        name="newPassword"
+                        value={passwordForm.newPassword}
+                        onChange={handlePasswordInput}
+                        placeholder="••••••••"
+                        className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#00b6b6] focus:ring-1 focus:ring-[#00b6b6] outline-none transition-colors placeholder:text-gray-400"
+                      />
+                    </div>
+                  </div>
+               </div>
             </div>
+
           </div>
 
         </div>

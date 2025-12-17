@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { ArrowLeft, Plus, Loader2 } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
@@ -10,6 +10,7 @@ import { ChapterItem } from "../../components/teachers/CourseListComponents";
 import apiClient from "../../api/axiosConfig";
 
 export default function EditCourse() {
+  const navigate = useNavigate();
   const { courseId } = useParams();
   const [activeMainTab, setActiveMainTab] = useState("curriculum");
   const [isLoading, setIsLoading] = useState(false);
@@ -39,11 +40,6 @@ export default function EditCourse() {
     chapterId: null,
     lessonId: null,
     contentId: null,
-  });
-
-  const [lessonModal, setLessonModal] = useState({
-    isOpen: false,
-    chapterId: null,
   });
 
   // --- HELPER: GET USER ID ---
@@ -634,6 +630,9 @@ export default function EditCourse() {
 
         questions.forEach((q, qIdx) => {
           formData.append(`questions[${qIdx}].qText`, q.question);
+          if (q.image && q.image instanceof File) {
+            formData.append(`questions[${qIdx}].qImage`, q.image);
+          }
           formData.append(`questions[${qIdx}].explanation`, "Exp");
           formData.append(`questions[${qIdx}].level`, settings.difficulty);
           formData.append(`questions[${qIdx}].score`, q.score.toString());
@@ -641,6 +640,9 @@ export default function EditCourse() {
 
           q.options.forEach((opt, oIdx) => {
             formData.append(`questions[${qIdx}].mcqContents[${oIdx}].cText`, opt.text);
+            if (opt.image && opt.image instanceof File) {
+              formData.append(`questions[${qIdx}].mcqContents[${oIdx}].cImage`, opt.image);
+            }
             formData.append(`questions[${qIdx}].mcqContents[${oIdx}].isCorrect`, opt.isCorrect.toString());
           });
         });
@@ -675,16 +677,16 @@ export default function EditCourse() {
         <div className="bg-white border-b border-gray-200 sticky top-[72px] z-30 shadow-sm">
           <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
             <div className="flex items-center gap-4">
-              <button className="p-2 hover:bg-gray-100 rounded-full text-gray-500">
+              <button 
+                className="p-2 hover:bg-gray-100 rounded-full text-gray-500"
+                onClick={() => navigate(`/teacher/courses`)}
+              >
                 <ArrowLeft size={24} />
               </button>
               <h1 className="text-xl font-bold text-gray-800">Edit Course</h1>
               {isLoading && <Loader2 className="animate-spin text-[#00b6b6]" />}
             </div>
             <div className="flex gap-3">
-              <button className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition">
-                Save Draft
-              </button>
               <button className="px-6 py-2 bg-[#00b6b6] text-white rounded-lg font-bold shadow-md hover:bg-[#009e9e] transition">
                 Publish
               </button>
