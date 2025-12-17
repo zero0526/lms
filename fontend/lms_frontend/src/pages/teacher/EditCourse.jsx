@@ -119,6 +119,38 @@ export default function EditCourse() {
   }, [courseId]);
 
   useEffect(() => {
+    // ← Chỉ chạy khi chapters đã load xong
+    if (chapters.length === 0) return;
+
+    // ← Duyệt qua tất cả lessons đang expanded
+    Object.keys(expandedLessons).forEach((lessonIdStr) => {
+      const lessonId = parseInt(lessonIdStr);
+      const isExpanded = expandedLessons[lessonId];
+
+      // ← Nếu lesson đang expanded
+      if (isExpanded) {
+        // ← Tìm chapter chứa lesson này
+        let chapterId = null;
+        let lesson = null;
+
+        for (const ch of chapters) {
+          const foundLesson = ch.lessons.find((l) => l.id === lessonId);
+          if (foundLesson) {
+            chapterId = ch.id;
+            lesson = foundLesson;
+            break;
+          }
+        }
+
+        if (lesson && !lesson.isDetailsLoaded) {
+          console.log(`Auto-fetching details for lesson ${lessonId} (chapter ${chapterId})`);
+          fetchLessonDetails(lessonId, chapterId);
+        }
+      }
+    });
+  }, [chapters, expandedLessons]);
+
+  useEffect(() => {
     fetchCourseData();
   }, [fetchCourseData]);
 
@@ -285,25 +317,58 @@ export default function EditCourse() {
     });
   };
 
-  const openAddContent = (chapterId, lessonId) => {
+  const openAddContent = (lessonId) => {
+    // ← Tìm chapterId từ lessonId
+    let chapterId = null;
+    chapters.forEach(ch => {
+      if (ch.lessons.some(l => l.id === lessonId)) {
+        chapterId = ch.id;
+      }
+    });
+
+    console.log(`=== OPEN ADD CONTENT ===`);
+    console.log(`Lesson ID: ${lessonId}`);
+    console.log(`Chapter ID: ${chapterId}`);
+
     setContentModal({
       isOpen: true,
       type: "add",
       initialData: null,
-      chapterId,
-      lessonId,
+      chapterId: chapterId,  // ← Tìm được từ lessonId
+      lessonId: lessonId,
+      contentId: null,
+      contentType: null,  // ← null = cho phép chọn tất cả tabs
     });
   };
 
-  const openEditContent = (chapterId, lessonId, content) => {
+  const openEditContent = (lessonId, contentType, contentData) => {
+
+    let chapterId = null;
+    chapters.forEach(ch => {
+      if (ch.lessons.some(l => l.id === lessonId)) {
+        chapterId = ch.id;
+      }
+    });
+
+    console.log(`=== OPEN EDIT CONTENT ===`);
+    console.log(`Lesson ID: ${lessonId}`);
+    console.log(`Content Type: ${contentType}`);
+    console.log(`Content Data:`, contentData);
+
     setContentModal({
       isOpen: true,
       type: "edit",
-      initialData: content,
-      chapterId,
-      lessonId,
-      contentId: content.id,
+      initialData: contentData,  // ← Data của video/doc cần edit
+      chapterId: chapterId,
+      lessonId: lessonId,
+      contentId: contentData?.id || null,
+      contentType: contentType,  // ← "video" hoặc "doc" hoặc "quiz"
     });
+  };
+
+  const openDeleteContent = (lessonId, contentId) => {
+    console.log(`Delete content: ${contentId} from lesson: ${lessonId}`);
+    // TODO: Implement delete logic
   };
 
   // --- DELETE ACTIONS ---
@@ -324,24 +389,59 @@ export default function EditCourse() {
     }
   };
 
-  const deleteLesson = async (chapterId, lessonId) => {
-    if (!window.confirm("Delete this lesson?")) return;
-    setIsLoading(true);
+  // --- DELETE LESSON ---
+  const deleteLesson = async (lessonId) => {  // ← SỬA: Chỉ nhận lessonId
+    if (!confirm("Are you sure you want to delete this lesson?")) return;
+
     try {
-      await apiClient.delete(`/lesson/${lessonId}`);
-      setChapters(
-        chapters.map((ch) =>
-          ch.id === chapterId
-            ? { ...ch, lessons: ch.lessons.filter((l) => l.id !== lessonId) }
-            : ch
-        )
-      );
-    } catch (error) {
-      if (error.response?.status === 404 || error.response?.status === 500) {
+      console.log(`Deleting lesson: ${lessonId}`);
+      
+      // ← API CALL: Delete lesson
+      const res = await apiClient.delete(`/lesson/${lessonId}`);
+      
+      console.log("Delete lesson response:", res);
+
+      if (res.status === 200) {
+        console.log("Lesson deleted successfully!");
+        
+        // ← XÓA lesson khỏi expandedLessons state
+        setExpandedLessons((prev) => {
+          const updated = { ...prev };
+          delete updated[lessonId];
+          return updated;
+        });
+        
+        // ← Clear contentModal nếu đang mở content của lesson bị xóa
+        if (contentModal.lessonId === lessonId) {
+          setContentModal({
+            isOpen: false,
+            type: null,
+            initialData: null,
+            chapterId: null,
+            lessonId: null,
+            contentId: null,
+          });
+        }
+        
+        // ← Reload course outline
         fetchCourseData();
+        
+        alert("Lesson deleted successfully!");
+
+        console.warn("⚠️ BACKEND BUG: After deleting lesson, /course/outline returns empty array.");
+        console.warn("Frontend is using local state update instead of refetching.");
+        console.warn("Please fix backend: DELETE /lesson/{id} should NOT affect /course/outline response.");
       }
-    } finally {
-      setIsLoading(false);
+    } catch (error) {
+      console.error("Error deleting lesson:", error);
+      
+      if (error.response) {
+        console.error("Error Response Status:", error.response.status);
+        console.error("Error Response Data:", error.response.data);
+        alert(`Failed to delete lesson (${error.response.status}): ${JSON.stringify(error.response.data)}`);
+      } else {
+        alert("Network error while deleting lesson.");
+      }
     }
   };
 
@@ -488,8 +588,14 @@ export default function EditCourse() {
           formData.append("videoDTO.segmentDTOs[0].description", "Intro");
         } 
         else if (contentType === "doc") {
-          formData.append("courseMaterialDTOs[0].title", data.title);
-          if (data.file) formData.append("courseMaterialDTOs[0].doc", data.file);
+          // ← THÊM: ID của doc nếu là EDIT (không phải ADD)
+          if (data.id) {
+            formData.append("courseMaterialDTOs[0].id", data.id.toString());
+          }
+          formData.append("courseMaterialDTOs[0].title", data.title || "Document");
+          if (data.file) {
+            formData.append("courseMaterialDTOs[0].doc", data.file);
+          }
         }
 
         await apiClient.put(`/lesson/${lessonId}`, formData, {
@@ -617,25 +723,25 @@ export default function EditCourse() {
               </div>
 
               <div className="space-y-4">
-                {chapters.map((chapter, cIndex) => (
+                {/* COURSE OUTLINE */}
+                {chapters.map((chapter, chIdx) => (
                   <ChapterItem
                     key={chapter.id}
-                    index={cIndex}
                     chapter={chapter}
+                    index={chIdx}
                     isExpanded={expandedChapters[chapter.id]}
                     onToggle={toggleChapter}
                     onEdit={openEditChapter}
                     onDelete={deleteChapter}
                     onAddLesson={openAddLesson}
                     expandedLessons={expandedLessons}
-                    toggleLesson={(lessonId) => toggleLesson(lessonId, chapter.id)}
-                    onEditLesson={(lesson) => openEditLesson(lesson, chapter.id)}
-                    onDeleteLesson={(lessonId) => deleteLesson(chapter.id, lessonId)}
-                    onAddContent={(lessonId) => openAddContent(chapter.id, lessonId)}
-                    onEditContent={(chapterId, lessonId, content) =>
-                      openEditContent(chapterId, lessonId, content)
-                    }
-                    onDeleteContent={deleteContent}
+                    toggleLesson={toggleLesson}
+                    onEditLesson={openEditLesson}
+                    onDeleteLesson={deleteLesson}
+                    // ← THÊM: 3 hàm xử lý content
+                    onAddContent={openAddContent}
+                    onEditContent={openEditContent}  // ← MỚI
+                    onDeleteContent={openDeleteContent}  // ← MỚI
                   />
                 ))}
               </div>
@@ -665,6 +771,7 @@ export default function EditCourse() {
         onClose={() => setContentModal({ ...contentModal, isOpen: false })}
         onSave={handleSaveContentModal}
         initialData={contentModal.initialData}
+        contentType={contentModal.contentType}
       />
     </div>
   );
