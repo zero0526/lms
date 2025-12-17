@@ -427,10 +427,6 @@ export default function EditCourse() {
         fetchCourseData();
         
         alert("Lesson deleted successfully!");
-
-        console.warn("⚠️ BACKEND BUG: After deleting lesson, /course/outline returns empty array.");
-        console.warn("Frontend is using local state update instead of refetching.");
-        console.warn("Please fix backend: DELETE /lesson/{id} should NOT affect /course/outline response.");
       }
     } catch (error) {
       console.error("Error deleting lesson:", error);
@@ -465,7 +461,11 @@ export default function EditCourse() {
           title: value,
           order: newOrder,
         });
-        if (res.status === 200 || res.status === 201) fetchCourseData();
+        if (res.status === 200 || res.status === 201){
+          await new Promise(resolve => setTimeout(resolve, 500));
+          fetchCourseData();
+          alert("Chapter added successfully!");
+        }
       }
       
       // 2. EDIT CHAPTER
