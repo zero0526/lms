@@ -1,5 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { Video, FileText, HelpCircle, UploadCloud, X, CheckSquare, Square, Trash2, Clock, Plus, CheckCircle2, File, Image as ImageIcon } from "lucide-react";
+import { Video, FileText, HelpCircle, UploadCloud, X, CheckSquare, Square, Trash2, Clock, Plus, CheckCircle2, File as FileIcon, Image as ImageIcon } from "lucide-react";
+
+const convertDriveLink = (url) => {
+  if (!url || typeof url !== 'string') return "";
+  if (!url.includes("drive.google.com")) return url;
+
+  try {
+    const idMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+    if (idMatch && idMatch[1]) {
+      return `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w1000`;
+    }
+    return url; 
+  } catch (e) {
+    return url;
+  }
+};
 
 const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType = null }) => {
   const [activeTab, setActiveTab] = useState("video"); 
@@ -25,7 +40,7 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
 
     // ← LOAD INITIAL DATA (NẾU EDIT)
     if (initialData && contentType) {
-      setIsEditMode(true); // ← Set edit mode = true
+      setIsEditMode(true);
       
       if (contentType === "video") {
         setActiveTab("video");
@@ -38,7 +53,6 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
       } 
       else if (contentType === "doc") {
         setActiveTab("doc");
-        // ← SỬA: initialData ĐÃ LÀ doc object rồi, không cần kiểm tra docs array
         setDocData({
           id: initialData.id,
           file: null,
@@ -49,17 +63,23 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
       } 
       else if (contentType === "quiz") {
         setActiveTab("quiz");
-        // ← SỬA: initialData ĐÃ LÀ quiz object rồi
+        
+        // ← LOAD QUIZ SETTINGS
         setQuizSettings({
+          title: initialData.title || "Quiz",
+          description: initialData.description || "",
+          precondition: initialData.precondition || "None",
           timeLimit: initialData.timeLimit || 10,
-          difficulty: initialData.level || "Medium",
-          passScore: initialData.numOfQuestion || 5,
-          title: initialData.titleQuiz,
+          difficulty: initialData.difficulty || "Medium",
+          passScore: initialData.passScore || 5,
         });
-        setQuizData([]);
+        
+        // ← LOAD QUIZ QUESTIONS (với URL images từ backend)
+        setQuizData(initialData.questions || []);
+        
+        console.log("Loaded Quiz Data:", initialData.questions);
       }
     } else {
-      // ← QUAN TRỌNG: Chỉ set isEditMode = false khi KHÔNG có initialData VÀ contentType
       setIsEditMode(false);
     }
   }, [isOpen, initialData, contentType]);
@@ -102,10 +122,10 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
     qImage: null, // New: Image for question
     score: 1, // Changed default score to 1
     options: [
-      { id: 1, text: "", isCorrect: false, cImage: null }, // New: Image for option
-      { id: 2, text: "", isCorrect: false, cImage: null }, 
-      { id: 3, text: "", isCorrect: false, cImage: null }, 
-      { id: 4, text: "", isCorrect: false, cImage: null }
+      { text: "", isCorrect: false, cImage: null }, // New: Image for option
+      { text: "", isCorrect: false, cImage: null }, 
+      { text: "", isCorrect: false, cImage: null }, 
+      { text: "", isCorrect: false, cImage: null }
     ] 
   }]);
 
@@ -334,7 +354,7 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
                   ) : (
                     <div className="flex flex-col items-center group-hover:scale-[1.02] transition-transform">
                       <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4 text-gray-500 group-hover:bg-yellow-100 group-hover:text-yellow-600 transition-colors">
-                        <File size={32} />
+                        <FileIcon size={32} />
                       </div>
                       <p className="text-gray-700 font-bold text-lg">Drag & Drop document here</p>
                       <p className="text-gray-400 text-sm mt-1">PDF, Word, Excel, PowerPoint</p>
@@ -434,7 +454,11 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
                             <div className="mt-2">
                                 {q.qImage ? (
                                     <div className="relative inline-block group/img">
-                                        <img src={URL.createObjectURL(q.qImage)} alt="Question" className="h-24 w-auto rounded-lg border border-gray-200 object-cover" />
+                                        <img 
+                                          src={q.qImage instanceof File ?
+                                            URL.createObjectURL(q.qImage) : 
+                                            convertDriveLink(q.qImage)
+                                          } alt="Question" className="h-24 w-auto rounded-lg border border-gray-200 object-cover" />
                                         <button onClick={() => removeQuestionImage(qIdx)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover/img:opacity-100 transition shadow-sm">
                                             <X size={12}/>
                                         </button>
@@ -452,7 +476,7 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {q.options.map((opt, oIdx) => (
-                            <div key={opt.id} className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${opt.isCorrect ? "border-green-200 bg-green-50" : "border-gray-100 bg-gray-50"}`}>
+                            <div key={oIdx} className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${opt.isCorrect ? "border-green-200 bg-green-50" : "border-gray-100 bg-gray-50"}`}>
                                 <button
                                     onClick={() => toggleCorrect(qIdx, oIdx)}
                                     className={`w-6 h-6 rounded flex items-center justify-center transition-colors flex-shrink-0 ${opt.isCorrect ? "bg-green-500 text-white" : "bg-white border border-gray-300 text-transparent hover:border-gray-400"}`}
@@ -471,7 +495,12 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
                                     <div className="mt-1">
                                         {opt.cImage ? (
                                             <div className="relative inline-block group/optImg">
-                                                <img src={URL.createObjectURL(opt.cImage)} alt="Option" className="h-12 w-auto rounded border border-gray-200 object-cover" />
+                                                <img 
+                                                  src={
+                                                    opt.cImage instanceof File ? 
+                                                    URL.createObjectURL(opt.cImage) : convertDriveLink(opt.cImage)} 
+                                                    alt="Option" 
+                                                    className="h-12 w-auto rounded border border-gray-200 object-cover" />
                                                 <button onClick={() => removeOptionImage(qIdx, oIdx)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover/optImg:opacity-100 transition shadow-sm">
                                                     <X size={10}/>
                                                 </button>
@@ -488,6 +517,18 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
                                 </div>
                             </div>
                         ))}
+                        </div>
+
+                        {/* Explanation Field */}
+                        <div className="mt-4">
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Explaination (Optional)</label>
+                            <textarea
+                                value={q.explanation || ""}
+                                onChange={(e) => updateQuestion(qIdx, "explanation", e.target.value)}
+                                placeholder="Explain why the correct answer is right..."
+                                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none resize-none bg-gray-50 text-sm"
+                                rows="2"
+                            />
                         </div>
                     </div>
                     ))}
