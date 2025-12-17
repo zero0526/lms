@@ -249,6 +249,64 @@ export default function EditCourse() {
     }
   };
 
+  // --- API: FETCH QUIZ DETAILS ---
+  const fetchQuizDetails = async (quizId) => {
+    try {
+      console.log(`=== FETCHING QUIZ DETAILS ===`);
+      console.log(`Quiz ID: ${quizId}`);
+      
+      const res = await apiClient.get(`/quiz/${quizId}`);
+      
+      console.log("Quiz Details Response:", res.data);
+      
+      const quizData = res.data.data;
+      
+      if (quizData) {
+        console.log(`Quiz Title: ${quizData.title}`);
+        console.log(`Question Count: ${quizData.questions.length}`);
+        
+        // ← Transform backend data sang format của ContentModal
+        const transformedData = {
+          id: quizData.id,
+          title: quizData.title,
+          description: quizData.desc,
+          precondition: quizData.precondition,
+          timeLimit: quizData.timeLimitMinutes,
+          difficulty: quizData.difficultyAvg,
+          passScore: quizData.score,
+          questions: quizData.questions.map(q => ({
+            id: q.id,
+            question: q.qText,
+            qImage: q.qImage, // ← URL string từ backend
+            explanation: q.explanation,
+            level: q.level,
+            score: q.score,
+            order: q.order,
+            options: q.mcqContents.map(opt => ({
+              id: opt.id,
+              text: opt.cText,
+              cImage: opt.cImage, // ← URL string từ backend
+              isCorrect: opt.isCorrect,
+            })),
+          })),
+        };
+        
+        console.log("Transformed Quiz Data:", transformedData);
+        
+        return transformedData;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error("Error fetching quiz details:", error);
+      if (error.response) {
+        console.error("Response Status:", error.response.status);
+        console.error("Response Data:", error.response.data);
+      }
+      return null;
+    }
+  };
+
   // --- UI HANDLERS ---
   const toggleChapter = (id) => {
     setExpandedChapters((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -337,8 +395,7 @@ export default function EditCourse() {
     });
   };
 
-  const openEditContent = (lessonId, contentType, contentData) => {
-
+  const openEditContent = async (lessonId, contentType, contentData) => {
     let chapterId = null;
     chapters.forEach(ch => {
       if (ch.lessons.some(l => l.id === lessonId)) {
@@ -351,15 +408,39 @@ export default function EditCourse() {
     console.log(`Content Type: ${contentType}`);
     console.log(`Content Data:`, contentData);
 
-    setContentModal({
-      isOpen: true,
-      type: "edit",
-      initialData: contentData,  // ← Data của video/doc cần edit
-      chapterId: chapterId,
-      lessonId: lessonId,
-      contentId: contentData?.id || null,
-      contentType: contentType,  // ← "video" hoặc "doc" hoặc "quiz"
-    });
+    // ← THÊM: Nếu là quiz, fetch full details từ API
+    if (contentType === "quiz") {
+      setIsLoading(true);
+      const quizDetails = await fetchQuizDetails(contentData.quizId);
+      setIsLoading(false);
+      
+      if (!quizDetails) {
+        alert("Failed to load quiz details");
+        return;
+      }
+      
+      // ← Pass quiz details vào modal
+      setContentModal({
+        isOpen: true,
+        type: "edit",
+        initialData: quizDetails, // ← Full quiz data từ API
+        chapterId: chapterId,
+        lessonId: lessonId,
+        contentId: contentData.quizId,
+        contentType: "quiz",
+      });
+    } else {
+      // ← Video/Doc giữ nguyên
+      setContentModal({
+        isOpen: true,
+        type: "edit",
+        initialData: contentData,
+        chapterId: chapterId,
+        lessonId: lessonId,
+        contentId: contentData?.id || null,
+        contentType: contentType,
+      });
+    }
   };
 
   const openDeleteContent = (lessonId, contentId) => {
@@ -600,54 +681,92 @@ export default function EditCourse() {
         alert(`${contentType} updated successfully!`);
       } 
       
-      // --- CASE B: QUIZ (PUT Add Quiz) ---
+      // --- CASE B: QUIZ ---
       else if (contentType === "quiz") {
         const formData = new FormData();
         const { questions, settings } = data;
 
         console.log("=== QUIZ DATA ===");
-        console.log(`Chapter ID: ${chapterId}`);
         console.log(`Lesson ID: ${lessonId}`);
         console.log(`Quiz Title: ${settings.title || "Quiz"}`);
         console.log(`Question Count: ${questions.length}`);
-        questions.forEach((q, qIdx) => {
-          console.log(`  Question ${qIdx + 1}: "${q.question}" (Score: ${q.score})`);
-          q.options.forEach((opt, oIdx) => {
-            console.log(`    Option ${oIdx + 1}: "${opt.text}" (Correct: ${opt.isCorrect})`);
-          });
-        });
         
-        // Add Quiz API URL
-        const ADD_QUIZ_URL = `/lesson/${lessonId}/add-quiz`;
+        // ← KIỂM TRA: EDIT hay ADD?
+        const isEditMode = !!contentModal.initialData?.id;
+        const quizId = contentModal.initialData?.id;
+        
+        console.log(`Mode: ${isEditMode ? 'EDIT' : 'ADD'}`);
+        if (isEditMode) console.log(`Quiz ID: ${quizId}`);
 
-        //formData.append("lessonId", lessonId.toString());
-        formData.append("title", "Quiz");
-        formData.append("desc", "Quiz description");
+        // ← API ENDPOINT
+        const QUIZ_API_URL = isEditMode 
+          ? `/quiz/${quizId}`  // ← SỬA: PUT /quiz/{quizId}
+          : `/lesson/${lessonId}/add-quiz`;
+        
+        console.log(`API URL: ${QUIZ_API_URL}`);
+
+        // ← BASIC INFO
+        formData.append("title", settings.title || "Quiz");
+        formData.append("precondition", settings.precondition || "None");
+        formData.append("desc", settings.description || "Quiz description");
         formData.append("timeLimitMinutes", settings.timeLimit.toString());
         formData.append("difficultyAvg", settings.difficulty);
         formData.append("score", settings.passScore.toString());
-        formData.append("precondition", "None");
 
+        // ← QUESTIONS
         questions.forEach((q, qIdx) => {
+          console.log(`Processing Question ${qIdx + 1}:`, q);
+          
           formData.append(`questions[${qIdx}].qText`, q.question);
+          
+          // ← IMAGE: Chỉ append nếu là File (upload mới)
           if (q.qImage && q.qImage instanceof File) {
             formData.append(`questions[${qIdx}].qImage`, q.qImage);
+            console.log(`  → Question ${qIdx + 1}: Uploading NEW image`);
+          } else if (typeof q.qImage === 'string' && q.qImage) {
+            console.log(`  → Question ${qIdx + 1}: Keeping existing image URL`);
           }
-          formData.append(`questions[${qIdx}].explanation`, "Exp");
-          formData.append(`questions[${qIdx}].level`, settings.difficulty);
+          
+          formData.append(`questions[${qIdx}].explanation`, q.explanation || "");
+          formData.append(`questions[${qIdx}].level`, q.level || settings.difficulty);
           formData.append(`questions[${qIdx}].score`, q.score.toString());
           formData.append(`questions[${qIdx}].order`, (qIdx + 1).toString());
 
+          // ← THÊM: question.id nếu EDIT (backend cần để update đúng question)
+          if (isEditMode && q.id && typeof q.id === 'number' && q.id < 1000000) {
+            formData.append(`questions[${qIdx}].id`, q.id.toString());
+            console.log(`  → Question ${qIdx + 1}: Existing ID = ${q.id}`);
+          } else {
+            console.log(`  → Question ${qIdx + 1}: NEW question (no ID)`);
+          }
+
+          // ← OPTIONS
           q.options.forEach((opt, oIdx) => {
+            console.log(`  Processing Option ${oIdx + 1}:`, opt);
+            
             formData.append(`questions[${qIdx}].mcqContents[${oIdx}].cText`, opt.text);
+            
+            // ← IMAGE: Chỉ append nếu là File
             if (opt.cImage && opt.cImage instanceof File) {
               formData.append(`questions[${qIdx}].mcqContents[${oIdx}].cImage`, opt.cImage);
-              console.log(`  Option ${oIdx} uploaded image: ${opt.cImage.name}`);
+              console.log(`    → Option ${oIdx + 1}: Uploading NEW image`);
+            } else if (typeof opt.cImage === 'string' && opt.cImage) {
+              console.log(`    → Option ${oIdx + 1}: Keeping existing image URL`);
             }
+            
             formData.append(`questions[${qIdx}].mcqContents[${oIdx}].isCorrect`, opt.isCorrect.toString());
+
+            // ← THÊM: option.id nếu EDIT (theo curl example của backend)
+            if (isEditMode && opt.id && typeof opt.id === 'number' && opt.id > 100) {
+              formData.append(`questions[${qIdx}].mcqContents[${oIdx}].id`, opt.id.toString());
+              console.log(`    → Option ${oIdx + 1}: Existing ID = ${opt.id}`);
+            } else {
+              console.log(`    → Option ${oIdx + 1}: NEW option (no ID)`);
+            }
           });
         });
 
+        // ← DEBUG: Log FormData
         console.log("=== FormData Content ===");
         for (let pair of formData.entries()) {
           if (pair[1] instanceof File) {
@@ -657,10 +776,19 @@ export default function EditCourse() {
           }
         }
 
-        await apiClient.put(ADD_QUIZ_URL, formData, {
+        // ← API CALL
+        await apiClient.put(QUIZ_API_URL, formData, {
           headers: { "Content-Type": undefined },
         });
-        alert("Quiz added successfully!");
+        
+        alert(isEditMode ? "Quiz updated successfully!" : "Quiz added successfully!");
+      }
+
+      // ← RELOAD DATA
+      fetchCourseData();
+      if (chapterId) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        fetchLessonDetails(lessonId, chapterId);
       }
 
       fetchCourseData();

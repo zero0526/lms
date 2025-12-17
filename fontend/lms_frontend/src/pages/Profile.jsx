@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
-  User, Phone, MapPin, Calendar, Edit2, Save, X, Loader2, Lock, Key
+  User, Phone, MapPin, Calendar, Edit2, Save, X, Loader2, Lock, Key, Camera
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
@@ -22,6 +22,24 @@ export default function Profile() {
     newPassword: ""
   });
   const [passwordLoading, setPasswordLoading] = useState(false);
+
+  // HELPER: CONVERT GOOGLE DRIVE LINK
+  const convertDriveLink = (url) => {
+    if (!url || typeof url !== 'string') return "";
+    // Nếu là blob url (ảnh vừa upload từ máy tính để preview) thì hiển thị luôn
+    if (!url.includes("drive.google.com")) return url;
+
+    try {
+      // Tìm ID file trong link drive
+      const idMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+      if (idMatch && idMatch[1]) {
+        return `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w1000`;
+      }
+      return url; 
+    } catch (e) {
+      return url;
+    }
+  };
 
   // HELPER: FORMAT DATE
   const formatDate = (dateArray) => {
@@ -67,16 +85,19 @@ export default function Profile() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // Kích hoạt input file ẩn
   const handleCameraClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
 
+  // Xử lý khi chọn file ảnh
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setSelectedFile(file);
+      // Tạo URL preview tạm thời (blob:...)
       const previewUrl = URL.createObjectURL(file);
       setFormData(prev => ({ ...prev, pictureUrl: previewUrl }));
     }
@@ -102,9 +123,17 @@ export default function Profile() {
       dataToSend.append("bio", formData.bio || "");
 
       if (selectedFile) {
-        dataToSend.append("file", selectedFile); 
-      } else {
-        dataToSend.append("pictureUrl", formData.pictureUrl || ""); 
+        dataToSend.append("picture", selectedFile); 
+      }
+
+      // ← LOG: Check FormData
+      console.log("=== UPDATE PROFILE ===");
+      for (let pair of dataToSend.entries()) {
+        if (pair[1] instanceof File) {
+          console.log(`${pair[0]}: [File: ${pair[1].name}]`);
+        } else {
+          console.log(`${pair[0]}: ${pair[1]}`);
+        }
       }
 
       const res = await apiClient.put(`/user/update/info/${currentUserId}`, dataToSend, {
@@ -113,14 +142,23 @@ export default function Profile() {
         }
       });
 
+      // ← LOG: Check Response
+      console.log("=== API RESPONSE ===");
+      console.log("Status:", res.status);
+      console.log("Data:", res.data);
+      
       await new Promise(resolve => setTimeout(resolve, 800));
       
       if (res.status === 200) {
+        // ← KIỂM TRA: Backend có trả về pictureUrl mới không?
         if (res.data && res.data.data) {
+          console.log("New pictureUrl from backend:", res.data.data.pictureUrl);
+          
           setProfileData(res.data.data);
           setFormData(res.data.data);
         } else {
-            setProfileData({...formData});
+          console.warn("Backend didn't return updated data, using local formData");
+          setProfileData({...formData});
         }
         
         setIsEditing(false); 
@@ -130,6 +168,7 @@ export default function Profile() {
     } catch (error) {
       console.error("Failed to update profile:", error);
       if (error.response) {
+        console.error("Error Response:", error.response.data);
         alert(`Error: ${error.response.data.message || "Update failed"}`);
       } else {
         alert("An unexpected error occurred during update.");
@@ -178,7 +217,6 @@ export default function Profile() {
     } catch (error) {
       console.error("Failed to change password:", error);
       if (error.response) {
-        // Backend often returns meaningful error messages (e.g., "Wrong password")
         alert(`Error: ${error.response.data.message || error.response.data || "Failed to update password"}`);
       } else {
         alert("An unexpected error occurred. Please try again.");
@@ -230,11 +268,41 @@ export default function Profile() {
             <div className="relative group">
               <div className="w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-white shadow-md bg-gray-200 flex items-center justify-center text-4xl font-bold text-gray-400 overflow-hidden relative">
                 {formData.pictureUrl ? (
-                  <img src={formData.pictureUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  // ÁP DỤNG HÀM convertDriveLink CHO SRC
+                  <img 
+                    src={convertDriveLink(formData.pictureUrl)} 
+                    alt="Avatar" 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                         e.target.onerror = null; 
+                         e.target.src = "https://via.placeholder.com/150?text=Error";
+                    }}
+                  />
                 ) : (
                   <span className="text-[#00b6b6]">{getAvatarLabel(formData.fullName)}</span>
                 )}
               </div>
+              
+              {/* Nút Upload (Chỉ hiện khi đang Edit) */}
+              {isEditing && (
+                <>
+                    <input 
+                        type="file" 
+                        ref={fileInputRef} 
+                        onChange={handleFileChange} 
+                        className="hidden" 
+                        accept="image/png, image/jpeg, image/jpg"
+                    />
+                    <button 
+                        type="button"
+                        onClick={handleCameraClick}
+                        className="absolute bottom-0 right-0 bg-gray-800 text-white p-2 rounded-full hover:bg-black transition shadow-sm cursor-pointer z-10" 
+                        title="Upload new photo"
+                    >
+                        <Camera size={16} />
+                    </button>
+                </>
+              )}
             </div>
 
             {/* Name & Role */}
@@ -394,14 +462,13 @@ export default function Profile() {
               </div>
             </div>
             
-            {/* CHANGE PASSWORD SECTION (Replaced "Ready to learn") */}
+            {/* CHANGE PASSWORD SECTION */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 relative">
                <div className="flex justify-between items-start mb-4">
                  <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                    <Lock size={20} className="text-[#00b6b6]" /> Security
                  </h3>
                  
-                 {/* Save Password Button - Top Right */}
                  <button 
                    onClick={handlePasswordSave}
                    disabled={isPasswordSaveDisabled}

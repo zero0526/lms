@@ -128,7 +128,13 @@ export const LessonItem = ({
                 color="text-purple-500"
                 title={quiz.titleQuiz || `Quiz ${idx + 1}`}
                 subtitle={`${quiz.numOfQuestion} Questions • ${quiz.timeLimit} mins • ${quiz.level}`}
-                onEdit={(e) => { e.stopPropagation(); alert('Edit Quiz feature coming soon'); }}
+                onEdit={(e) => {
+                  e.stopPropagation();
+                  onEditContent(lesson.id, "quiz", {
+                    quizId: quiz.quizId,
+                    title: quiz.titleQuiz,
+                  });
+                }}
                 onDelete={(e) => { e.stopPropagation(); onDeleteContent(lesson.id, quiz.quizId); }}
             />
           ))}
