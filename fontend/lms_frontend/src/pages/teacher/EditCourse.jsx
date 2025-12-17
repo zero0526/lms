@@ -617,10 +617,10 @@ export default function EditCourse() {
           });
         });
         
-        // Cần confirm URL này với BE, hiện tại dùng theo giả định sửa ở bước trước
+        // Add Quiz API URL
         const ADD_QUIZ_URL = `/lesson/${lessonId}/add-quiz`;
 
-        formData.append("lessonId", lessonId.toString());
+        //formData.append("lessonId", lessonId.toString());
         formData.append("title", "Quiz");
         formData.append("desc", "Quiz description");
         formData.append("timeLimitMinutes", settings.timeLimit.toString());
@@ -630,8 +630,8 @@ export default function EditCourse() {
 
         questions.forEach((q, qIdx) => {
           formData.append(`questions[${qIdx}].qText`, q.question);
-          if (q.image && q.image instanceof File) {
-            formData.append(`questions[${qIdx}].qImage`, q.image);
+          if (q.qImage && q.qImage instanceof File) {
+            formData.append(`questions[${qIdx}].qImage`, q.qImage);
           }
           formData.append(`questions[${qIdx}].explanation`, "Exp");
           formData.append(`questions[${qIdx}].level`, settings.difficulty);
@@ -640,12 +640,22 @@ export default function EditCourse() {
 
           q.options.forEach((opt, oIdx) => {
             formData.append(`questions[${qIdx}].mcqContents[${oIdx}].cText`, opt.text);
-            if (opt.image && opt.image instanceof File) {
-              formData.append(`questions[${qIdx}].mcqContents[${oIdx}].cImage`, opt.image);
+            if (opt.cImage && opt.cImage instanceof File) {
+              formData.append(`questions[${qIdx}].mcqContents[${oIdx}].cImage`, opt.cImage);
+              console.log(`  Option ${oIdx} uploaded image: ${opt.cImage.name}`);
             }
             formData.append(`questions[${qIdx}].mcqContents[${oIdx}].isCorrect`, opt.isCorrect.toString());
           });
         });
+
+        console.log("=== FormData Content ===");
+        for (let pair of formData.entries()) {
+          if (pair[1] instanceof File) {
+            console.log(`${pair[0]}: [File: ${pair[1].name}, Size: ${pair[1].size}]`);
+          } else {
+            console.log(`${pair[0]}: ${pair[1]}`);
+          }
+        }
 
         await apiClient.put(ADD_QUIZ_URL, formData, {
           headers: { "Content-Type": undefined },
