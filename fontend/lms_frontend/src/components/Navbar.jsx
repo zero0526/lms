@@ -1,42 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { Search, Bell, User, LogOut } from "lucide-react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useUser } from "../contexts/UserContext";
+import { convertDriveLink, getAvatarLabel } from "../api/user/userUtils";
 
 export default function Navbar() {
   const [searchTerm, setSearchTerm] = useState("");
-  const [user, setUser] = useState(null); 
+  const { user } = useUser();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   const dropdownRef = useRef(null); 
   const navigate = useNavigate();
   const location = useLocation();
-
-  // --- LOGIC AUTHENTICATION ---
-  useEffect(() => {
-    const checkLoginStatus = () => {
-      let token = localStorage.getItem("accessToken");
-      let storedUser = localStorage.getItem("user");
-
-      if (!token) {
-        token = sessionStorage.getItem("accessToken");
-        storedUser = sessionStorage.getItem("user");
-      }
-
-      if (token && storedUser) {
-        try {
-          const parsedUser = JSON.parse(storedUser);
-          setUser(parsedUser);
-        } catch (error) {
-          console.error("Lỗi parse user data:", error);
-          setUser(null);
-        }
-      } else {
-        setUser(null);
-      }
-    };
-
-    checkLoginStatus();
-  }, [location]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -65,19 +40,14 @@ export default function Navbar() {
     sessionStorage.removeItem("accessToken");
     sessionStorage.removeItem("user");
     
-    setUser(null);
     setIsDropdownOpen(false);
-    
     navigate("/login");
+    window.location.reload();
   };
 
   const handleProfileClick = () => {
     setIsDropdownOpen(false);
     navigate("/profile");
-  };
-
-  const getAvatarLabel = (name) => {
-    return name ? name.charAt(0).toUpperCase() : "U";
   };
 
   const getCoursesPath = () => {
@@ -89,6 +59,10 @@ export default function Navbar() {
     }
     return "/login";
   };
+
+  const avatarUrl = user?.avatar || user?.pictureUrl;
+  console.log("Navbar avatarUrl:", avatarUrl);
+  console.log("User object:", user);
 
   return (
     <nav className="flex justify-between items-center px-4 md:px-10 py-4 bg-[#00b6b6] text-white fixed top-0 w-full z-50 shadow-md">
@@ -136,14 +110,19 @@ export default function Navbar() {
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="w-10 h-10 rounded-full bg-white text-[#00b6b6] flex items-center justify-center font-bold text-lg overflow-hidden border-2 border-white shadow-sm hover:ring-2 hover:ring-yellow-200 transition cursor-pointer select-none"
               >
-                {user.avatar ? (
+                {avatarUrl ? (
                   <img 
-                    src={user.avatar} 
-                    alt={user.userName} 
-                    className="w-full h-full object-cover" 
+                    src={convertDriveLink(avatarUrl)} 
+                    alt={user.fullName || user.userName} 
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.style.display = "none";
+                      e.target.parentElement.innerHTML = `<span class="text-[#00b6b6]">${getAvatarLabel(user.fullName || user.userName)}</span>`;
+                    }} 
                   />
                 ) : (
-                  <span>{getAvatarLabel(user.userName)}</span>
+                  <span>{getAvatarLabel(user.fullName || user.userName)}</span>
                 )}
               </div>
 
@@ -153,8 +132,8 @@ export default function Navbar() {
                   <div className="absolute -top-2 right-3 w-4 h-4 bg-white transform rotate-45 border-l border-t border-gray-100"></div>
 
                   <div className="px-4 py-2 border-b border-gray-100 mb-1">
-                      <p className="text-sm font-bold text-gray-800 truncate" title={user.userName}>
-                        {user.userName || "User"}
+                      <p className="text-sm font-bold text-gray-800 truncate" title={user.fullName || user.userName}>
+                        {user.fullName || user.userName || "User"}
                       </p>
                       <p className="text-xs text-gray-500 font-medium text-teal-600">
                         {user.role === "ROLE_STUDENT" ? "Student" : user.role === "ROLE_TEACHER" ? "Teacher" : "Admin"}

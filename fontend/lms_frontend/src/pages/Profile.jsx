@@ -4,9 +4,20 @@ import {
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-import apiClient from "../api/axiosConfig";
+import { useUser } from "../contexts/UserContext";
+
+// Api functions
+import { fetchUserProfile, updateUserProfile } from "../api/user/profileApi";
+import { changeUserPassword } from "../api/user/authApi";
+import { 
+  convertDriveLink, 
+  formatDate, 
+  getAvatarLabel, 
+  getCurrentUserId 
+} from "../api/user/userUtils";
 
 export default function Profile() {
+  const { user: contextUser, updateUser } = useUser();
   const [loading, setLoading] = useState(true);
   
   // Profile Update State
@@ -23,52 +34,20 @@ export default function Profile() {
   });
   const [passwordLoading, setPasswordLoading] = useState(false);
 
-  // HELPER: CONVERT GOOGLE DRIVE LINK
-  const convertDriveLink = (url) => {
-    if (!url || typeof url !== 'string') return "";
-    // Nếu là blob url (ảnh vừa upload từ máy tính để preview) thì hiển thị luôn
-    if (!url.includes("drive.google.com")) return url;
-
-    try {
-      // Tìm ID file trong link drive
-      const idMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
-      if (idMatch && idMatch[1]) {
-        return `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w1000`;
-      }
-      return url; 
-    } catch (e) {
-      return url;
-    }
-  };
-
-  // HELPER: FORMAT DATE
-  const formatDate = (dateArray) => {
-    if (!dateArray || !Array.isArray(dateArray)) return "N/A";
-    const [year, month, day, hour, minute] = dateArray;
-    return new Date(year, month - 1, day, hour, minute).toLocaleString('vi-VN', {
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit'
-    });
-  };
-
   // FETCH DATA
   useEffect(() => {
-    const fetchProfile = async () => {
+    const loadProfile = async () => {
       try {
-        const storedUser = JSON.parse(localStorage.getItem("user") || sessionStorage.getItem("user"));
+        const userId = getCurrentUserId();
         
-        if (!storedUser || !storedUser.userId) {
-            setLoading(false);
-            return;
+        if (!userId) {
+          setLoading(false);
+          return;
         }
 
-        const response = await apiClient.get(`/user/info/${storedUser.userId}`);
-        const result = response.data;
-
-        if (result.status === 200) {
-          setProfileData(result.data);
-          setFormData(result.data);
-        }
+        const profile = await fetchUserProfile(userId);
+        setProfileData(profile);
+        setFormData(profile);
       } catch (error) {
         console.error("Failed to fetch profile:", error);
       } finally {
@@ -76,7 +55,7 @@ export default function Profile() {
       }
     };
 
-    fetchProfile();
+    loadProfile();
   }, []);
 
   // HANDLERS - PROFILE
@@ -85,14 +64,12 @@ export default function Profile() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Kích hoạt input file ẩn
   const handleCameraClick = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
 
-  // Xử lý khi chọn file ảnh
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -106,8 +83,7 @@ export default function Profile() {
   const handleSaveProfile = async () => {
     try {
       setLoading(true);
-      const storedUser = JSON.parse(localStorage.getItem("user") || sessionStorage.getItem("user"));
-      const currentUserId = storedUser?.userId || profileData?.userId;
+      const currentUserId = getCurrentUserId() || profileData?.userId;
 
       if (!currentUserId) {
         alert("User ID not found. Please verify login.");
@@ -115,64 +91,32 @@ export default function Profile() {
         return;
       }
 
-      const dataToSend = new FormData();
-      dataToSend.append("fullName", formData.fullName || "");
-      dataToSend.append("phoneNumber", formData.phoneNumber || "");
-      dataToSend.append("gender", formData.gender || "");
-      dataToSend.append("address", formData.address || "");
-      dataToSend.append("bio", formData.bio || "");
+      // ← GỌI API UPDATE PROFILE
+      const updatedProfile = await updateUserProfile(
+        currentUserId, 
+        formData, 
+        selectedFile
+      );
 
-      if (selectedFile) {
-        dataToSend.append("picture", selectedFile); 
-      }
+      setProfileData(updatedProfile);
+      setFormData(updatedProfile);
+      setIsEditing(false); 
+      setSelectedFile(null);
 
-      // ← LOG: Check FormData
-      console.log("=== UPDATE PROFILE ===");
-      for (let pair of dataToSend.entries()) {
-        if (pair[1] instanceof File) {
-          console.log(`${pair[0]}: [File: ${pair[1].name}]`);
-        } else {
-          console.log(`${pair[0]}: ${pair[1]}`);
-        }
-      }
-
-      const res = await apiClient.put(`/user/update/info/${currentUserId}`, dataToSend, {
-        headers: {
-            "Content-Type": "multipart/form-data",
-        }
+      updateUser({
+        ...contextUser,
+        fullName: updatedProfile.fullName,
+        pictureUrl: updatedProfile.pictureUrl,
+        phoneNumber: updatedProfile.phoneNumber,
+        gender: updatedProfile.gender,
+        address: updatedProfile.address,
+        bio: updatedProfile.bio,
       });
-
-      // ← LOG: Check Response
-      console.log("=== API RESPONSE ===");
-      console.log("Status:", res.status);
-      console.log("Data:", res.data);
       
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      if (res.status === 200) {
-        // ← KIỂM TRA: Backend có trả về pictureUrl mới không?
-        if (res.data && res.data.data) {
-          console.log("New pictureUrl from backend:", res.data.data.pictureUrl);
-          
-          setProfileData(res.data.data);
-          setFormData(res.data.data);
-        } else {
-          console.warn("Backend didn't return updated data, using local formData");
-          setProfileData({...formData});
-        }
-        
-        setIsEditing(false); 
-        setSelectedFile(null);
-        alert("Profile updated successfully!");
-      }
+      alert("Profile updated successfully!");
     } catch (error) {
       console.error("Failed to update profile:", error);
-      if (error.response) {
-        console.error("Error Response:", error.response.data);
-        alert(`Error: ${error.response.data.message || "Update failed"}`);
-      } else {
-        alert("An unexpected error occurred during update.");
-      }
+      alert(`Error: ${error.message || "Update failed"}`);
     } finally {
       setLoading(false);
     }
@@ -195,42 +139,31 @@ export default function Profile() {
 
     try {
       setPasswordLoading(true);
-      const storedUser = JSON.parse(localStorage.getItem("user") || sessionStorage.getItem("user"));
-      const currentUserId = storedUser?.userId || profileData?.userId;
+      const currentUserId = getCurrentUserId() || profileData?.userId;
 
       if (!currentUserId) {
         alert("User ID not found.");
         return;
       }
 
-      const payload = {
-        currentPassword: passwordForm.currentPassword,
-        newPassword: passwordForm.newPassword
-      };
+      // ← GỌI API CHANGE PASSWORD
+      await changeUserPassword(
+        currentUserId, 
+        passwordForm.currentPassword, 
+        passwordForm.newPassword
+      );
 
-      const res = await apiClient.post(`/user/update/password/${currentUserId}`, payload);
-
-      if (res.status === 200) {
-        alert("Password updated successfully!");
-        setPasswordForm({ currentPassword: "", newPassword: "" }); // Reset form
-      }
+      alert("Password updated successfully!");
+      setPasswordForm({ currentPassword: "", newPassword: "" }); // Reset form
     } catch (error) {
       console.error("Failed to change password:", error);
-      if (error.response) {
-        alert(`Error: ${error.response.data.message || error.response.data || "Failed to update password"}`);
-      } else {
-        alert("An unexpected error occurred. Please try again.");
-      }
+      alert(`Error: ${error.message || "Failed to update password"}`);
     } finally {
       setPasswordLoading(false);
     }
   };
 
   const isPasswordSaveDisabled = !passwordForm.currentPassword || !passwordForm.newPassword || passwordLoading;
-
-  const getAvatarLabel = (name) => {
-    return name ? name.charAt(0).toUpperCase() : "U";
-  };
 
   if (loading) {
     return (
@@ -268,14 +201,13 @@ export default function Profile() {
             <div className="relative group">
               <div className="w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-white shadow-md bg-gray-200 flex items-center justify-center text-4xl font-bold text-gray-400 overflow-hidden relative">
                 {formData.pictureUrl ? (
-                  // ÁP DỤNG HÀM convertDriveLink CHO SRC
                   <img 
                     src={convertDriveLink(formData.pictureUrl)} 
                     alt="Avatar" 
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                         e.target.onerror = null; 
-                         e.target.src = "https://via.placeholder.com/150?text=Error";
+                      e.target.onerror = null; 
+                      e.target.src = "https://via.placeholder.com/150?text=Error";
                     }}
                   />
                 ) : (
@@ -286,21 +218,21 @@ export default function Profile() {
               {/* Nút Upload (Chỉ hiện khi đang Edit) */}
               {isEditing && (
                 <>
-                    <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handleFileChange} 
-                        className="hidden" 
-                        accept="image/png, image/jpeg, image/jpg"
-                    />
-                    <button 
-                        type="button"
-                        onClick={handleCameraClick}
-                        className="absolute bottom-0 right-0 bg-gray-800 text-white p-2 rounded-full hover:bg-black transition shadow-sm cursor-pointer z-10" 
-                        title="Upload new photo"
-                    >
-                        <Camera size={16} />
-                    </button>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    onChange={handleFileChange} 
+                    className="hidden" 
+                    accept="image/png, image/jpeg, image/jpg"
+                  />
+                  <button 
+                    type="button"
+                    onClick={handleCameraClick}
+                    className="absolute bottom-0 right-0 bg-gray-800 text-white p-2 rounded-full hover:bg-black transition shadow-sm cursor-pointer z-10" 
+                    title="Upload new photo"
+                  >
+                    <Camera size={16} />
+                  </button>
                 </>
               )}
             </div>
@@ -308,16 +240,16 @@ export default function Profile() {
             {/* Name & Role */}
             <div className="text-center md:text-left flex-1 mb-2 w-full md:w-auto">
               {isEditing ? (
-                 <div className="flex flex-col gap-1 w-full md:max-w-md">
-                    <label className="text-xs font-bold text-gray-500 uppercase">Full Name</label>
-                    <input 
-                      type="text" 
-                      name="fullName"
-                      value={formData.fullName || ""}
-                      onChange={handleInputChange}
-                      className="text-2xl font-bold text-gray-800 border-b-2 border-[#00b6b6] focus:outline-none bg-transparent px-1 w-full"
-                    />
-                 </div>
+                <div className="flex flex-col gap-1 w-full md:max-w-md">
+                  <label className="text-xs font-bold text-gray-500 uppercase">Full Name</label>
+                  <input 
+                    type="text" 
+                    name="fullName"
+                    value={formData.fullName || ""}
+                    onChange={handleInputChange}
+                    className="text-2xl font-bold text-gray-800 border-b-2 border-[#00b6b6] focus:outline-none bg-transparent px-1 w-full"
+                  />
+                </div>
               ) : (
                 <h1 className="text-3xl font-bold text-gray-800">{profileData.fullName}</h1>
               )}
@@ -464,65 +396,63 @@ export default function Profile() {
             
             {/* CHANGE PASSWORD SECTION */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 relative">
-               <div className="flex justify-between items-start mb-4">
-                 <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                   <Lock size={20} className="text-[#00b6b6]" /> Security
-                 </h3>
-                 
-                 <button 
-                   onClick={handlePasswordSave}
-                   disabled={isPasswordSaveDisabled}
-                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
-                     isPasswordSaveDisabled 
-                       ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
-                       : "bg-[#00b6b6] text-white hover:bg-[#009e9e] shadow-sm cursor-pointer"
-                   }`}
-                   title={isPasswordSaveDisabled ? "Enter both fields to save" : "Save new password"}
-                 >
-                    {passwordLoading ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                    Save
-                 </button>
-               </div>
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <Lock size={20} className="text-[#00b6b6]" /> Security
+                </h3>
+                
+                <button 
+                  onClick={handlePasswordSave}
+                  disabled={isPasswordSaveDisabled}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-bold transition-all ${
+                    isPasswordSaveDisabled 
+                      ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
+                      : "bg-[#00b6b6] text-white hover:bg-[#009e9e] shadow-sm cursor-pointer"
+                  }`}
+                  title={isPasswordSaveDisabled ? "Enter both fields to save" : "Save new password"}
+                >
+                  {passwordLoading ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                  Save
+                </button>
+              </div>
 
-               <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Current Password</label>
-                    <div className="relative">
-                      <div className="absolute left-3 top-2.5 text-gray-400">
-                        <Key size={16} />
-                      </div>
-                      <input 
-                        type="password"
-                        name="currentPassword"
-                        value={passwordForm.currentPassword}
-                        onChange={handlePasswordInput}
-                        placeholder="••••••••"
-                        className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#00b6b6] focus:ring-1 focus:ring-[#00b6b6] outline-none transition-colors placeholder:text-gray-400"
-                      />
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">Current Password</label>
+                  <div className="relative">
+                    <div className="absolute left-3 top-2.5 text-gray-400">
+                      <Key size={16} />
                     </div>
+                    <input 
+                      type="password"
+                      name="currentPassword"
+                      value={passwordForm.currentPassword}
+                      onChange={handlePasswordInput}
+                      placeholder="••••••••"
+                      className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#00b6b6] focus:ring-1 focus:ring-[#00b6b6] outline-none transition-colors placeholder:text-gray-400"
+                    />
                   </div>
+                </div>
 
-                  <div>
-                    <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">New Password</label>
-                    <div className="relative">
-                      <div className="absolute left-3 top-2.5 text-gray-400">
-                        <Lock size={16} />
-                      </div>
-                      <input 
-                        type="password"
-                        name="newPassword"
-                        value={passwordForm.newPassword}
-                        onChange={handlePasswordInput}
-                        placeholder="••••••••"
-                        className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#00b6b6] focus:ring-1 focus:ring-[#00b6b6] outline-none transition-colors placeholder:text-gray-400"
-                      />
+                <div>
+                  <label className="text-xs font-bold text-gray-500 uppercase mb-1 block">New Password</label>
+                  <div className="relative">
+                    <div className="absolute left-3 top-2.5 text-gray-400">
+                      <Lock size={16} />
                     </div>
+                    <input 
+                      type="password"
+                      name="newPassword"
+                      value={passwordForm.newPassword}
+                      onChange={handlePasswordInput}
+                      placeholder="••••••••"
+                      className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:border-[#00b6b6] focus:ring-1 focus:ring-[#00b6b6] outline-none transition-colors placeholder:text-gray-400"
+                    />
                   </div>
-               </div>
+                </div>
+              </div>
             </div>
-
           </div>
-
         </div>
       </main>
       
