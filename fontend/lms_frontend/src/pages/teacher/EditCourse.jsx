@@ -7,7 +7,19 @@ import Footer from "../../components/Footer";
 import SimpleModal from "../../components/teachers/SimpleModal";
 import ContentModal from "../../components/teachers/ContentModal";
 import { ChapterItem } from "../../components/teachers/CourseListComponents";
-import apiClient from "../../api/axiosConfig";
+
+// Api functions
+import { fetchCourseOutline, addChapter } from "../../api/teacher/courseApi";
+import { deleteChapter as deleteChapterApi, updateChapter } from "../../api/teacher/chapterApi";
+import { 
+  fetchLessonDetails, 
+  addLesson, 
+  updateLesson, 
+  deleteLesson as deleteLessonApi,
+  updateLessonVideo,
+  updateLessonDoc
+} from "../../api/teacher/lessonApi";
+import { fetchQuizDetails, addQuiz, updateQuiz } from "../../api/teacher/quizApi";
 
 export default function EditCourse() {
   const navigate = useNavigate();
@@ -17,8 +29,6 @@ export default function EditCourse() {
 
   // --- STATE DỮ LIỆU ---
   const [chapters, setChapters] = useState([]);
-
-  // --- STATE QUẢN LÝ UI ---
   const [expandedChapters, setExpandedChapters] = useState({});
   const [expandedLessons, setExpandedLessons] = useState({});
 
@@ -59,28 +69,11 @@ export default function EditCourse() {
     }
 
     try {
-      console.log(`Fetching outline for userId: ${userId}, courseId: ${courseId}`);
-      const res = await apiClient.get(`/course/outline`, {
-        params: { userId, courseId },
-      });
-
-      console.log("Course Outline Response (Raw):", res.data);
-
-      const rawChapters = res.data.data || [];
-
-      // ← LOG ALL CHAPTER & LESSON IDS
-      console.log("=== COURSE STRUCTURE ===");
-      rawChapters.forEach((ch, chIdx) => {
-        console.log(`Chapter ${chIdx + 1}: ID=${ch.chapterId}, Title="${ch.title}", Order=${ch.order}`);
-        (ch.lessons || []).forEach((ls, lsIdx) => {
-          console.log(`  └─ Lesson ${lsIdx + 1}: ID=${ls.lessonId}, Title="${ls.title}", Order=${ls.order}`);
-        });
-      });
+      const rawChapters = await fetchCourseOutline(userId, courseId);
 
       // ← CẬP NHẬT CHAPTERS VỚI CURRENT STATE
       setChapters((prevChapters) => {
         return rawChapters.map((ch) => {
-          // TÌM CHAPTER CŨ
           const oldChapter = prevChapters.find(oldCh => oldCh.id === ch.chapterId);
           
           return {
@@ -88,7 +81,6 @@ export default function EditCourse() {
             title: ch.title,
             order: ch.order,
             lessons: (ch.lessons || []).map((ls) => {
-              // TÌM LESSON CŨ ĐỂ PRESERVE DETAILS
               const oldLesson = oldChapter?.lessons.find(oldL => oldL.id === ls.lessonId);
               
               return {
@@ -96,7 +88,6 @@ export default function EditCourse() {
                 title: ls.title,
                 order: ls.order,
                 duration: ls.duration,
-                // ← PRESERVE: isDetailsLoaded, urlVideo, docs, quizzes
                 isDetailsLoaded: oldLesson?.isDetailsLoaded || false,
                 urlVideo: oldLesson?.urlVideo || null,
                 docs: oldLesson?.docs || null,
@@ -114,18 +105,15 @@ export default function EditCourse() {
     }
   }, [courseId]);
 
+  // ← AUTO-FETCH LESSON DETAILS when expanded
   useEffect(() => {
-    // ← Chỉ chạy khi chapters đã load xong
     if (chapters.length === 0) return;
 
-    // ← Duyệt qua tất cả lessons đang expanded
     Object.keys(expandedLessons).forEach((lessonIdStr) => {
       const lessonId = parseInt(lessonIdStr);
       const isExpanded = expandedLessons[lessonId];
 
-      // ← Nếu lesson đang expanded
       if (isExpanded) {
-        // ← Tìm chapter chứa lesson này
         let chapterId = null;
         let lesson = null;
 
@@ -140,7 +128,7 @@ export default function EditCourse() {
 
         if (lesson && !lesson.isDetailsLoaded) {
           console.log(`Auto-fetching details for lesson ${lessonId} (chapter ${chapterId})`);
-          fetchLessonDetails(lessonId, chapterId);
+          handleFetchLessonDetails(lessonId, chapterId);
         }
       }
     });
@@ -150,75 +138,13 @@ export default function EditCourse() {
     fetchCourseData();
   }, [fetchCourseData]);
 
-  // --- API: FETCH LESSON DETAILS ---
-  const fetchLessonDetails = async (lessonId, chapterId) => {
+  // --- FETCH LESSON DETAILS ---
+  const handleFetchLessonDetails = async (lessonId, chapterId) => {
     const userId = getUserId();
     if (!userId) return;
 
     try {
-      console.log(`Fetching details for lessonID: ${lessonId} (in chapterID: ${chapterId})...`);
-      const res = await apiClient.get(`/lesson/details`, {
-        params: { userId, lessonId },
-      });
-
-      const details = res.data.data;
-      
-      // --- LOG DEBUG: CHI TIẾT NỘI DUNG & ID ---
-      console.log(`=== LESSON DETAILS: ${lessonId} ===`);
-      console.log(`Lesson ID: ${lessonId}`);
-      console.log(`Chapter ID: ${chapterId}`);
-      if (details) {
-          console.log(`Title: "${details.title}"`);
-          console.log(`Duration: ${details.duration}`);
-          
-          // ← LOG VIDEO DETAILS
-          if (details.urlVideo) {
-              console.log(`=== VIDEO ===`);
-              console.log(`Video URL: ${details.urlVideo}`);
-              if (typeof details.urlVideo === 'object') {
-                  console.log(`Video ID: ${details.urlVideo.videoId || details.urlVideo.id || "N/A"}`);
-                  console.log(`Video Title: ${details.urlVideo.title || "N/A"}`);
-                  console.log(`Video Duration: ${details.urlVideo.duration || "N/A"}`);
-                  console.log(`Full Video Object:`, details.urlVideo);
-              }
-          } else {
-              console.log(`Video: NULL`);
-          }
-          
-          // ← LOG DOCS DETAILS
-          if (details.docs) {
-              console.log(`=== DOCUMENTS ===`);
-              if (Array.isArray(details.docs)) {
-                  console.log(`Document Count: ${details.docs.length}`);
-                  details.docs.forEach((doc, dIdx) => {
-                      console.log(`  Doc ${dIdx + 1}:`);
-                      console.log(`    ID: ${doc.id || doc.docId || doc.materialId || "N/A"}`);
-                      console.log(`    Title: ${doc.title || "N/A"}`);
-                      console.log(`    URL: ${doc.url || doc.docUrl || "N/A"}`);
-                      console.log(`    Full Doc Object:`, doc);
-                  });
-              } else if (typeof details.docs === 'object') {
-                  console.log(`Document (Single Object):`);
-                  console.log(`  ID: ${details.docs.id || details.docs.docId || details.docs.materialId || "N/A"}`);
-                  console.log(`  Title: ${details.docs.title || "N/A"}`);
-                  console.log(`  URL: ${details.docs.url || details.docs.docUrl || "N/A"}`);
-                  console.log(`  Full Doc Object:`, details.docs);
-              } else {
-                  console.log(`Docs: ${details.docs}`);
-              }
-          } else {
-              console.log(`Documents: NULL`);
-          }
-          
-          if (details.quizzes && details.quizzes.length > 0) {
-              console.log(`=== QUIZZES (${details.quizzes.length}) ===`);
-              details.quizzes.forEach((q, qIdx) => {
-                console.log(`  Quiz ${qIdx + 1}: ID=${q.quizId}, Title="${q.titleQuiz}"`);
-              });
-          } else {
-              console.log(`Quizzes: Empty`);
-          }
-      }
+      const details = await fetchLessonDetails(userId, lessonId);
 
       if (details) {
         setChapters((prev) =>
@@ -249,64 +175,6 @@ export default function EditCourse() {
     }
   };
 
-  // --- API: FETCH QUIZ DETAILS ---
-  const fetchQuizDetails = async (quizId) => {
-    try {
-      console.log(`=== FETCHING QUIZ DETAILS ===`);
-      console.log(`Quiz ID: ${quizId}`);
-      
-      const res = await apiClient.get(`/quiz/${quizId}`);
-      
-      console.log("Quiz Details Response:", res.data);
-      
-      const quizData = res.data.data;
-      
-      if (quizData) {
-        console.log(`Quiz Title: ${quizData.title}`);
-        console.log(`Question Count: ${quizData.questions.length}`);
-        
-        // ← Transform backend data sang format của ContentModal
-        const transformedData = {
-          id: quizData.id,
-          title: quizData.title,
-          description: quizData.desc,
-          precondition: quizData.precondition,
-          timeLimit: quizData.timeLimitMinutes,
-          difficulty: quizData.difficultyAvg,
-          passScore: quizData.score,
-          questions: quizData.questions.map(q => ({
-            id: q.id,
-            question: q.qText,
-            qImage: q.qImage, // ← URL string từ backend
-            explanation: q.explanation,
-            level: q.level,
-            score: q.score,
-            order: q.order,
-            options: q.mcqContents.map(opt => ({
-              id: opt.id,
-              text: opt.cText,
-              cImage: opt.cImage, // ← URL string từ backend
-              isCorrect: opt.isCorrect,
-            })),
-          })),
-        };
-        
-        console.log("Transformed Quiz Data:", transformedData);
-        
-        return transformedData;
-      }
-      
-      return null;
-    } catch (error) {
-      console.error("Error fetching quiz details:", error);
-      if (error.response) {
-        console.error("Response Status:", error.response.status);
-        console.error("Response Data:", error.response.data);
-      }
-      return null;
-    }
-  };
-
   // --- UI HANDLERS ---
   const toggleChapter = (id) => {
     setExpandedChapters((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -320,7 +188,7 @@ export default function EditCourse() {
       const chapter = chapters.find((c) => c.id === chapterId);
       const lesson = chapter?.lessons.find((l) => l.id === lessonId);
       if (lesson && !lesson.isDetailsLoaded) {
-        fetchLessonDetails(lessonId, chapterId);
+        handleFetchLessonDetails(lessonId, chapterId);
       }
     }
   };
@@ -372,7 +240,6 @@ export default function EditCourse() {
   };
 
   const openAddContent = (lessonId) => {
-    // ← Tìm chapterId từ lessonId
     let chapterId = null;
     chapters.forEach(ch => {
       if (ch.lessons.some(l => l.id === lessonId)) {
@@ -388,10 +255,10 @@ export default function EditCourse() {
       isOpen: true,
       type: "add",
       initialData: null,
-      chapterId: chapterId,  // ← Tìm được từ lessonId
+      chapterId: chapterId,
       lessonId: lessonId,
       contentId: null,
-      contentType: null,  // ← null = cho phép chọn tất cả tabs
+      contentType: null,
     });
   };
 
@@ -408,29 +275,31 @@ export default function EditCourse() {
     console.log(`Content Type: ${contentType}`);
     console.log(`Content Data:`, contentData);
 
-    // ← THÊM: Nếu là quiz, fetch full details từ API
     if (contentType === "quiz") {
       setIsLoading(true);
-      const quizDetails = await fetchQuizDetails(contentData.quizId);
-      setIsLoading(false);
-      
-      if (!quizDetails) {
+      try {
+        const quizDetails = await fetchQuizDetails(contentData.quizId);
+        setIsLoading(false);
+        
+        if (!quizDetails) {
+          alert("Failed to load quiz details");
+          return;
+        }
+        
+        setContentModal({
+          isOpen: true,
+          type: "edit",
+          initialData: quizDetails,
+          chapterId: chapterId,
+          lessonId: lessonId,
+          contentId: contentData.quizId,
+          contentType: "quiz",
+        });
+      } catch (error) {
+        setIsLoading(false);
         alert("Failed to load quiz details");
-        return;
       }
-      
-      // ← Pass quiz details vào modal
-      setContentModal({
-        isOpen: true,
-        type: "edit",
-        initialData: quizDetails, // ← Full quiz data từ API
-        chapterId: chapterId,
-        lessonId: lessonId,
-        contentId: contentData.quizId,
-        contentType: "quiz",
-      });
     } else {
-      // ← Video/Doc giữ nguyên
       setContentModal({
         isOpen: true,
         type: "edit",
@@ -449,11 +318,11 @@ export default function EditCourse() {
   };
 
   // --- DELETE ACTIONS ---
-  const deleteChapter = async (id) => {
+  const handleDeleteChapter = async (id) => {
     if (!window.confirm("Delete this chapter? All lessons inside will be lost.")) return;
     setIsLoading(true);
     try {
-      await apiClient.delete(`/chapter/${id}`);
+      await deleteChapterApi(id);
       setChapters(chapters.filter((c) => c.id !== id));
     } catch (error) {
       if (error.response?.status === 404 || error.response?.status === 500) {
@@ -466,51 +335,34 @@ export default function EditCourse() {
     }
   };
 
-  // --- DELETE LESSON ---
-  const deleteLesson = async (lessonId) => {  // ← SỬA: Chỉ nhận lessonId
+  const handleDeleteLesson = async (lessonId) => {
     if (!confirm("Are you sure you want to delete this lesson?")) return;
 
     try {
-      console.log(`Deleting lesson: ${lessonId}`);
+      await deleteLessonApi(lessonId);
       
-      // ← API CALL: Delete lesson
-      const res = await apiClient.delete(`/lesson/${lessonId}`);
+      setExpandedLessons((prev) => {
+        const updated = { ...prev };
+        delete updated[lessonId];
+        return updated;
+      });
       
-      console.log("Delete lesson response:", res);
-
-      if (res.status === 200) {
-        console.log("Lesson deleted successfully!");
-        
-        // ← XÓA lesson khỏi expandedLessons state
-        setExpandedLessons((prev) => {
-          const updated = { ...prev };
-          delete updated[lessonId];
-          return updated;
+      if (contentModal.lessonId === lessonId) {
+        setContentModal({
+          isOpen: false,
+          type: null,
+          initialData: null,
+          chapterId: null,
+          lessonId: null,
+          contentId: null,
         });
-        
-        // ← Clear contentModal nếu đang mở content của lesson bị xóa
-        if (contentModal.lessonId === lessonId) {
-          setContentModal({
-            isOpen: false,
-            type: null,
-            initialData: null,
-            chapterId: null,
-            lessonId: null,
-            contentId: null,
-          });
-        }
-        
-        // ← Reload course outline
-        fetchCourseData();
-        
-        alert("Lesson deleted successfully!");
       }
+      
+      fetchCourseData();
+      alert("Lesson deleted successfully!");
     } catch (error) {
       console.error("Error deleting lesson:", error);
-      
       if (error.response) {
-        console.error("Error Response Status:", error.response.status);
-        console.error("Error Response Data:", error.response.data);
         alert(`Failed to delete lesson (${error.response.status}): ${JSON.stringify(error.response.data)}`);
       } else {
         alert("Network error while deleting lesson.");
@@ -518,86 +370,39 @@ export default function EditCourse() {
     }
   };
 
-  const deleteContent = (chapterId, lessonId, contentId) => {
-    alert("Delete content feature coming soon.");
-  };
-
-  // ==========================================
-  // HANDLERS: SAVE SIMPLE MODAL
-  // ==========================================
+  // --- SAVE SIMPLE MODAL ---
   const handleSaveSimpleModal = async (value) => {
     const { type, targetId, parentId, extraData } = simpleModal;
     setIsLoading(true);
 
     try {
-      // 1. ADD CHAPTER
       if (type === "add_chapter") {
         const newOrder = chapters.length + 1;
-        const res = await apiClient.post("/course/add-chapter", {
-          courseId: parseInt(courseId),
-          title: value,
-          order: newOrder,
-        });
-        if (res.status === 200 || res.status === 201){
+        const res = await addChapter(parseInt(courseId), value, newOrder);
+        if (res) {
           await new Promise(resolve => setTimeout(resolve, 500));
           fetchCourseData();
           alert("Chapter added successfully!");
         }
       }
-      
-      // 2. EDIT CHAPTER
       else if (type === "edit_chapter") {
-        await apiClient.put(`/chapter/${targetId}`, {
-          title: value,
-          order: extraData?.order || 1,
-        });
+        await updateChapter(targetId, value, extraData?.order || 1);
         fetchCourseData();
       }
-      
-      // 3. ADD LESSON (Basic Info)
       else if (type === "add_lesson") {
         const currentChapter = chapters.find((c) => c.id === parentId);
         const newOrder = (currentChapter?.lessons?.length || 0) + 1;
-
-        const formData = new FormData();
-        formData.append("title", value);
-        formData.append("desc", "");
-        formData.append("order", newOrder.toString());
-        formData.append("preCond", "None");
-        formData.append("chapterId", parentId.toString());
-
-        await apiClient.post("/course/add-lesson", formData, {
-          headers: { "Content-Type": undefined },
-        });
+        await addLesson(parentId, value, newOrder);
         fetchCourseData();
       }
-      
-      // 4. EDIT LESSON (Rename)
       else if (type === "edit_lesson") {
-        console.log("=== EDIT LESSON ===");
-        console.log("LessonID:", targetId);
-        const formData = new FormData();
-        formData.append("title", value);
-
-        let currentOrder = "1";
-        let currentDesc = "";
-        
         const chapter = chapters.find((c) => c.id === parentId);
-        if (chapter) {
-            const lesson = chapter.lessons.find((l) => l.id === targetId);
-            if (lesson) {
-                if (lesson.order) currentOrder = lesson.order.toString();
-                if (lesson.description) currentDesc = lesson.description;
-            }
-        }
-        formData.append("order", currentOrder);
-        formData.append("desc", currentDesc);
-
-        const res = await apiClient.put(`/lesson/${targetId}`, formData, {
-            headers: { "Content-Type": undefined }
-        });
-
-        if (res.status === 200) fetchCourseData();
+        const lesson = chapter?.lessons.find((l) => l.id === targetId);
+        const currentOrder = lesson?.order || 1;
+        const currentDesc = lesson?.description || "";
+        
+        await updateLesson(targetId, value, currentOrder, currentDesc);
+        fetchCourseData();
       }
 
       setSimpleModal({ ...simpleModal, isOpen: false });
@@ -613,19 +418,10 @@ export default function EditCourse() {
     }
   };
 
-  // ==========================================
-  // HANDLERS: SAVE CONTENT (VIDEO / DOC / QUIZ)
-  // ==========================================
+  // --- SAVE CONTENT MODAL ---
   const handleSaveContentModal = async (payload) => {
-    const { lessonId } = contentModal;
+    const { lessonId, chapterId } = contentModal;
     const { contentType, data } = payload;
-    
-    let chapterId = null;
-    chapters.forEach(ch => {
-        if (ch.lessons.some(l => l.id === lessonId)) {
-            chapterId = ch.id;
-        }
-    });
 
     console.log("=== SAVE CONTENT ===");
     console.log(`Chapter ID: ${chapterId}`);
@@ -635,164 +431,39 @@ export default function EditCourse() {
     setIsLoading(true);
 
     try {
-      // --- CASE A: VIDEO hoặc DOC (PUT Lesson) ---
-      if (contentType === "video" || contentType === "doc") {
-        const formData = new FormData();
-        let currentTitle = "Lesson";
-        let currentOrder = "1";
-        let currentDesc = "";
-
-        const chapter = chapters.find((c) => c.id === chapterId);
-        if (chapter) {
-             const l = chapter.lessons.find((ls) => ls.id === lessonId);
-             if (l) {
-                currentTitle = l.title;
-                currentOrder = l.order.toString();
-                currentDesc = l.description || "";
-             }
-        }
-
-        formData.append("title", currentTitle);
-        formData.append("order", currentOrder);
-        formData.append("desc", currentDesc);
-
-        if (contentType === "video") {
-          formData.append("videoDTO.title", data.fileName);
-          if (data.file) formData.append("videoDTO.video", data.file);
-          formData.append("videoDTO.duration", data.duration || "0");
-          formData.append("videoDTO.segmentDTOs[0].startAtSeconds", "0");
-          formData.append("videoDTO.segmentDTOs[0].endAtSeconds", "10");
-          formData.append("videoDTO.segmentDTOs[0].description", "Intro");
-        } 
-        else if (contentType === "doc") {
-          // ← THÊM: ID của doc nếu là EDIT (không phải ADD)
-          if (data.id) {
-            formData.append("courseMaterialDTOs[0].id", data.id.toString());
-          }
-          formData.append("courseMaterialDTOs[0].title", data.title || "Document");
-          if (data.file) {
-            formData.append("courseMaterialDTOs[0].doc", data.file);
-          }
-        }
-
-        await apiClient.put(`/lesson/${lessonId}`, formData, {
-          headers: { "Content-Type": undefined },
-        });
-        alert(`${contentType} updated successfully!`);
-      } 
+      const chapter = chapters.find((c) => c.id === chapterId);
+      const lesson = chapter?.lessons.find((ls) => ls.id === lessonId);
       
-      // --- CASE B: QUIZ ---
+      const currentTitle = lesson?.title || "Lesson";
+      const currentOrder = lesson?.order || 1;
+      const currentDesc = lesson?.description || "";
+
+      if (contentType === "video") {
+        await updateLessonVideo(lessonId, data, currentTitle, currentOrder, currentDesc);
+        alert("Video updated successfully!");
+      } 
+      else if (contentType === "doc") {
+        await updateLessonDoc(lessonId, data, currentTitle, currentOrder, currentDesc);
+        alert("Document updated successfully!");
+      }
       else if (contentType === "quiz") {
-        const formData = new FormData();
-        const { questions, settings } = data;
-
-        console.log("=== QUIZ DATA ===");
-        console.log(`Lesson ID: ${lessonId}`);
-        console.log(`Quiz Title: ${settings.title || "Quiz"}`);
-        console.log(`Question Count: ${questions.length}`);
-        
-        // ← KIỂM TRA: EDIT hay ADD?
         const isEditMode = !!contentModal.initialData?.id;
-        const quizId = contentModal.initialData?.id;
         
-        console.log(`Mode: ${isEditMode ? 'EDIT' : 'ADD'}`);
-        if (isEditMode) console.log(`Quiz ID: ${quizId}`);
-
-        // ← API ENDPOINT
-        const QUIZ_API_URL = isEditMode 
-          ? `/quiz/${quizId}`  // ← SỬA: PUT /quiz/{quizId}
-          : `/lesson/${lessonId}/add-quiz`;
-        
-        console.log(`API URL: ${QUIZ_API_URL}`);
-
-        // ← BASIC INFO
-        formData.append("title", settings.title || "Quiz");
-        formData.append("precondition", settings.precondition || "None");
-        formData.append("desc", settings.description || "Quiz description");
-        formData.append("timeLimitMinutes", settings.timeLimit.toString());
-        formData.append("difficultyAvg", settings.difficulty);
-        formData.append("score", settings.passScore.toString());
-
-        // ← QUESTIONS
-        questions.forEach((q, qIdx) => {
-          console.log(`Processing Question ${qIdx + 1}:`, q);
-          
-          formData.append(`questions[${qIdx}].qText`, q.question);
-          
-          // ← IMAGE: Chỉ append nếu là File (upload mới)
-          if (q.qImage && q.qImage instanceof File) {
-            formData.append(`questions[${qIdx}].qImage`, q.qImage);
-            console.log(`  → Question ${qIdx + 1}: Uploading NEW image`);
-          } else if (typeof q.qImage === 'string' && q.qImage) {
-            console.log(`  → Question ${qIdx + 1}: Keeping existing image URL`);
-          }
-          
-          formData.append(`questions[${qIdx}].explanation`, q.explanation || "");
-          formData.append(`questions[${qIdx}].level`, q.level || settings.difficulty);
-          formData.append(`questions[${qIdx}].score`, q.score.toString());
-          formData.append(`questions[${qIdx}].order`, (qIdx + 1).toString());
-
-          // ← THÊM: question.id nếu EDIT (backend cần để update đúng question)
-          if (isEditMode && q.id && typeof q.id === 'number' && q.id < 1000000) {
-            formData.append(`questions[${qIdx}].id`, q.id.toString());
-            console.log(`  → Question ${qIdx + 1}: Existing ID = ${q.id}`);
-          } else {
-            console.log(`  → Question ${qIdx + 1}: NEW question (no ID)`);
-          }
-
-          // ← OPTIONS
-          q.options.forEach((opt, oIdx) => {
-            console.log(`  Processing Option ${oIdx + 1}:`, opt);
-            
-            formData.append(`questions[${qIdx}].mcqContents[${oIdx}].cText`, opt.text);
-            
-            // ← IMAGE: Chỉ append nếu là File
-            if (opt.cImage && opt.cImage instanceof File) {
-              formData.append(`questions[${qIdx}].mcqContents[${oIdx}].cImage`, opt.cImage);
-              console.log(`    → Option ${oIdx + 1}: Uploading NEW image`);
-            } else if (typeof opt.cImage === 'string' && opt.cImage) {
-              console.log(`    → Option ${oIdx + 1}: Keeping existing image URL`);
-            }
-            
-            formData.append(`questions[${qIdx}].mcqContents[${oIdx}].isCorrect`, opt.isCorrect.toString());
-
-            // ← THÊM: option.id nếu EDIT (theo curl example của backend)
-            if (isEditMode && opt.id && typeof opt.id === 'number' && opt.id > 100) {
-              formData.append(`questions[${qIdx}].mcqContents[${oIdx}].id`, opt.id.toString());
-              console.log(`    → Option ${oIdx + 1}: Existing ID = ${opt.id}`);
-            } else {
-              console.log(`    → Option ${oIdx + 1}: NEW option (no ID)`);
-            }
-          });
-        });
-
-        // ← DEBUG: Log FormData
-        console.log("=== FormData Content ===");
-        for (let pair of formData.entries()) {
-          if (pair[1] instanceof File) {
-            console.log(`${pair[0]}: [File: ${pair[1].name}, Size: ${pair[1].size}]`);
-          } else {
-            console.log(`${pair[0]}: ${pair[1]}`);
-          }
+        if (isEditMode) {
+          const quizId = contentModal.initialData.id;
+          await updateQuiz(quizId, data);
+          alert("Quiz updated successfully!");
+        } else {
+          await addQuiz(lessonId, data);
+          alert("Quiz added successfully!");
         }
-
-        // ← API CALL
-        await apiClient.put(QUIZ_API_URL, formData, {
-          headers: { "Content-Type": undefined },
-        });
-        
-        alert(isEditMode ? "Quiz updated successfully!" : "Quiz added successfully!");
       }
 
-      // ← RELOAD DATA
       fetchCourseData();
       if (chapterId) {
         await new Promise(resolve => setTimeout(resolve, 300));
-        fetchLessonDetails(lessonId, chapterId);
+        handleFetchLessonDetails(lessonId, chapterId);
       }
-
-      fetchCourseData();
-      if (chapterId) fetchLessonDetails(lessonId, chapterId);
 
     } catch (error) {
       console.error("Save Content Error:", error);
@@ -803,6 +474,7 @@ export default function EditCourse() {
       }
     } finally {
       setIsLoading(false);
+      setContentModal({ ...contentModal, isOpen: false });
     }
   };
 
@@ -863,7 +535,6 @@ export default function EditCourse() {
               </div>
 
               <div className="space-y-4">
-                {/* COURSE OUTLINE */}
                 {chapters.map((chapter, chIdx) => (
                   <ChapterItem
                     key={chapter.id}
@@ -872,16 +543,15 @@ export default function EditCourse() {
                     isExpanded={expandedChapters[chapter.id]}
                     onToggle={toggleChapter}
                     onEdit={openEditChapter}
-                    onDelete={deleteChapter}
+                    onDelete={handleDeleteChapter}
                     onAddLesson={openAddLesson}
                     expandedLessons={expandedLessons}
                     toggleLesson={toggleLesson}
                     onEditLesson={openEditLesson}
-                    onDeleteLesson={deleteLesson}
-                    // ← THÊM: 3 hàm xử lý content
+                    onDeleteLesson={handleDeleteLesson}
                     onAddContent={openAddContent}
-                    onEditContent={openEditContent}  // ← MỚI
-                    onDeleteContent={openDeleteContent}  // ← MỚI
+                    onEditContent={openEditContent}
+                    onDeleteContent={openDeleteContent}
                   />
                 ))}
               </div>

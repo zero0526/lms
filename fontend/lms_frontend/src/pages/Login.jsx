@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Eye, EyeOff, ArrowLeft, Github } from "lucide-react";
 import { AxiosError } from "axios";
 import apiClient from "../api/axiosConfig";
+import { useUser } from "../contexts/UserContext";
 
 const BACKEND_URL = "http://localhost:8081";
 
@@ -37,9 +38,9 @@ export default function Login() {
   
   const location = useLocation();
   const navigate = useNavigate();
+  const { setUser } = useUser();
 
   // --- XỬ LÝ OAUTH2 CALLBACK ---
-  // useEffect này sẽ chạy khi Backend redirect ngược lại trang Login kèm accessToken
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const token = params.get("accessToken");
@@ -47,7 +48,6 @@ export default function Login() {
 
     if (errorMsg) {
       setError("Login failed: " + errorMsg);
-      // Xóa query param trên URL cho sạch
       window.history.replaceState({}, document.title, location.pathname);
       return;
     }
@@ -55,29 +55,20 @@ export default function Login() {
     if (token) {
       console.log("OAuth2 Success. Token received:", token);
       
-      // 1. Lưu token tạm thời
       if (remember) {
         localStorage.setItem('accessToken', token);
       } else {
         sessionStorage.setItem('accessToken', token);
-        // Lưu tạm vào localStorage để apiClient có thể dùng ngay cho request tiếp theo
-        // (Tùy logic axiosConfig của bạn, ở đây tôi giả sử bạn ưu tiên localStorage)
         localStorage.setItem('accessToken', token); 
       }
 
-      // 2. Gọi API lấy thông tin User (Profile)
-      // Vì OAuth chỉ trả về token, ta cần fetch info để lưu vào localStorage 'user' 
-      // để Navbar hiển thị được Avatar/Name
       fetchUserProfile(token);
     }
   }, [location, remember]);
 
   const fetchUserProfile = async (token) => {
     try {
-      // Gửi request lấy thông tin user hiện tại. 
-      // LƯU Ý: Bạn cần hỏi BE endpoint chính xác là gì (ví dụ: /auth/me, /users/profile, /auth/profile)
-      // Ở đây tôi ví dụ là `/auth/profile` hoặc `/user/me`
-      const response = await apiClient.get('/auth/profile'); // <-- CẦN CẬP NHẬT ENDPOINT NÀY THEO BE
+      const response = await apiClient.get('/auth/profile');
       
       const responseData = response.data.data || response.data;
       
@@ -95,27 +86,25 @@ export default function Login() {
           localStorage.setItem('user', userString);
       } else {
           sessionStorage.setItem('user', userString);
-          // Dọn dẹp localStorage nếu không chọn remember (vì ở trên đã set tạm)
           localStorage.removeItem('accessToken');
           sessionStorage.setItem('accessToken', token);
       }
 
-      // Xóa query param và chuyển hướng
+      // set user vào Context
+      setUser(userToSave);
+
       window.history.replaceState({}, document.title, location.pathname);
       navigate('/home');
 
     } catch (err) {
       console.error("Failed to fetch user profile after OAuth:", err);
       setError("Login successful but failed to load user profile.");
-      // Vẫn cho vào nhưng có thể thiếu info user
       navigate('/home'); 
     }
   };
 
-  // 3rd party login handler
   const handleSocialLogin = (provider) => {
     const targetUrl = `${BACKEND_URL}/oauth2/authorization/${provider}?role=${encodeURIComponent(roleName)}`;
-    // Navigate to backend OAuth2 endpoint
     window.location.href = targetUrl;
   };
 
@@ -159,6 +148,9 @@ export default function Login() {
           sessionStorage.setItem('accessToken', accessToken);
           sessionStorage.setItem('user', userString);
       }
+
+      // set user vào Context sau khi login thành công
+      setUser(userToSave);
 
       navigate('/home');
     } catch (err) {
@@ -336,7 +328,6 @@ export default function Login() {
                 </span>
               </div>
             </div>
-            {/* DIVIDER END */}
 
             {/* SOCIAL BUTTONS */}
             <div className="flex flex-col gap-3">
@@ -358,8 +349,6 @@ export default function Login() {
                 <span className="font-medium">GitHub</span>
               </button>
             </div>
-            {/* SOCIAL BUTTONS END */}
-
           </form>
         </div>
       </div>

@@ -203,6 +203,7 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
           <div>
             <h2 className="text-xl font-bold text-gray-800">Add Content</h2>
             <p className="text-sm text-gray-500">Add video, documents or quizzes to your lesson</p>
+            <p className="mt-1 text-sm text-red-500">You can only add one new content at a time</p>
           </div>
           <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition">
             <X size={24}/>

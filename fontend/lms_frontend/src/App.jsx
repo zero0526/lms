@@ -1,4 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { UserProvider } from "./contexts/UserContext";
+
+// Public Pages
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -24,83 +27,85 @@ import ProtectedRoute from "./components/ProtectedRoute";
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* --- PUBLIC ROUTES (Ai cũng xem được) --- */}
-        <Route path="/" element={<Navigate to="/home" />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/blog" element={<Blog />} />
-        <Route path="/blog/:category" element={<BlogDetail/>} />
-        <Route path="/courses" element={<CourseList />} />
-        
-        {/* Trang chi tiết khóa học giờ là Public Route */}
-        <Route path="/courses/:courseId" element={<CourseDetail />} /> 
+      <UserProvider>
+        <Routes>
+          {/* --- PUBLIC ROUTES (Ai cũng xem được) --- */}
+          <Route path="/" element={<Navigate to="/home" />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:category" element={<BlogDetail/>} />
+          <Route path="/courses" element={<CourseList />} />
+          
+          {/* Trang chi tiết khóa học giờ là Public Route */}
+          <Route path="/courses/:courseId" element={<CourseDetail />} /> 
 
-        {/* --- PROTECTED ROUTES --- */}
-        <Route 
-          path="/profile" 
-          element={
-            <ProtectedRoute allowedRoles={["ROLE_STUDENT", "ROLE_TEACHER"]}>
-              <Profile />
-            </ProtectedRoute>
-          } 
-        />
-        
-        {/* --- STUDENT ROUTES --- */}
-        <Route 
-          path="/student/courses" 
-          element={
-            <ProtectedRoute allowedRoles={["ROLE_STUDENT"]}>
-              <CourseStudent />
-            </ProtectedRoute>
-          } 
-        />
+          {/* --- PROTECTED ROUTES --- */}
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute allowedRoles={["ROLE_STUDENT", "ROLE_TEACHER"]}>
+                <Profile />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* --- STUDENT ROUTES --- */}
+          <Route 
+            path="/student/courses" 
+            element={
+              <ProtectedRoute allowedRoles={["ROLE_STUDENT"]}>
+                <CourseStudent />
+              </ProtectedRoute>
+            } 
+          />
 
-        {/* Giữ lại route cũ nếu cần backward compatibility, nhưng redirect về route public mới */}
-        <Route 
-          path="/student/courses/:courseId" 
-          element={<Navigate to={(location) => `/courses/${location.pathname.split('/').pop()}`} replace />} 
-        />
+          {/* Giữ lại route cũ nếu cần backward compatibility, nhưng redirect về route public mới */}
+          <Route 
+            path="/student/courses/:courseId" 
+            element={<Navigate to={(location) => `/courses/${location.pathname.split('/').pop()}`} replace />} 
+          />
 
-        <Route
-          path="/student/courses/:courseId/lessons/:lessonId" 
-          element={
-            <ProtectedRoute allowedRoles={["ROLE_STUDENT"]}>
-              <LessonDetail />
-            </ProtectedRoute>
-          } 
-        />
-        
-        {/* --- TEACHER ROUTES --- */}
-        <Route 
-          path="/teacher/courses" 
-          element={
-            <ProtectedRoute allowedRoles={["ROLE_TEACHER"]}>
-              <TeacherStudio />
-            </ProtectedRoute>
-          } 
-        />
+          <Route
+            path="/student/courses/:courseId/lessons/:lessonId" 
+            element={
+              <ProtectedRoute allowedRoles={["ROLE_STUDENT"]}>
+                <LessonDetail />
+              </ProtectedRoute>
+            } 
+          />
+          
+          {/* --- TEACHER ROUTES --- */}
+          <Route 
+            path="/teacher/courses" 
+            element={
+              <ProtectedRoute allowedRoles={["ROLE_TEACHER"]}>
+                <TeacherStudio />
+              </ProtectedRoute>
+            } 
+          />
 
-        <Route 
-          path="/teacher/courses/:courseId" 
-          element={
-            <ProtectedRoute allowedRoles={["ROLE_TEACHER"]}>
-              <TeacherCourseDetail />
-            </ProtectedRoute>
-          } 
-        />
+          <Route 
+            path="/teacher/courses/:courseId" 
+            element={
+              <ProtectedRoute allowedRoles={["ROLE_TEACHER"]}>
+                <TeacherCourseDetail />
+              </ProtectedRoute>
+            } 
+          />
 
-        <Route 
-          path="/teacher/courses/:courseId/edit" 
-          element={
-            <ProtectedRoute allowedRoles={["ROLE_TEACHER"]}>
-              <EditCourse />
-            </ProtectedRoute>
-          } 
-        />
+          <Route 
+            path="/teacher/courses/:courseId/edit" 
+            element={
+              <ProtectedRoute allowedRoles={["ROLE_TEACHER"]}>
+                <EditCourse />
+              </ProtectedRoute>
+            } 
+          />
 
-      </Routes>
+        </Routes>
+      </UserProvider>
     </BrowserRouter>
   );
 }
