@@ -7,10 +7,8 @@ import {
   Plus, 
   Minus, 
   Clock, 
-  Film,
   Award, 
   Presentation,
-  ChevronRight,
   Edit3,
   Trash2,
   Users,
@@ -99,11 +97,6 @@ export default function TeacherCourseDetail() {
     navigate(`/teacher/courses/${courseData.id}/edit`);
   };
 
-  const handleLessonPreview = (lessonId) => {
-    console.log("Preview lesson:", lessonId);
-    // Preview logic for lessons
-  };
-
   return (
     <div className="bg-gray-50 min-h-screen font-sans">
       <Navbar />
@@ -181,25 +174,16 @@ export default function TeacherCourseDetail() {
                             </div>
                             <div className="flex items-center gap-4">
                                 <span className="text-xs text-gray-400">{lesson.time}</span>
-                                {/* Small action button for lesson */}
-                                <Edit3 size={14} className="text-gray-300 hover:text-[#00b6b6]" />
                             </div>
                           </div>
                         ))}
-                        {/* Quick add lesson button */}
-                          <div className="p-3 pl-10 text-sm text-[#00b6b6] font-medium cursor-pointer hover:underline flex items-center gap-2">
-                            <Plus size={16}/> Add new lesson
-                        </div>
                       </div>
                     )}
                   </div>
                 ))}
               </div>
               
-              {/* Add new chapter button */}
-              <button className="mt-4 w-full border-2 border-dashed border-gray-300 text-gray-500 py-3 rounded-lg hover:border-[#00b6b6] hover:text-[#00b6b6] transition font-medium flex items-center justify-center gap-2">
-                   <Plus size={20}/> Add new chapter
-              </button>
+              {/* Removed "Add new chapter" button */}
             </div>
 
             {/* Section: Prerequisites */}

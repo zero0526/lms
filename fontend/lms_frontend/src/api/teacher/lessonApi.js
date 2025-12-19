@@ -158,3 +158,18 @@ export const updateLessonDoc = async (lessonId, docData, lessonTitle, lessonOrde
     throw error;
   }
 };
+
+/**
+ * Delete lesson document
+ */
+export const deleteLessonDoc = async (docId) => {
+  try {
+    console.log(`Deleting document ${docId} from lesson ${lessonId}`);
+    const res = await apiClient.delete(`/course-material/${docId}`);
+    console.log("Delete lesson document response:", res);
+    return res.data;
+  } catch (error) {
+    console.error("Error deleting lesson document:", error);
+    throw error;
+  }
+};
