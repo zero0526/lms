@@ -14,7 +14,7 @@ export const fetchCourseOutline = async (userId, courseId) => {
 
     const rawChapters = res.data.data || [];
 
-    // ← LOG ALL CHAPTER & LESSON IDS
+    // LOG ALL CHAPTER & LESSON IDS
     console.log("=== COURSE STRUCTURE ===");
     rawChapters.forEach((ch, chIdx) => {
       console.log(`Chapter ${chIdx + 1}: ID=${ch.chapterId}, Title="${ch.title}", Order=${ch.order}`);
@@ -43,6 +43,37 @@ export const addChapter = async (courseId, title, order) => {
     return res.data;
   } catch (error) {
     console.error("Error adding chapter:", error);
+    throw error;
+  }
+};
+
+/**
+ * Publish course
+ */
+export const publishCourse = async (courseId) => {
+  try {
+    const formData = new FormData();
+    formData.append("isCompleted", "true");
+    const res = await apiClient.put(`/course/${courseId}`, formData, {
+      headers: { "Content-Type": undefined },
+    }
+);
+    return res.data;
+  } catch (error) {
+    console.error("Error publishing course:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get punlished courses
+ */
+export const fetchPublishedCourses = async (userId) => {
+  try {
+    const res = await apiClient.get(`/course/completed/${userId}`);
+    return res.data;
+  } catch (error) {
+    console.error("Error fetching published courses:", error);
     throw error;
   }
 };

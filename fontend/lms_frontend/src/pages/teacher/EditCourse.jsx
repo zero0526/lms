@@ -9,7 +9,7 @@ import ContentModal from "../../components/teachers/ContentModal";
 import { ChapterItem } from "../../components/teachers/CourseListComponents";
 
 // Api functions
-import { fetchCourseOutline, addChapter } from "../../api/teacher/courseApi";
+import { fetchCourseOutline, addChapter, publishCourse } from "../../api/teacher/courseApi";
 import { deleteChapter as deleteChapterApi, updateChapter } from "../../api/teacher/chapterApi";
 import { 
   fetchLessonDetails, 
@@ -105,7 +105,7 @@ export default function EditCourse() {
     }
   }, [courseId]);
 
-  // ← AUTO-FETCH LESSON DETAILS when expanded
+  // AUTO-FETCH LESSON DETAILS when expanded
   useEffect(() => {
     if (chapters.length === 0) return;
 
@@ -478,6 +478,25 @@ export default function EditCourse() {
     }
   };
 
+  // Publish Course Handler
+  const handlePublishCourse = async () => {
+    if (!window.confirm("Are you sure you want to publish this course?")){
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await publishCourse(courseId);
+      alert("Course published successfully!");
+      navigate(`/teacher/courses`);
+    } catch (error) {
+      console.error("Error publishing course:", error);
+      alert("Failed to publish course.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen font-sans flex flex-col">
       <Navbar />
@@ -497,7 +516,10 @@ export default function EditCourse() {
               {isLoading && <Loader2 className="animate-spin text-[#00b6b6]" />}
             </div>
             <div className="flex gap-3">
-              <button className="px-6 py-2 bg-[#00b6b6] text-white rounded-lg font-bold shadow-md hover:bg-[#009e9e] transition">
+              <button
+                onClick={handlePublishCourse}
+                disabled={isLoading}
+                className="px-6 py-2 bg-[#00b6b6] text-white rounded-lg font-bold shadow-md hover:bg-[#009e9e] transition">
                 Publish
               </button>
             </div>
