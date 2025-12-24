@@ -13,6 +13,7 @@ import {
   enrollCourse,
   checkEnrollmentStatus 
 } from "../../api/user/courseApi";
+import { submitCourseReview, getCourseReviews } from "../../api/student/reviewApi";
 
 export default function StudentCourseDetail() {
   const navigate = useNavigate();
@@ -26,6 +27,18 @@ export default function StudentCourseDetail() {
   const [courseOutline, setCourseOutline] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // ✅ Review states
+  const [reviews, setReviews] = useState([]);
+  const [reviewPage, setReviewPage] = useState(0);
+  const [reviewLimit] = useState(10);
+  const [hasMoreReviews, setHasMoreReviews] = useState(true);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+  
+  const [userRating, setUserRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0); // ✅ Thêm state cho hover
+  const [userComment, setUserComment] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
   // ✅ Load user info
   useEffect(() => {
@@ -43,44 +56,61 @@ export default function StudentCourseDetail() {
   // ✅ Fetch course data
   useEffect(() => {
     const fetchCourseData = async () => {
-      if (!currentUser) return;
+      if (!currentUser?.userId || !courseId) return;
 
       try {
         setIsLoading(true);
 
-        // 1. Fetch course details
         const detailsData = await getCourseDetails(courseId);
-        console.log("Course Details:", detailsData);
         setCourseDetails(detailsData.data);
 
-        // 2. Check enrollment status
-        const enrolled = await checkEnrollmentStatus(currentUser.id, courseId);
-        console.log("Is Enrolled:", enrolled);
+        const enrolled = await checkEnrollmentStatus(currentUser.userId, courseId);
         setIsEnrolled(enrolled);
 
-        // 3. Fetch outline
         let outlineData;
         if (enrolled) {
-          outlineData = await getCourseOutlineEnrolled(currentUser.id, courseId);
+          outlineData = await getCourseOutlineEnrolled(currentUser.userId, courseId);
         } else {
           outlineData = await getCourseOutlinePublic(courseId);
         }
         
-        console.log("Course Outline:", outlineData);
         setCourseOutline(outlineData.data || []);
-
         setIsLoading(false);
       } catch (err) {
-        console.error("Failed to fetch course data:", err);
+        console.error("❌ Failed to fetch course data:", err);
         setError("Không thể tải thông tin khóa học. Vui lòng thử lại sau.");
         setIsLoading(false);
       }
     };
 
-    if (courseId && currentUser) {
-      fetchCourseData();
-    }
-  }, [courseId, currentUser]);
+    fetchCourseData();
+  }, [currentUser, courseId]);
+
+  // ✅ Fetch reviews
+  useEffect(() => {
+    const fetchReviews = async () => {
+      if (!courseId) return;
+
+      try {
+        setIsLoadingReviews(true);
+        const reviewsData = await getCourseReviews(courseId, reviewPage, reviewLimit);
+        
+        console.log("Reviews data:", reviewsData);
+        
+        if (reviewsData.data && reviewsData.data.content) {
+          setReviews(prev => reviewPage === 0 ? reviewsData.data.content : [...prev, ...reviewsData.data.content]);
+          setHasMoreReviews(!reviewsData.data.last);
+        }
+        
+        setIsLoadingReviews(false);
+      } catch (err) {
+        console.error("Failed to fetch reviews:", err);
+        setIsLoadingReviews(false);
+      }
+    };
+
+    fetchReviews();
+  }, [courseId, reviewPage, reviewLimit]);
 
   const toggleChapter = (index) => {
     setOpenChapters((prev) => ({
@@ -90,20 +120,18 @@ export default function StudentCourseDetail() {
   };
 
   const handleEnroll = async () => {
-    if (!currentUser) return;
+    if (!currentUser?.userId) return;
 
     try {
       setIsLoading(true);
       
-      const enrollResult = await enrollCourse(currentUser.id, courseId);
-      console.log("Enroll result:", enrollResult);
+      const enrollResult = await enrollCourse(currentUser.userId, courseId);
 
       if (enrollResult.status === 200) {
         alert("Đăng ký khóa học thành công! Bắt đầu học ngay.");
         setIsEnrolled(true);
 
-        // Reload outline với progress
-        const enrolledOutline = await getCourseOutlineEnrolled(currentUser.id, courseId);
+        const enrolledOutline = await getCourseOutlineEnrolled(currentUser.userId, courseId);
         setCourseOutline(enrolledOutline.data || []);
       }
 
@@ -121,6 +149,61 @@ export default function StudentCourseDetail() {
       return;
     }
     navigate(`/student/courses/${courseId}/lessons/${lessonId}`);
+  };
+
+  // ✅ Handle submit review với validation chặt chẽ
+  const handleSubmitReview = async () => {
+    if (!currentUser?.userId) {
+      alert("Vui lòng đăng nhập để đánh giá khóa học.");
+      return;
+    }
+
+    if (userRating === 0) {
+      alert("Vui lòng chọn số sao đánh giá.");
+      return;
+    }
+
+    if (!userComment || userComment.trim() === '') {
+      alert("Vui lòng nhập nội dung đánh giá.");
+      return;
+    }
+
+    try {
+      setIsSubmittingReview(true);
+
+      const reviewData = {
+        rating: userRating,
+        userid: currentUser.userId,
+        at: new Date().toISOString(),
+        courseId: parseInt(courseId),
+        comment: userComment.trim()
+      };
+
+      console.log("Submitting review:", reviewData);
+
+      await submitCourseReview(reviewData);
+      
+      alert("Đánh giá của bạn đã được gửi thành công!");
+      
+      // Reset form
+      setUserRating(0);
+      setHoverRating(0);
+      setUserComment("");
+      
+      // Reload reviews
+      setReviewPage(0);
+      setReviews([]);
+      
+      // Reload course details to update rating
+      const detailsData = await getCourseDetails(courseId);
+      setCourseDetails(detailsData.data);
+      
+      setIsSubmittingReview(false);
+    } catch (error) {
+      console.error("Submit review error:", error);
+      alert(error.message || "Gửi đánh giá thất bại. Vui lòng thử lại.");
+      setIsSubmittingReview(false);
+    }
   };
 
   const formatDuration = (seconds) => {
@@ -154,13 +237,24 @@ export default function StudentCourseDetail() {
     }
   };
 
+  const formatReviewDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="bg-gray-50 min-h-screen font-sans">
         <Navbar />
         <main className="max-w-6xl mx-auto px-4 pt-24 pb-12">
-          <div className="flex justify-center items-center h-96">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00b6b6]"></div>
+          <div className="flex flex-col justify-center items-center h-96">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00b6b6] mb-4"></div>
+            <p className="text-gray-500">Đang tải khóa học...</p>
           </div>
         </main>
         <Footer />
@@ -309,37 +403,130 @@ export default function StudentCourseDetail() {
               </div>
             </div>
 
+            {/* ✅ Reviews Section */}
             <div id="reviews" className="pt-8 border-t border-gray-200">
               <div className="flex items-center gap-2 mb-6">
                 <Star className="w-6 h-6 fill-yellow-400 text-yellow-400" />
                 <h2 className="text-xl font-bold text-gray-800">
                   {courseDetails.rating?.toFixed(1) || "Chưa có"} Đánh giá khóa học
                 </h2>
-                <span className="text-gray-500 text-sm">({courseDetails.numOfRating} xếp hạng)</span>
+                <span className="text-gray-500 text-sm">({courseDetails.numOfRating || 0} đánh giá)</span>
               </div>
 
-              <div className="bg-gray-50 border border-gray-200 p-6 rounded-lg text-center text-gray-500">
-                Chưa có đánh giá nào
-              </div>
-
+              {/* ✅ Review Form - Only for enrolled students */}
               {isEnrolled && (
-                <div className="bg-white border border-gray-200 p-6 rounded-xl shadow-sm mt-6">
+                <div className="bg-white border border-gray-200 p-6 rounded-xl shadow-sm mb-6">
                   <h3 className="font-bold text-gray-800 mb-4">Viết đánh giá của bạn</h3>
-                  <div className="flex gap-1 mb-4 cursor-pointer">
-                    {[1, 2, 3, 4, 5].map(star => (
-                      <Star key={star} className="text-gray-300 hover:text-yellow-400 hover:fill-yellow-400 transition" />
-                    ))}
+                  
+                  {/* ✅ Star Rating với Hover Effect */}
+                  <div className="flex items-center gap-1 mb-4">
+                    {[1, 2, 3, 4, 5].map(star => {
+                      const displayRating = hoverRating || userRating;
+                      return (
+                        <Star 
+                          key={star} 
+                          size={28}
+                          className={`cursor-pointer transition-all duration-150 ${
+                            star <= displayRating
+                              ? "text-yellow-400 fill-yellow-400 scale-110" 
+                              : "text-gray-300 hover:text-yellow-300"
+                          }`}
+                          onClick={() => setUserRating(star)}
+                          onMouseEnter={() => setHoverRating(star)}
+                          onMouseLeave={() => setHoverRating(0)}
+                        />
+                      );
+                    })}
+                    {userRating > 0 && (
+                      <span className="ml-2 text-sm font-medium text-gray-700">
+                        {userRating} sao
+                      </span>
+                    )}
                   </div>
+
                   <textarea 
-                    className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#00b6b6] outline-none mb-3" 
-                    rows="3" 
-                    placeholder="Chia sẻ cảm nghĩ..."
+                    className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-[#00b6b6] outline-none mb-3 resize-none" 
+                    rows="4" 
+                    placeholder="Chia sẻ cảm nghĩ của bạn về khóa học..."
+                    value={userComment}
+                    onChange={(e) => setUserComment(e.target.value)}
+                    maxLength={500}
                   ></textarea>
-                  <button className="bg-[#00b6b6] text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-[#009e9e] transition">
-                    Gửi đánh giá
-                  </button>
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-gray-500">
+                      {userComment.length}/500 ký tự
+                    </span>
+                    <button 
+                      onClick={handleSubmitReview}
+                      disabled={isSubmittingReview || userRating === 0 || !userComment.trim()}
+                      className="bg-[#00b6b6] text-white px-6 py-2 rounded-lg font-bold text-sm hover:bg-[#009e9e] transition disabled:bg-gray-400 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {isSubmittingReview ? "Đang gửi..." : "Gửi đánh giá"}
+                    </button>
+                  </div>
                 </div>
               )}
+
+              {/* ✅ Reviews List */}
+              <div className="space-y-4">
+                {reviews.length > 0 ? (
+                  <>
+                    {reviews.map((review, index) => (
+                      <div key={index} className="bg-white border border-gray-200 p-6 rounded-xl shadow-sm">
+                        <div className="flex items-start gap-4">
+                          <div className="w-10 h-10 bg-gradient-to-br from-[#00b6b6] to-[#009e9e] rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-white font-bold text-sm">
+                              {review.userName?.charAt(0).toUpperCase() || "?"}
+                            </span>
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="font-bold text-gray-800">{review.userName || "Anonymous"}</h4>
+                              <div className="flex gap-0.5">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star 
+                                    key={i} 
+                                    size={16}
+                                    className={`${
+                                      i < review.rating 
+                                        ? "text-yellow-400 fill-yellow-400" 
+                                        : "text-gray-300"
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                            <p className="text-xs text-gray-500 mb-2">{formatReviewDate(review.at)}</p>
+                            <p className="text-gray-700 text-sm leading-relaxed">{review.comment}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* Load More Button */}
+                    {hasMoreReviews && (
+                      <div className="text-center">
+                        <button
+                          onClick={() => setReviewPage(prev => prev + 1)}
+                          disabled={isLoadingReviews}
+                          className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition disabled:opacity-50 font-medium"
+                        >
+                          {isLoadingReviews ? "Đang tải..." : "Xem thêm đánh giá"}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="bg-gray-50 border border-gray-200 p-8 rounded-lg text-center">
+                    <div className="text-gray-400 mb-2">
+                      <Star size={48} className="mx-auto" />
+                    </div>
+                    <p className="text-gray-500">
+                      Chưa có đánh giá nào. {isEnrolled && "Hãy là người đầu tiên đánh giá khóa học này!"}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
           </div>
