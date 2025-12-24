@@ -1,6 +1,22 @@
 import apiClient from "../axiosConfig";
 
 /**
+ * Fetch overall courses info
+ */
+export const fetchCourseInfo = async (courseId) => {
+  try {
+    const res = await apiClient.get(`course/details/${courseId}`);
+    const details = res.data.data;
+
+    console.log(`Fetched details for course ${courseId}:`, details);
+    return details; // ✅ Trả về data
+  } catch (error) {
+    console.error(`Failed to fetch details for course ${courseId}`, error);
+    throw error;
+  }
+};
+
+/**
  * Fetch course outline (chapters + lessons structure)
  */
 export const fetchCourseOutline = async (userId, courseId) => {

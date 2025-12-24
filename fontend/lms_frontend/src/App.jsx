@@ -15,6 +15,7 @@ import CourseDetail from "./pages/CourseDetail"; // Import component mới đổ
 
 // Student Pages
 import CourseStudent from "./pages/student/CourseStudent";
+import StudentCourseDetail from "./pages/student/StudentCourseDetail";
 import LessonDetail from "./pages/student/LessonDetail";
 
 // Teacher Pages
@@ -36,10 +37,19 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:category" element={<BlogDetail/>} />
-          <Route path="/courses" element={<CourseList />} />
+          
+          <Route 
+            path="/courses" 
+            element={
+              <CourseList />
+            } 
+          />
           
           {/* Trang chi tiết khóa học giờ là Public Route */}
-          <Route path="/courses/:courseId" element={<CourseDetail />} /> 
+          <Route 
+            path="/courses/:courseId" 
+            element={<CourseDetail />} 
+          />
 
           {/* --- PROTECTED ROUTES --- */}
           <Route 
@@ -64,7 +74,11 @@ export default function App() {
           {/* Giữ lại route cũ nếu cần backward compatibility, nhưng redirect về route public mới */}
           <Route 
             path="/student/courses/:courseId" 
-            element={<Navigate to={(location) => `/courses/${location.pathname.split('/').pop()}`} replace />} 
+            element={
+              <ProtectedRoute allowedRoles={["ROLE_STUDENT"]}>
+                <StudentCourseDetail />
+              </ProtectedRoute>
+            } 
           />
 
           <Route
