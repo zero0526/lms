@@ -53,6 +53,12 @@ export const getCourseOutlinePublic = async (courseId) => {
  * Lấy outline khóa học (enrolled - đã đăng ký)
  */
 export const getCourseOutlineEnrolled = async (userId, courseId) => {
+  // ✅ Guard clause: Validate userId
+  if (!userId || userId === 'undefined' || userId === undefined) {
+    console.error("❌ Invalid userId:", userId);
+    throw new Error("User ID is required to fetch enrolled course outline");
+  }
+
   const response = await apiClient.get(`/course/outline?userId=${userId}&courseId=${courseId}`);
   return response.data;
 };
@@ -61,6 +67,12 @@ export const getCourseOutlineEnrolled = async (userId, courseId) => {
  * Đăng ký khóa học
  */
 export const enrollCourse = async (userId, courseId) => {
+  // ✅ Guard clause: Validate userId
+  if (!userId || userId === 'undefined' || userId === undefined) {
+    console.error("❌ Invalid userId:", userId);
+    throw new Error("User ID is required to enroll in a course");
+  }
+
   const enrollData = {
     userId: userId,
     courseId: courseId,
@@ -76,6 +88,17 @@ export const enrollCourse = async (userId, courseId) => {
  * Logic: Gọi API outline với userId, nếu trả về thành công và có progressLesson field -> đã enroll
  */
 export const checkEnrollmentStatus = async (userId, courseId) => {
+  // ✅ Guard clause: Validate inputs
+  if (!userId || userId === 'undefined' || userId === undefined) {
+    console.error("❌ Invalid userId provided to checkEnrollmentStatus:", userId);
+    return false; // Không có userId hợp lệ -> chưa đăng ký
+  }
+
+  if (!courseId || courseId === 'undefined' || courseId === undefined) {
+    console.error("❌ Invalid courseId provided to checkEnrollmentStatus:", courseId);
+    return false;
+  }
+
   try {
     console.log("=== CHECK ENROLLMENT STATUS ===");
     console.log("userId:", userId);

@@ -1,31 +1,56 @@
-import apiClient from '../utils/apiClient';
+import apiClient from "../axiosConfig";
 
-export const submitCourseReview = async (courseId, userid, at, rating, comment) => {
-  // Logic to submit a course review by a student
-  if (!comment || comment.trim() === '') {
-    return { success: false, message: "Comment cannot be empty" };
+/**
+ * Submit course review
+ * @param {Object} reviewData - Review data
+ * @param {number} reviewData.courseId - Course ID
+ * @param {number} reviewData.userid - User ID
+ * @param {string} reviewData.at - Timestamp (ISO format)
+ * @param {number} reviewData.rating - Rating (1-5)
+ * @param {string} reviewData.comment - Review comment
+ */
+export const submitCourseReview = async (reviewData) => {
+  // Validate input
+  if (!reviewData.comment || reviewData.comment.trim() === '') {
+    throw new Error("Comment cannot be empty");
   }
 
-  if (rating < 1 || rating > 5) {
-    return { success: false, message: "Rating must be between 1 and 5" };
+  if (reviewData.rating < 1 || reviewData.rating > 5) {
+    throw new Error("Rating must be between 1 and 5");
+  }
+
+  if (!reviewData.userid || !reviewData.courseId) {
+    throw new Error("User ID and Course ID are required");
   }
   
   try {
+    // ✅ Gửi đúng format theo BE yêu cầu
     const response = await apiClient.post('/review/review-course', {
-      courseId,
-      userid,
-      at,
-      rating,
-      comment
+      rating: reviewData.rating,
+      userid: reviewData.userid,
+      at: reviewData.at || new Date().toISOString(),
+      courseId: reviewData.courseId,
+      comment: reviewData.comment
     });
-    return { success: true, data: response.data };
+    
+    return response.data;
   } catch (error) {
-    return { success: false, message: error.message };
+    console.error("Submit review error:", error);
+    throw error;
   }
-}
+};
 
-export const getPageReviewCourse = async (courseId, pageNum = 0, limit = 10) => {
-  // Logic to get paginated course reviews
+/**
+ * Get paginated course reviews
+ * @param {number} courseId - Course ID
+ * @param {number} pageNum - Page number (default: 0)
+ * @param {number} limit - Items per page (default: 10)
+ */
+export const getCourseReviews = async (courseId, pageNum = 0, limit = 10) => {
+  if (!courseId) {
+    throw new Error("Course ID is required");
+  }
+
   try {
     const response = await apiClient.get('/review/review-course', {
       params: {
@@ -34,8 +59,10 @@ export const getPageReviewCourse = async (courseId, pageNum = 0, limit = 10) => 
         limit
       }
     });
-    return { success: true, data: response.data };
+    
+    return response.data;
   } catch (error) {
-    return { success: false, message: error.message };
+    console.error("Get reviews error:", error);
+    throw error;
   }
-}
+};
