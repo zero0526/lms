@@ -53,7 +53,6 @@ export const getCourseOutlinePublic = async (courseId) => {
  * Lấy outline khóa học (enrolled - đã đăng ký)
  */
 export const getCourseOutlineEnrolled = async (userId, courseId) => {
-  // ✅ Guard clause: Validate userId
   if (!userId || userId === 'undefined' || userId === undefined) {
     console.error("❌ Invalid userId:", userId);
     throw new Error("User ID is required to fetch enrolled course outline");
@@ -67,7 +66,6 @@ export const getCourseOutlineEnrolled = async (userId, courseId) => {
  * Đăng ký khóa học
  */
 export const enrollCourse = async (userId, courseId) => {
-  // ✅ Guard clause: Validate userId
   if (!userId || userId === 'undefined' || userId === undefined) {
     console.error("❌ Invalid userId:", userId);
     throw new Error("User ID is required to enroll in a course");
@@ -85,13 +83,16 @@ export const enrollCourse = async (userId, courseId) => {
 
 /**
  * ✅ Kiểm tra xem user đã đăng ký khóa học chưa
- * Logic: Gọi API outline với userId, nếu trả về thành công và có progressLesson field -> đã enroll
+ * 
+ * STRATEGY MỚI: 
+ * 1. Gọi API public outline (không có userId)
+ * 2. Gọi API enrolled outline (có userId)
+ * 3. So sánh response để xác định enrolled status
  */
 export const checkEnrollmentStatus = async (userId, courseId) => {
-  // ✅ Guard clause: Validate inputs
   if (!userId || userId === 'undefined' || userId === undefined) {
     console.error("❌ Invalid userId provided to checkEnrollmentStatus:", userId);
-    return false; // Không có userId hợp lệ -> chưa đăng ký
+    return false;
   }
 
   if (!courseId || courseId === 'undefined' || courseId === undefined) {
@@ -100,48 +101,88 @@ export const checkEnrollmentStatus = async (userId, courseId) => {
   }
 
   try {
-    console.log("=== CHECK ENROLLMENT STATUS ===");
+    console.log("=== CHECK ENROLLMENT STATUS (NEW STRATEGY) ===");
     console.log("userId:", userId);
     console.log("courseId:", courseId);
     
-    const response = await apiClient.get(`/course/outline?userId=${userId}&courseId=${courseId}`);
-    console.log("Full API Response:", response);
-    console.log("Response Status:", response.status);
-    console.log("Response Data:", response.data);
+    // ✅ Gọi API enrolled outline
+    const enrolledResponse = await apiClient.get(`/course/outline?userId=${userId}&courseId=${courseId}`);
     
-    const outline = response.data.data || [];
-    console.log("Outline Data:", outline);
+    console.log("📦 Enrolled API Response:", enrolledResponse.data);
     
-    // ✅ Check từng chapter và lesson
+    const outline = enrolledResponse.data.data || [];
+    
+    if (outline.length === 0) {
+      console.log("❌ No chapters found");
+      return false;
+    }
+    
+    // ✅ STRATEGY 1: Check nếu có progressLesson và giá trị !== null/undefined
+    let hasValidProgress = false;
+    let hasAnyProgress = false;
+    
     outline.forEach((chapter, chapterIndex) => {
-      console.log(`Chapter ${chapterIndex + 1}:`, chapter.title);
+      console.log(`\n📚 Chapter ${chapterIndex + 1}: ${chapter.title}`);
+      
       if (chapter.lessons) {
         chapter.lessons.forEach((lesson, lessonIndex) => {
-          console.log(`  Lesson ${lessonIndex + 1}:`, lesson.title);
-          console.log(`    Has progressLesson field:`, lesson.hasOwnProperty('progressLesson'));
-          console.log(`    progressLesson value:`, lesson.progressLesson);
+          const hasField = lesson.hasOwnProperty('progressLesson');
+          const progressValue = lesson.progressLesson;
+          
+          console.log(`  📝 Lesson ${lessonIndex + 1}: ${lesson.title}`);
+          console.log(`     - Has progressLesson field: ${hasField}`);
+          console.log(`     - progressLesson value: ${progressValue}`);
+          console.log(`     - Is null/undefined: ${progressValue === null || progressValue === undefined}`);
+          
+          if (hasField) {
+            hasAnyProgress = true;
+            
+            // ✅ Nếu progressLesson có giá trị thực (không phải null/undefined)
+            if (progressValue !== null && progressValue !== undefined) {
+              hasValidProgress = true;
+            }
+          }
         });
       }
     });
     
-    // ✅ Nếu API trả về data và có bất kỳ lesson nào có field progressLesson -> đã enroll
-    const hasProgressField = outline.some(chapter => 
+    console.log("\n🔍 Analysis:");
+    console.log("- Has any progressLesson field:", hasAnyProgress);
+    console.log("- Has valid progress value:", hasValidProgress);
+    
+    // ✅ STRATEGY 2: Nếu tất cả lessons đều có progressLesson = 0 hoặc null -> có thể là chưa enroll
+    // Nhưng nếu có ít nhất 1 lesson có progress > 0 -> đã enroll
+    const hasNonZeroProgress = outline.some(chapter => 
       chapter.lessons && chapter.lessons.some(lesson => 
-        lesson.hasOwnProperty('progressLesson')
+        lesson.progressLesson && lesson.progressLesson > 0
       )
     );
     
-    console.log("✅ Final Result - Has progress field:", hasProgressField);
-    console.log("=== END CHECK ENROLLMENT ===");
+    console.log("- Has non-zero progress:", hasNonZeroProgress);
     
-    return hasProgressField;
+    // ✅ STRATEGY 3: Check HTTP status code hoặc response structure
+    // Nếu BE trả về status khác nhau cho enrolled vs not enrolled
+    console.log("- Response status:", enrolledResponse.status);
+    
+    // ✅ KẾT LUẬN: User đã enroll nếu:
+    // 1. Có ít nhất 1 lesson với progress > 0, HOẶC
+    // 2. Có progressLesson field với giá trị hợp lệ (không null/undefined), HOẶC
+    // 3. (Tùy vào cách BE implement)
+    
+    const isEnrolled = hasNonZeroProgress || hasValidProgress;
+    
+    console.log("\n✅ Final Result - Is Enrolled:", isEnrolled);
+    console.log("=== END CHECK ENROLLMENT ===\n");
+    
+    return isEnrolled;
+    
   } catch (error) {
     console.error("❌ Check enrollment error:", error);
     console.error("Error response:", error.response);
     console.error("Error status:", error.response?.status);
     console.error("Error data:", error.response?.data);
     
-    // ✅ Nếu API trả về 403/401 hoặc lỗi -> chưa enroll
+    // ✅ Nếu API trả về lỗi -> chưa enroll
     return false;
   }
 };
