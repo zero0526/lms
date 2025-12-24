@@ -3,87 +3,115 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import CourseCard from "../components/courses/CourseCard";
 import CourseFilter from "../components/courses/CourseFilter";
-import { mockCourses } from "../data/mockCourses";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { convertDriveLink } from "../api/user/userUtils";
+import { Search } from "lucide-react";
+import apiClient from "../api/axiosConfig";
 
 export default function CourseList() {
   const [courses, setCourses] = useState([]);
   const [filteredCourses, setFilteredCourses] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   
-  // Search State
   const [searchTerm, setSearchTerm] = useState("");
   
-  // Filter States
   const [filters, setFilters] = useState({
     category: "All",
-    price: "all",
     rating: 0,
     sort: "popular"
   });
 
-  // Load initial data
+  const [page, setPage] = useState(0);
+  const [limit] = useState(10);
+
   useEffect(() => {
-    // In a real app, fetch from API here
-    setCourses(mockCourses);
-    setFilteredCourses(mockCourses);
-    
-    // Extract unique categories
-    const uniqueCategories = [...new Set(mockCourses.map(c => c.category))];
-    setCategories(uniqueCategories);
+    const fetchTags = async () => {
+      try {
+        const tagsResponse = await apiClient.get(`/course/course-tags?limit=10`);
+        const tagsData = tagsResponse.data.data || [];
+        console.log("Tags Data:", tagsData);
+        setCategories(tagsData);
+      } catch (error) {
+        console.error("Failed to fetch tags:", error);
+      }
+    };
+
+    fetchTags();
   }, []);
 
-  // Apply filters whenever filters state or search term changes
   useEffect(() => {
-    let result = [...courses];
+    const fetchCourses = async () => {
+      try {
+        setIsLoading(true);
 
-    // 1. Search Filter
+        const params = new URLSearchParams();
+        
+        if (filters.category !== "All") {
+          params.append("tags", filters.category);
+        }
+        
+        if (filters.rating > 0) {
+          params.append("lowerBoundRating", filters.rating.toString());
+        }
+
+        const sortBy = filters.sort === "newest" ? "latest" : filters.sort;
+        params.append("sortBy", sortBy);
+        
+        params.append("page", page.toString());
+        params.append("limit", limit.toString());
+
+        console.log("Fetching with params:", params.toString());
+
+        const coursesResponse = await apiClient.get(`/course/introduce-course?${params.toString()}`);
+        
+        console.log("API Response:", coursesResponse.data);
+        
+        const coursesData = coursesResponse.data.data.content || [];
+
+        const mappedCourses = coursesData.map(course => ({
+          id: course.id,
+          title: course.title,
+          description: course.description,
+          image: convertDriveLink(course.thumbnailUrl),
+          rating: course.avgRating || 0,
+          studentNums: course.numUserEnrolled,
+          category: course.category || "All",
+          chapterNums: course.numChapters,
+          isCompleted: course.isCompleted
+        }));
+        
+        console.log("Mapped Courses:", mappedCourses);
+
+        setCourses(mappedCourses);
+        setFilteredCourses(mappedCourses);
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Failed to fetch courses:", error);
+        console.error("Error response:", error.response?.data);
+        setError("Failed to load courses. Please try again later.");
+        setIsLoading(false);
+      }
+    };
+
+    fetchCourses();
+  }, [filters.category, filters.rating, filters.sort, page, limit]);
+
+  useEffect(() => {
     if (searchTerm) {
-      result = result.filter(course => 
+      const result = courses.filter(course => 
         course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        course.instructor.toLowerCase().includes(searchTerm.toLowerCase())
+        (course.description && course.description.toLowerCase().includes(searchTerm.toLowerCase()))
       );
+      setFilteredCourses(result);
+    } else {
+      setFilteredCourses(courses);
     }
-
-    // 2. Category Filter
-    if (filters.category !== "All") {
-      result = result.filter(course => course.category === filters.category);
-    }
-
-    // 3. Price Filter
-    if (filters.price === "free") {
-      result = result.filter(course => course.price === 0);
-    } else if (filters.price === "paid") {
-      result = result.filter(course => course.price > 0);
-    }
-
-    // 4. Rating Filter
-    if (filters.rating > 0) {
-      result = result.filter(course => course.rating >= filters.rating);
-    }
-
-    // 5. Sorting
-    switch (filters.sort) {
-      case "price-low":
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case "price-high":
-        result.sort((a, b) => b.price - a.price);
-        break;
-      case "newest":
-        result.sort((a, b) => b.id - a.id); // Assuming higher ID is newer
-        break;
-      case "popular":
-      default:
-        result.sort((a, b) => b.studentNums - a.studentNums); // Most students = most popular
-        break;
-    }
-
-    setFilteredCourses(result);
-  }, [filters, searchTerm, courses]);
+  }, [searchTerm, courses]);
 
   const handleFilterChange = (newFilters) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
+    setPage(0);
   };
 
   return (
@@ -100,7 +128,7 @@ export default function CourseList() {
               From programming to design, we have something for everyone.
             </p>
             
-            {/* Search Bar in Header */}
+            {/* Search Bar */}
             <div className="mt-8 max-w-xl mx-auto relative">
               <input
                 type="text"
@@ -128,35 +156,18 @@ export default function CourseList() {
 
             {/* Course Grid */}
             <div className="w-full md:w-3/4">
-              {/* Top Controls */}
-              <div className="flex justify-between items-center mb-6">
+              {/* ✅ Chỉ hiển thị số lượng courses */}
+              <div className="mb-6">
                 <p className="text-gray-600 font-medium">
                   Showing <span className="text-gray-900 font-bold">{filteredCourses.length}</span> courses
                 </p>
-                
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500 hidden sm:inline">Sort by:</span>
-                  <div className="relative">
-                    <select 
-                      className="appearance-none bg-white border border-gray-300 text-gray-700 py-2 pl-4 pr-8 rounded-lg focus:outline-none focus:border-[#00b6b6] cursor-pointer text-sm font-medium"
-                      value={filters.sort}
-                      onChange={(e) => handleFilterChange({ sort: e.target.value })}
-                    >
-                      <option value="popular">Most Popular</option>
-                      <option value="newest">Newest</option>
-                      <option value="price-low">Price: Low to High</option>
-                      <option value="price-high">Price: High to Low</option>
-                    </select>
-                    <SlidersHorizontal size={14} className="absolute right-3 top-3 text-gray-400 pointer-events-none" />
-                  </div>
-                </div>
               </div>
 
               {/* Grid */}
               {filteredCourses.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredCourses.map(course => (
-                    <div key={course.id} className="flex"> {/* Flex wrapper to make cards equal height */}
+                    <div key={course.id} className="flex">
                       <CourseCard course={course} />
                     </div>
                   ))}
@@ -173,8 +184,7 @@ export default function CourseList() {
                   <button 
                     onClick={() => {
                         setSearchTerm("");
-                        handleFilterChange({ category: "All", price: "all", rating: 0, sort: "popular" });
-                        // We need a way to reset Filter component state too, but simplified for now
+                        handleFilterChange({ category: "All", rating: 0, sort: "popular" });
                         window.location.reload(); 
                     }}
                     className="mt-6 px-6 py-2 bg-[#00b6b6] text-white rounded-lg hover:bg-[#009e9e] transition"

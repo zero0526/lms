@@ -12,78 +12,115 @@ import {
   Edit3,
   Trash2,
   Users,
-  BarChart
+  BarChart,
+  Loader2
 } from "lucide-react";
+import { fetchCourseInfo, fetchCourseOutline } from "../../api/teacher/courseApi";
 import { useNavigate, useParams } from "react-router-dom";
 
-const mockCourseDetail = {
-  id: 1,
-  title: "Introductory IT Knowledge",
-  description: "To get an overview of the IT field and web development, watch the videos in this course first. The course is designed for beginners.",
-  price: 0,
-  oldPrice: 100,
-  thumbnail: "https://files.fullstack.edu.vn/f8-prod/courses/7.png",
-  instructor: {
-    name: "Nguyễn Văn Khoẻ",
-    avatar: "https://i.pravatar.cc/150?img=3"
-  },
-  whatYouWillLearn: [
-    "Basic foundational IT concepts",
-    "Common application architectures and deployment patterns",
-    "Core concepts and terminology used in application development",
-    "A better understanding of how the internet and computers work",
-  ],
-  requirements: [
-    "Computer with internet access",
-    "Strong self-learning mindset and personal responsibility",
-  ],
-  stats: {
-    chapters: 3,
-    lessons: 8,
-    duration: "03 hours 26 minutes",
-    students: 1234,
-    rating: 4.8
-  },
-  chapters: [
-    {
-      id: 1,
-      title: "1. Technical concepts to know",
-      lessons: [
-        { id: 101, title: "1. What is the Client-Server model?", time: "11:35", type: "video" },
-        { id: 102, title: "2. What is a Domain? What is a Hostname?", time: "10:34", type: "video" },
-        { id: 103, title: "3. What is a Server? What is a Web Server?", time: "08:12", type: "article" },
-      ]
-    },
-    {
-      id: 2,
-      title: "2. IT environment and roles",
-      lessons: [
-        { id: 104, title: "4. What are Front-end and Back-end?", time: "15:20", type: "video" },
-        { id: 105, title: "5. What is a Developer? What is a Tester?", time: "09:45", type: "video" },
-        { id: 106, title: "6. Software development process", time: "12:10", type: "quiz" },
-      ]
-    },
-    {
-      id: 3,
-      title: "3. Methods and learning paths",
-      lessons: [
-        { id: 107, title: "7. Programming mindset", time: "20:05", type: "video" },
-        { id: 108, title: "8. Web Developer learning roadmap", time: "18:30", type: "video" },
-      ]
-    },
-  ]
-};
-
 export default function TeacherCourseDetail() {
-  const { courseId } = useParams(); // Get ID from URL if you need to call API
-  const [courseData, setCourseData] = useState(mockCourseDetail);
-  const [openChapters, setOpenChapters] = useState({}); // Object to manage open state for multiple chapters
+  const { courseId } = useParams();
   const navigate = useNavigate();
 
-  // Default: open the first chapter on load
+  const [courseData, setCourseData] = useState(null);
+  const [courseOutline, setCourseOutline] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const [openChapters, setOpenChapters] = useState({});
+
+  // Get user ID from storage
+  const getUserId = () => {
+    const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
+    return userStr ? JSON.parse(userStr).userId : null;
+  };
+
+  // Convert Google Drive link
+  const getDirectGoogleDriveLink = (url) => {
+    if (!url || typeof url !== 'string') return "";
+    if (!url.includes("drive.google.com")) return url;
+
+    try {
+      const idMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/id=([a-zA-Z0-9_-]+)/);
+      if (idMatch && idMatch[1]) {
+        return `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w1000`;
+      }
+      return url;
+    } catch (e) {
+      return url;
+    }
+  };
+
+  // Format duration
+  const formatDuration = (minutes) => {
+    if (!minutes) return "N/A";
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  };
+
+  // ✅ Fetch course data from API
   useEffect(() => {
-    setOpenChapters({ 0: true });
-  }, []);
+    const loadCourseData = async () => {
+      const userId = getUserId();
+      
+      if (!userId || !courseId) {
+        setError("Invalid user or course ID");
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        
+        // Fetch both course info and outline
+        const [info, outline] = await Promise.all([
+          fetchCourseInfo(courseId),
+          fetchCourseOutline(userId, courseId)
+        ]);
+
+        // Map data to match current structure
+        const mappedCourseData = {
+          id: info.courseId,
+          title: info.title,
+          description: info.desc,
+          price: 0, // Always free for now
+          thumbnail: info.thumbnailUrl,
+          instructor: {
+            name: info.teacherName,
+            avatar: info.teachAvatarUrl
+          },
+          whatYouWillLearn: info.courseTargets?.split('\n').filter(t => t.trim()) || [],
+          requirements: info.preconditions?.split('\n').filter(r => r.trim()) || [],
+          stats: {
+            chapters: info.numOfChapter,
+            lessons: info.numOfLesson,
+            duration: formatDuration(info.courseDuration),
+            students: 0, // Not available in API
+            rating: info.rating || 0
+          },
+          isCompleted: info.isCompleted
+        };
+
+        setCourseData(mappedCourseData);
+        setCourseOutline(outline);
+        
+        // Auto-open first chapter
+        if (outline.length > 0) {
+          setOpenChapters({ 0: true });
+        }
+        
+        setError(null);
+      } catch (err) {
+        console.error("Error loading course:", err);
+        setError("Failed to load course data");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCourseData();
+  }, [courseId]);
 
   const toggleChapter = (index) => {
     setOpenChapters((prev) => ({
@@ -96,6 +133,41 @@ export default function TeacherCourseDetail() {
     // Navigate to course edit page
     navigate(`/teacher/courses/${courseData.id}/edit`);
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="bg-gray-50 min-h-screen font-sans">
+        <Navbar />
+        <main className="max-w-7xl mx-auto px-4 pt-24 pb-12 flex items-center justify-center min-h-[60vh]">
+          <Loader2 size={48} className="animate-spin text-[#00b6b6]" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  //Error state
+  if (error || !courseData) {
+    return (
+      <div className="bg-gray-50 min-h-screen font-sans">
+        <Navbar />
+        <main className="max-w-7xl mx-auto px-4 pt-24 pb-12">
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Course Not Found</h2>
+            <p className="text-gray-500 mb-6">{error || "Unable to load course"}</p>
+            <button 
+              onClick={() => navigate("/teacher/courses")}
+              className="px-6 py-3 bg-[#00b6b6] text-white rounded-full hover:bg-[#009e9e] font-bold"
+            >
+              Back to Courses
+            </button>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-50 min-h-screen font-sans">
@@ -149,8 +221,8 @@ export default function TeacherCourseDetail() {
 
               {/* Chapters list */}
               <div className="space-y-3">
-                {courseData.chapters.map((chapter, index) => (
-                  <div key={chapter.id} className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
+                {courseOutline.map((chapter, index) => (
+                  <div key={chapter.chapterId} className="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm">
                     {/* Chapter Header */}
                     <div 
                       onClick={() => toggleChapter(index)}
@@ -158,22 +230,28 @@ export default function TeacherCourseDetail() {
                     >
                       <div className="flex items-center gap-3">
                         {openChapters[index] ? <Minus className="w-4 h-4 text-[#00b6b6]" /> : <Plus className="w-4 h-4 text-[#00b6b6]" />}
-                        <h3 className="font-semibold text-gray-700">{chapter.title}</h3>
+                        <h3 className="font-semibold text-gray-700">
+                          {chapter.order}. {chapter.title}
+                        </h3>
                       </div>
-                        <span className="text-xs text-gray-500">{chapter.lessons.length} lessons</span>
+                      <span className="text-xs text-gray-500">{chapter.lessons?.length || 0} lessons</span>
                     </div>
 
                     {/* Chapter Lessons */}
                     {openChapters[index] && (
                       <div className="divide-y divide-gray-100">
-                        {chapter.lessons.map((lesson) => (
-                          <div key={lesson.id} className="flex justify-between items-center p-3 pl-10 hover:bg-teal-50 transition cursor-pointer group">
+                        {chapter.lessons?.map((lesson) => (
+                          <div key={lesson.lessonId} className="flex justify-between items-center p-3 pl-10 hover:bg-teal-50 transition cursor-pointer group">
                             <div className="flex items-center gap-3">
-                              {lesson.type === 'video' ? <PlayCircle className="w-4 h-4 text-gray-400" /> : <Presentation className="w-4 h-4 text-gray-400" />}
-                              <span className="text-gray-600 text-sm group-hover:text-gray-900">{lesson.title}</span>
+                              <PlayCircle className="w-4 h-4 text-gray-400" />
+                              <span className="text-gray-600 text-sm group-hover:text-gray-900">
+                                {lesson.order}. {lesson.title}
+                              </span>
                             </div>
                             <div className="flex items-center gap-4">
-                                <span className="text-xs text-gray-400">{lesson.time}</span>
+                              <span className="text-xs text-gray-400">
+                                {lesson.duration ? formatDuration(lesson.duration) : 'N/A'}
+                              </span>
                             </div>
                           </div>
                         ))}
@@ -205,7 +283,7 @@ export default function TeacherCourseDetail() {
               <div className="relative group cursor-pointer">
                 <div className="w-full h-48 bg-gray-200 overflow-hidden">
                     <img 
-                      src={courseData.thumbnail} 
+                      src={getDirectGoogleDriveLink(courseData.thumbnail)} 
                       alt="Thumbnail" 
                       className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                     />

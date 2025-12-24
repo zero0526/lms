@@ -1,31 +1,27 @@
 import React, { useState } from "react";
-import { Filter, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Filter } from "lucide-react";
 
 export default function CourseFilter({ onFilterChange, categories }) {
-  const [isOpen, setIsOpen] = useState(false); // Mobile toggle
+  const [isOpen, setIsOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [priceRange, setPriceRange] = useState("all"); // 'all', 'free', 'paid'
   const [minRating, setMinRating] = useState(0);
-  const [sortBy, setSortBy] = useState("popular"); // 'popular', 'newest', 'price-low', 'price-high'
+  const [sortBy, setSortBy] = useState("popular");
 
   const handleApply = () => {
     onFilterChange({
       category: selectedCategory,
-      price: priceRange,
       rating: minRating,
       sort: sortBy
     });
-    setIsOpen(false); // Close on mobile after applying
+    setIsOpen(false);
   };
 
   const handleClear = () => {
     setSelectedCategory("All");
-    setPriceRange("all");
     setMinRating(0);
     setSortBy("popular");
     onFilterChange({
       category: "All",
-      price: "all",
       rating: 0,
       sort: "popular"
     });
@@ -78,31 +74,6 @@ export default function CourseFilter({ onFilterChange, categories }) {
 
         <div className="border-t border-gray-100 my-4"></div>
 
-        {/* Price */}
-        <div className="mb-6">
-          <h4 className="font-semibold text-gray-700 mb-3 text-sm">Price</h4>
-          <div className="space-y-2">
-            {[
-              { id: "all", label: "All Prices" },
-              { id: "free", label: "Free" },
-              { id: "paid", label: "Paid" },
-            ].map((opt) => (
-              <label key={opt.id} className="flex items-center gap-2 cursor-pointer group">
-                <input
-                  type="radio"
-                  name="price"
-                  className="accent-[#00b6b6] w-4 h-4 cursor-pointer"
-                  checked={priceRange === opt.id}
-                  onChange={() => setPriceRange(opt.id)}
-                />
-                <span className="text-sm text-gray-600 group-hover:text-gray-800">{opt.label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div className="border-t border-gray-100 my-4"></div>
-
         {/* Rating */}
         <div className="mb-6">
           <h4 className="font-semibold text-gray-700 mb-3 text-sm">Rating</h4>
@@ -122,19 +93,52 @@ export default function CourseFilter({ onFilterChange, categories }) {
               </label>
             ))}
             <label className="flex items-center gap-2 cursor-pointer group">
-                <input
-                  type="radio"
-                  name="rating"
-                  className="accent-[#00b6b6] w-4 h-4 cursor-pointer"
-                  checked={minRating === 0}
-                  onChange={() => setMinRating(0)}
-                />
-                <span className="text-sm text-gray-600 group-hover:text-gray-800">Any Rating</span>
-              </label>
+              <input
+                type="radio"
+                name="rating"
+                className="accent-[#00b6b6] w-4 h-4 cursor-pointer"
+                checked={minRating === 0}
+                onChange={() => setMinRating(0)}
+              />
+              <span className="text-sm text-gray-600 group-hover:text-gray-800">Any Rating</span>
+            </label>
           </div>
         </div>
 
-        {/* Apply Button (Mobile mostly, but useful for desktop too) */}
+        <div className="border-t border-gray-100 my-4"></div>
+
+        {/* ✅ Sort By */}
+        <div className="mb-6">
+          <h4 className="font-semibold text-gray-700 mb-3 text-sm">Sort By</h4>
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input
+                type="radio"
+                name="sort"
+                className="accent-[#00b6b6] w-4 h-4 cursor-pointer"
+                checked={sortBy === "popular"}
+                onChange={() => setSortBy("popular")}
+              />
+              <span className={`text-sm ${sortBy === "popular" ? "text-[#00b6b6] font-medium" : "text-gray-600 group-hover:text-gray-800"}`}>
+                Most Popular
+              </span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input
+                type="radio"
+                name="sort"
+                className="accent-[#00b6b6] w-4 h-4 cursor-pointer"
+                checked={sortBy === "newest"}
+                onChange={() => setSortBy("newest")}
+              />
+              <span className={`text-sm ${sortBy === "newest" ? "text-[#00b6b6] font-medium" : "text-gray-600 group-hover:text-gray-800"}`}>
+                Newest
+              </span>
+            </label>
+          </div>
+        </div>
+
+        {/* Apply Button */}
         <button
           onClick={handleApply}
           className="w-full bg-[#00b6b6] text-white py-2 rounded-lg font-medium hover:bg-[#009e9e] transition shadow-md mt-2"
