@@ -25,11 +25,6 @@ export default function Navbar() {
     };
   }, []);
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    console.log("Searching for:", searchTerm);
-  };
-
   const handleLogoClick = () => {
     navigate("/home");
   };
@@ -41,7 +36,7 @@ export default function Navbar() {
     sessionStorage.removeItem("user");
     
     setIsDropdownOpen(false);
-    navigate("/login");
+    navigate("/home");
     window.location.reload();
   };
 

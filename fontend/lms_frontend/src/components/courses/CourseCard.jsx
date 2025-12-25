@@ -6,25 +6,42 @@ export default function CourseCard({ course }) {
   const navigate = useNavigate();
 
   const handleCardClick = () => {
-    // ✅ Check xem user đã đăng nhập chưa và role là gì
+    // Check xem user đã đăng nhập chưa
     const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
     
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
         
-        // ✅ Nếu là học sinh -> chuyển đến StudentCourseDetail
+        // Nếu là học sinh -> chuyển đến StudentCourseDetail
         if (user.role === "ROLE_STUDENT") {
           navigate(`/student/courses/${course.id}`);
           return;
         }
+        
+        // Nếu là teacher/admin -> thông báo
+        alert("Only students can access course details.");
+        return;
+        
       } catch (e) {
         console.error("Parse user error", e);
       }
     }
     
-    // ✅ Nếu chưa đăng nhập hoặc không phải học sinh -> chuyển đến CourseDetail (public)
-    navigate(`/courses/${course.id}`);
+    // Chưa đăng nhập -> Hiển thị confirm dialog
+    const confirmLogin = window.confirm(
+      "You need to log in as a student to view course details. Do you want to log in now?"
+    );
+    
+    if (confirmLogin) {
+      // Lưu lại URL hiện tại để redirect sau khi login
+      navigate("/login", { 
+        state: { 
+          from: `/student/courses/${course.id}`,
+          courseName: course.title 
+        } 
+      });
+    }
   };
 
   return (
@@ -45,21 +62,21 @@ export default function CourseCard({ course }) {
         <p className="text-gray-500 text-xs mb-4 line-clamp-2">{course.description}</p>
         
         <div className="mt-auto">
-            <div className="flex items-center justify-between border-t border-gray-100 pt-3 mb-3">
+          <div className="flex items-center justify-between border-t border-gray-100 pt-3 mb-3">
             <span className="flex items-center gap-1 text-xs text-gray-600">
-                <img className="w-4 h-4 opacity-70" src={student} alt="student" />
-                {course.studentNums}
+              <img className="w-4 h-4 opacity-70" src={student} alt="student" />
+              {course.studentNums}
             </span>
             <span className="flex items-center gap-1 text-xs text-gray-600">
-                <img className="w-4 h-4 opacity-70" src={lesson} alt="lesson" />
-                {course.chapterNums}
+              <img className="w-4 h-4 opacity-70" src={lesson} alt="lesson" />
+              {course.chapterNums}
             </span>
             <span className="font-bold text-teal-600 text-sm">Free</span>
-            </div>
+          </div>
 
-            <button className="w-full border border-[#00b6b6] text-[#00b6b6] rounded-lg py-2 text-sm font-semibold hover:bg-[#00b6b6] hover:text-white transition duration-300">
-            Explore
-            </button>
+          <button className="w-full border border-[#00b6b6] text-[#00b6b6] rounded-lg py-2 text-sm font-semibold hover:bg-[#00b6b6] hover:text-white transition duration-300">
+            View Details
+          </button>
         </div>
       </div>
     </div>

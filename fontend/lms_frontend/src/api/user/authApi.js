@@ -35,10 +35,43 @@ export const changeUserPassword = async (userId, currentPassword, newPassword) =
 };
 
 /**
+ * ✅ Request forgot password (send reset email)
+ * @param {string} email - User email
+ */
+export const requestForgotPassword = async (email) => {
+  try {
+    console.log("=== FORGOT PASSWORD REQUEST ===");
+    console.log(`Email: ${email}`);
+
+    const payload = { email: email.trim() };
+
+    const response = await apiClient.post('/user/forgot/password', payload);
+
+    console.log("✅ Forgot password request successful:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ Forgot password request failed:", error);
+    
+    if (error.response) {
+      console.error("Error Response:", error.response.data);
+      throw new Error(
+        error.response.data.message || 
+        error.response.data || 
+        "Failed to send reset password email"
+      );
+    }
+    
+    throw new Error("Network error. Please try again later.");
+  }
+};
+
+/**
  * Logout user (clear storage)
  */
 export const logoutUser = () => {
   localStorage.removeItem("user");
   sessionStorage.removeItem("user");
+  localStorage.removeItem("accessToken");
+  sessionStorage.removeItem("accessToken");
   console.log("User logged out");
 };
