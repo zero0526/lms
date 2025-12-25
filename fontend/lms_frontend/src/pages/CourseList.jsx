@@ -5,7 +5,7 @@ import CourseCard from "../components/courses/CourseCard";
 import CourseFilter from "../components/courses/CourseFilter";
 import { convertDriveLink } from "../api/user/userUtils";
 import { Search } from "lucide-react";
-import apiClient from "../api/axiosConfig";
+import { getCourseTags, getIntroduceCourses } from "../api/user/courseApi";
 
 export default function CourseList() {
   const [courses, setCourses] = useState([]);
@@ -25,11 +25,12 @@ export default function CourseList() {
   const [page, setPage] = useState(0);
   const [limit] = useState(10);
 
+  // Fetch tags
   useEffect(() => {
     const fetchTags = async () => {
       try {
-        const tagsResponse = await apiClient.get(`/course/course-tags?limit=10`);
-        const tagsData = tagsResponse.data.data || [];
+        const tagsResponse = await getCourseTags(10);
+        const tagsData = tagsResponse.data || [];
         console.log("Tags Data:", tagsData);
         setCategories(tagsData);
       } catch (error) {
@@ -40,36 +41,37 @@ export default function CourseList() {
     fetchTags();
   }, []);
 
+  // Search filter
   useEffect(() => {
     const fetchCourses = async () => {
       try {
         setIsLoading(true);
 
-        const params = new URLSearchParams();
+        const params = {
+          page,
+          limit
+        };
         
         if (filters.category !== "All") {
-          params.append("tags", filters.category);
+          params.tags = filters.category;
         }
         
         if (filters.rating > 0) {
-          params.append("lowerBoundRating", filters.rating.toString());
+          params.lowerBoundRating = filters.rating.toString();
         }
 
-        const sortBy = filters.sort === "newest" ? "latest" : filters.sort;
-        params.append("sortBy", sortBy);
-        
-        params.append("page", page.toString());
-        params.append("limit", limit.toString());
+        params.sortBy = filters.sort === "newest" ? "latest" : filters.sort;
 
-        console.log("Fetching with params:", params.toString());
+        console.log("Fetching with params:", params);
 
-        const coursesResponse = await apiClient.get(`/course/introduce-course?${params.toString()}`);
+        const coursesResponse = await getIntroduceCourses(params);
         
-        console.log("API Response:", coursesResponse.data);
+        console.log("API Response:", coursesResponse);
         
-        const coursesData = coursesResponse.data.data.content || [];
+        const coursesData = coursesResponse.data.content || [];
+        const completedCourses = coursesData.filter(course => course.isCompleted === true);
 
-        const mappedCourses = coursesData.map(course => ({
+        const mappedCourses = completedCourses.map(course => ({
           id: course.id,
           title: course.title,
           description: course.description,
@@ -97,6 +99,7 @@ export default function CourseList() {
     fetchCourses();
   }, [filters.category, filters.rating, filters.sort, page, limit]);
 
+  // Search filter
   useEffect(() => {
     if (searchTerm) {
       const result = courses.filter(course => 
@@ -133,7 +136,7 @@ export default function CourseList() {
               <input
                 type="text"
                 placeholder="What do you want to learn today?"
-                className="w-full py-3 pl-12 pr-4 rounded-full text-white focus:outline-none focus:ring-4 focus:ring-[#00b6b6]/50 shadow-lg placeholder-gray-400"
+                className="w-full py-3 pl-12 pr-4 rounded-full text-gray-800 focus:outline-none focus:ring-4 focus:ring-[#00b6b6]/50 shadow-lg placeholder-gray-400"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -156,15 +159,17 @@ export default function CourseList() {
 
             {/* Course Grid */}
             <div className="w-full md:w-3/4">
-              {/* ✅ Chỉ hiển thị số lượng courses */}
               <div className="mb-6">
                 <p className="text-gray-600 font-medium">
                   Showing <span className="text-gray-900 font-bold">{filteredCourses.length}</span> courses
                 </p>
               </div>
 
-              {/* Grid */}
-              {filteredCourses.length > 0 ? (
+              {isLoading ? (
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00b6b6]"></div>
+                </div>
+              ) : filteredCourses.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredCourses.map(course => (
                     <div key={course.id} className="flex">
@@ -185,7 +190,6 @@ export default function CourseList() {
                     onClick={() => {
                         setSearchTerm("");
                         handleFilterChange({ category: "All", rating: 0, sort: "popular" });
-                        window.location.reload(); 
                     }}
                     className="mt-6 px-6 py-2 bg-[#00b6b6] text-white rounded-lg hover:bg-[#009e9e] transition"
                   >

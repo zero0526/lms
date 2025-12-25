@@ -1,5 +1,6 @@
 import apiClient from "../axiosConfig";
 import axios from "axios";
+import apiPublicClient from "../axiosPublicConfig";
 
 /**
  * Lấy danh sách tags phổ biến
@@ -38,12 +39,21 @@ export const getIntroduceCourses = async (params = {}) => {
  * Lấy chi tiết khóa học
  */
 export const getCourseDetails = async (courseId) => {
-  const response = await apiClient.get(`/course/details/${courseId}`);
-  return response.data;
+  if (!courseId) {
+    throw new Error("Course ID is required");
+  }
+
+  try {
+    const response = await apiPublicClient.get(`/course/details/${courseId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch course details for courseId ${courseId}:`, error);
+    throw error;
+  }
 };
 
 /**
- * ✅ Lấy outline khóa học (public - chưa đăng ký)
+ * Lấy outline khóa học (public - chưa đăng ký)
  * Response mới:
  * {
  *   status: 200,
@@ -54,9 +64,20 @@ export const getCourseDetails = async (courseId) => {
  * }
  */
 export const getCourseOutlinePublic = async (courseId) => {
-  const response = await apiClient.get(`/course/outline?courseId=${courseId}`);
-  console.log("📦 Public Outline Response:", response.data);
-  return response.data;
+  if (!courseId) {
+    throw new Error("Course ID is required");
+  }
+
+  try {
+    const response = await apiPublicClient.get(`/course/outline`, {
+      params: { courseId }
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch public course outline for courseId ${courseId}:`, error);
+    throw error;
+  }
 };
 
 /**
@@ -83,7 +104,7 @@ export const getCourseOutlineEnrolled = async (userId, courseId) => {
 
 /**
  * Đăng ký khóa học
- * ⚠️ Endpoint này KHÔNG có prefix /api
+ * Endpoint này KHÔNG có prefix /api
  */
 export const enrollCourse = async (userId, courseId) => {
   if (!userId || userId === 'undefined' || userId === undefined) {
@@ -109,7 +130,7 @@ export const enrollCourse = async (userId, courseId) => {
     
     console.log("📤 Enroll request data:", enrollData);
     
-    // ✅ Tạo request riêng với full URL (không qua apiClient)
+    // Tạo request riêng với full URL (không qua apiClient)
     const baseURL = apiClient.defaults.baseURL.replace('/api', ''); // Loại bỏ /api
     const response = await axios.post(`${baseURL}/enroll`, enrollData, {
       headers: {
@@ -118,13 +139,13 @@ export const enrollCourse = async (userId, courseId) => {
       }
     });
     
-    console.log("✅ Enroll response:", response.data);
+    console.log("Enroll response:", response.data);
     console.log("=== END ENROLL ===\n");
     
     return response.data;
     
   } catch (error) {
-    console.error("❌ Enroll error:", error);
+    console.error("Enroll error:", error);
     console.error("Error response:", error.response?.data);
     console.error("Error status:", error.response?.status);
     
@@ -141,7 +162,7 @@ export const enrollCourse = async (userId, courseId) => {
 };
 
 /**
- * ✅ Kiểm tra enrollment status - SIMPLIFIED
+ * Kiểm tra enrollment status - SIMPLIFIED
  * Giờ BE trả về isEnrolled trong response rồi!
  */
 export const checkEnrollmentStatus = async (userId, courseId) => {

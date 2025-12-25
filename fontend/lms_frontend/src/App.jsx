@@ -9,6 +9,7 @@ import Blog from "./pages/Blog";
 import BlogDetail from "./pages/BlogDetail";
 import Profile from "./pages/Profile";
 import CourseList from "./pages/CourseList";
+import ResetPassword from './pages/ResetPassword';
 
 // Shared Pages (Now Public)
 import CourseDetail from "./pages/CourseDetail"; // Import component mới đổi tên
@@ -37,19 +38,9 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:category" element={<BlogDetail/>} />
-          
-          <Route 
-            path="/courses" 
-            element={
-              <CourseList />
-            } 
-          />
-          
-          {/* Trang chi tiết khóa học giờ là Public Route */}
-          <Route 
-            path="/courses/:courseId" 
-            element={<CourseDetail />} 
-          />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/courses" element={<CourseList />} />
+          <Route path="/courses/:courseId" element={<CourseDetail />} />
 
           {/* --- PROTECTED ROUTES --- */}
           <Route 

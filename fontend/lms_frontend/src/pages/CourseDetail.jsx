@@ -18,35 +18,38 @@ export default function CourseDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // ✅ Fetch course details và outline (public only)
-  useEffect(() => {
-    const fetchCourseData = async () => {
-      try {
-        setIsLoading(true);
+// Fetch course details và outline (public only)
+useEffect(() => {
+  const fetchCourseData = async () => {
+    try {
+      setIsLoading(true);
 
-        const [detailsData, outlineData] = await Promise.all([
-          getCourseDetails(courseId),
-          getCourseOutlinePublic(courseId)
-        ]);
+      const [detailsData, outlineData] = await Promise.all([
+        getCourseDetails(courseId),
+        getCourseOutlinePublic(courseId)
+      ]);
 
-        console.log("Course Details:", detailsData);
-        console.log("Course Outline:", outlineData);
+      console.log("Course Details:", detailsData);
+      console.log("Course Outline:", outlineData);
 
-        setCourseDetails(detailsData.data);
-        setCourseOutline(outlineData.data || []);
+      setCourseDetails(detailsData.data);
 
-        setIsLoading(false);
-      } catch (err) {
-        console.error("Failed to fetch course data:", err);
-        setError("Không thể tải thông tin khóa học. Vui lòng thử lại sau.");
-        setIsLoading(false);
-      }
-    };
+      const chapters = outlineData.data?.chapters || [];
+      console.log("Extracted chapters:", chapters);
+      setCourseOutline(chapters);
 
-    if (courseId) {
-      fetchCourseData();
+      setIsLoading(false);
+    } catch (err) {
+      console.error("Failed to fetch course data:", err);
+      setError("Không thể tải thông tin khóa học. Vui lòng thử lại sau.");
+      setIsLoading(false);
     }
-  }, [courseId]);
+  };
+
+  if (courseId) {
+    fetchCourseData();
+  }
+}, [courseId]);
 
   const toggleChapter = (index) => {
     setOpenChapters((prev) => ({
@@ -58,24 +61,30 @@ export default function CourseDetail() {
   // ✅ Redirect to login or student course detail
   const handleViewCourse = () => {
     const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
-    
+  
     if (!userStr) {
-      const confirmLogin = window.confirm("Bạn cần đăng nhập để xem khóa học. Đi tới trang đăng nhập?");
-      if (confirmLogin) {
-        navigate("/login", { state: { from: `/student/courses/${courseId}` } });
-      }
+      navigate("/login", { 
+        state: { 
+          from: `/student/courses/${courseId}`,
+          courseName: courseDetails.title 
+        } 
+      });
       return;
     }
 
     try {
       const user = JSON.parse(userStr);
+      
       if (user.role === "ROLE_STUDENT") {
         navigate(`/student/courses/${courseId}`);
+      } else if (user.role === "ROLE_TEACHER") {
+        navigate(`/teacher/courses/${courseId}`);
       } else {
-        alert("Chỉ tài khoản học sinh mới có thể tham gia khóa học.");
+        alert("Please log in as a student to enroll in this course.");
       }
     } catch (e) {
       console.error("Parse user error", e);
+      navigate("/login");
     }
   };
 
@@ -136,7 +145,7 @@ export default function CourseDetail() {
               onClick={() => navigate("/courses")} 
               className="mt-4 px-6 py-2 bg-[#00b6b6] text-white rounded-lg hover:bg-[#009e9e] transition"
             >
-              Quay lại danh sách khóa học
+              Back to course list
             </button>
           </div>
         </main>
@@ -169,23 +178,23 @@ export default function CourseDetail() {
                 />
                 <div>
                   <p className="text-sm font-bold text-gray-800">
-                    Được dạy bởi <span className="text-[#00b6b6]">{courseDetails.teacherName}</span>
+                    Taught by <span className="text-[#00b6b6]">{courseDetails.teacherName}</span>
                   </p>
-                  <p className="text-xs text-gray-500">Giảng viên</p>
+                  <p className="text-xs text-gray-500">Instructor</p>
                 </div>
               </div>
             </div>
 
             {courseDetails.preconditions && (
               <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-lg">
-                <h3 className="font-semibold text-gray-800 mb-2">📋 Yêu cầu trước khi học:</h3>
+                <h3 className="font-semibold text-gray-800 mb-2">📋 Prerequisites:</h3>
                 <p className="text-sm text-gray-700">{courseDetails.preconditions}</p>
               </div>
             )}
 
             {whatYouWillLearn.length > 0 && (
               <div className="bg-white border border-gray-200 p-6 rounded-xl shadow-sm">
-                <h2 className="text-xl font-semibold mb-4 text-gray-800">Bạn sẽ học được gì?</h2>
+                <h2 className="text-xl font-semibold mb-4 text-gray-800">What you will learn</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {whatYouWillLearn.map((item, index) => (
                     <div key={index} className="flex items-start gap-2">
@@ -199,10 +208,10 @@ export default function CourseDetail() {
 
             <div>
               <div className="flex flex-col md:flex-row justify-between items-end md:items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-800">Nội dung khóa học</h2>
+                <h2 className="text-xl font-semibold text-gray-800">Course Content</h2>
                 <div className="text-sm text-gray-500 font-medium">
-                  <span className="font-bold">{courseDetails.numOfChapter}</span> chương •{" "}
-                  <span className="font-bold">{courseDetails.numOfLesson}</span> bài học •{" "}
+                  <span className="font-bold">{courseDetails.numOfChapter}</span> chapters •{" "}
+                  <span className="font-bold">{courseDetails.numOfLesson}</span> lessons •{" "}
                   <span className="font-bold">{formatDuration(courseDetails.courseDuration)}</span>
                 </div>
               </div>
@@ -221,7 +230,7 @@ export default function CourseDetail() {
                         }
                         <h3 className="font-semibold text-gray-700">{chapter.title}</h3>
                       </div>
-                      <span className="text-xs text-gray-500">{chapter.lessons.length} bài học</span>
+                      <span className="text-xs text-gray-500">{chapter.lessons.length} lessons</span>
                     </div>
 
                     {openChapters[index] && (
@@ -251,13 +260,13 @@ export default function CourseDetail() {
               <div className="flex items-center gap-2 mb-6">
                 <Star className="w-6 h-6 fill-yellow-400 text-yellow-400" />
                 <h2 className="text-xl font-bold text-gray-800">
-                  {courseDetails.rating?.toFixed(1) || "Chưa có"} Đánh giá khóa học
+                  {courseDetails.rating?.toFixed(1) || "No"} Course Ratings
                 </h2>
-                <span className="text-gray-500 text-sm">({courseDetails.numOfRating} xếp hạng)</span>
+                <span className="text-gray-500 text-sm">({courseDetails.numOfRating} ratings)</span>
               </div>
 
               <div className="bg-gray-50 border border-gray-200 p-6 rounded-lg text-center text-gray-500">
-                Chưa có đánh giá nào
+                Log in to see reviews
               </div>
             </div>
 
@@ -282,31 +291,63 @@ export default function CourseDetail() {
 
               <div className="p-6 text-center">
                 <div className="mb-6">
-                  <h2 className="text-3xl font-bold text-[#00b6b6] mb-4">Miễn phí</h2>
+                  <h2 className="text-3xl font-bold text-[#00b6b6] mb-4">Free</h2>
+                    {/* Show different text based on login status */}
+                    <p className="text-sm text-gray-600 mb-4">
+                      {(() => {
+                        const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
+                        if (!userStr) {
+                          return "Log in to enroll and start learning";
+                        }
+                        
+                        try {
+                          const user = JSON.parse(userStr);
+                          if (user.role === "ROLE_STUDENT") {
+                            return "Click below to enroll in this course";
+                          }
+                          return "View course details";
+                        } catch {
+                          return "Log in to continue";
+                        }
+                      })()}
+                    </p>
                   <button 
                     onClick={handleViewCourse} 
                     className="w-full bg-[#00b6b6] text-white font-bold text-lg py-3 rounded-full hover:bg-[#009e9e] transition shadow-lg transform active:scale-95"
                   >
-                    XEM KHÓA HỌC
+                    {(() => {
+                      const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
+                      if (!userStr) return "LOG IN TO ENROLL";
+                      
+                      try {
+                        const user = JSON.parse(userStr);
+                        if (user.role === "ROLE_STUDENT") return "ENROLL NOW";
+                        if (user.role === "ROLE_TEACHER") return "VIEW AS TEACHER";
+                        return "VIEW COURSE";
+                      } catch {
+                        return "VIEW COURSE";
+                      }
+                    })()}
                   </button>
                 </div>
-
+                
+                {/* Course Info */}
                 <ul className="text-left space-y-4 text-sm text-gray-600 border-t border-gray-100 pt-4">
                   <li className="flex items-center gap-3">
                     <Award className="w-5 h-5 text-gray-400" />
-                    <span>Trình độ cơ bản</span>
+                    <span>Beginner Level</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <Film className="w-5 h-5 text-gray-400" />
-                    <span>Tổng số <strong>{courseDetails.numOfLesson}</strong> bài học</span>
+                    <span>Total <strong>{courseDetails.numOfLesson}</strong> lessons</span>
                   </li>
                   <li className="flex items-center gap-3">
                     <Clock className="w-5 h-5 text-gray-400" />
-                    <span>Thời lượng <strong>{formatDuration(courseDetails.courseDuration)}</strong></span>
+                    <span>Duration <strong>{formatDuration(courseDetails.courseDuration)}</strong></span>
                   </li>
                   <li className="flex items-center gap-3">
                     <Battery className="w-5 h-5 text-gray-400" />
-                    <span>Học mọi lúc, mọi nơi</span>
+                    <span>Learn anytime, anywhere</span>
                   </li>
                 </ul>
               </div>

@@ -66,6 +66,52 @@ export const requestForgotPassword = async (email) => {
 };
 
 /**
+ * Reset password với token
+ * @param {string} token - Reset token từ email
+ * @param {number} userId - User ID
+ * @param {string} newPassword - Mật khẩu mới
+ */
+export const resetPassword = async (token, userId, newPassword) => {
+  try {
+    console.log("=== RESET PASSWORD ===");
+    console.log(`Token: ${token}`);
+    console.log(`User ID: ${userId}`);
+
+    const payload = { newPassword };
+
+    const response = await apiClient.post(`/user/forgot`, payload, {
+      params: { token, userId }
+    });
+
+    console.log("Reset password successful:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Reset password failed:", error);
+    
+    if (error.response) {
+      console.error("Error Response:", error.response.data);
+      
+      // Handle specific error cases
+      if (error.response.status === 400) {
+        throw new Error("Invalid or expired reset token. Please request a new password reset.");
+      }
+      
+      if (error.response.status === 404) {
+        throw new Error("User not found.");
+      }
+      
+      throw new Error(
+        error.response.data.message || 
+        error.response.data || 
+        "Failed to reset password"
+      );
+    }
+    
+    throw new Error("Network error. Please try again later.");
+  }
+};
+
+/**
  * Logout user (clear storage)
  */
 export const logoutUser = () => {
