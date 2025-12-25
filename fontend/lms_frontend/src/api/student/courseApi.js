@@ -1,46 +1,61 @@
-import apiClient from '../utils/apiClient';
+import apiClient from '../axiosConfig';
 
-export const getCouseData = (courseId) => {
-  // Logic to get course data based on courseId
-  return { id: courseId, title: "Sample Course" }; // Example return value
-}
+export const getEnrolledCourses = async (userId) => {
+  if (!userId || userId === 'undefined' || userId === undefined) {
+    console.error("❌ Invalid userId:", userId);
+    throw new Error("User ID is required to fetch enrolled courses");
+  }
 
-export const enrollInCourse = (courseId, studentId) => {
-  // Logic to enroll a student in a course
-  return { success: true, courseId, studentId }; // Example return value
-}
+  try {
+    console.log("📚 Fetching enrolled courses for userId:", userId);
+    
+    const response = await apiClient.get(`/course/${userId}`);
+    
+    console.log("✅ Enrolled courses response:", response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error("❌ Get enrolled courses error:", error);
+    console.error("Error response:", error.response?.data);
+    
+    if (error.response?.status === 404) {
+      // User chưa đăng ký khóa học nào
+      return { status: 200, data: [] };
+    }
+    
+    throw error;
+  }
+};
 
-export const getEnrolledCourses = (studentId) => {
-  // Logic to get all courses a student is enrolled in
-  return [{ id: 1, title: "Sample Course 1" }, { id: 2, title: "Sample Course 2" }]; // Example return value
-}
+export const getEnrolledCourseDetail = async (userId, courseId) => {
+  if (!userId || !courseId) {
+    throw new Error("User ID and Course ID are required");
+  }
 
-export const dropCourse = (courseId, studentId) => {
-  // Logic to drop a course for a student
-  return { success: true, courseId, studentId }; // Example return value
-}
+  try {
+    const response = await apiClient.get(`/course/${userId}`);
+    const courses = response.data.data || [];
+    
+    // Tìm course theo courseId
+    const course = courses.find(c => c.courseId === parseInt(courseId));
+    
+    if (!course) {
+      throw new Error("Course not found in enrolled list");
+    }
+    
+    return { status: 200, data: course };
+  } catch (error) {
+    console.error("❌ Get enrolled course detail error:", error);
+    throw error;
+  }
+};
 
-export const getCourseMaterials = (courseId) => {
-  // Logic to get course materials based on courseId
-  return [{ id: 1, title: "Lecture Notes" }, { id: 2, title: "Assignments" }]; // Example return value
-}
-
-export const submitAssignment = (courseId, studentId, assignmentData) => {
-  // Logic to submit an assignment for a course by a student
-  return { success: true, courseId, studentId, assignmentData }; // Example return value
-}
-
-export const getGrades = (studentId) => {
-  // Logic to get grades for a student
-  return [{ courseId: 1, grade: "A" }, { courseId: 2, grade: "B+" }]; // Example return value
-}
-
-export const getCourseSchedule = (courseId) => {
-  // Logic to get the schedule for a course
-  return { courseId, schedule: "Mon-Wed-Fri 10:00-11:00 AM" }; // Example return value
-}
-
-export const getInstructorInfo = (courseId) => {
-  // Logic to get instructor information for a course
-  return { courseId, instructor: "Dr. John Doe" }; // Example return value
-}
+export const checkCourseCompletion = async (userId, courseId) => {
+  try {
+    const response = await getEnrolledCourseDetail(userId, courseId);
+    return response.data?.isCompleted || false;
+  } catch (error) {
+    console.error("❌ Check completion error:", error);
+    return false;
+  }
+};

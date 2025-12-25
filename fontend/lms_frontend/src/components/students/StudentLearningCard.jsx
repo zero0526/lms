@@ -1,16 +1,23 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { CheckCircle } from "lucide-react";
+import courseplaceholder from "../../assets/courseplaceholder.png";
 
 export default function StudentLearningCard({ course }) {
   const navigate = useNavigate();
+  const imgplaceholder = courseplaceholder;
 
-  const progressPercent = (course.progress / course.totalLessons) * 100;
+  const progressPercent = course.progressPercent || 0;
+  
+  // ✅ Đánh giá hoàn thiện dựa trên progress, không phải isCompleted
+  const isCourseCompleted = progressPercent >= 100;
 
   const handleCardClick = () => {
     navigate(`/student/courses/${course.id}`, { 
       state: { 
         isRegistered: true,
-        progress: course.progress
+        progress: course.progress,
+        progressPercent: progressPercent
       } 
     });
   };
@@ -18,12 +25,23 @@ export default function StudentLearningCard({ course }) {
   return (
     <div 
       onClick={handleCardClick}
-      className="bg-white shadow-lg rounded-xl overflow-hidden hover:scale-105 transform transition duration-300 cursor-pointer"
+      className="bg-white shadow-lg rounded-xl overflow-hidden hover:scale-105 transform transition duration-300 cursor-pointer relative"
     >
+      {/* ✅ Completed Badge - dựa vào progress */}
+      {isCourseCompleted && (
+        <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 z-10">
+          <CheckCircle size={14} />
+          Completed
+        </div>
+      )}
+
       <img
         src={course.image}
         alt={course.title}
         className="w-full h-40 object-cover"
+        onError={(e) => { 
+          e.target.src = imgplaceholder; 
+        }}
       />
 
       <div className="p-4">
@@ -31,21 +49,27 @@ export default function StudentLearningCard({ course }) {
           {course.title}
         </h4>
 
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-3">
           <p className="text-gray-600 text-xs">{course.instructor}</p>
         </div>
 
         {/* Progress bar */}
-        <div className="w-full bg-gray-200 h-1 rounded-full mb-2">
+        <div className="w-full bg-gray-200 h-2 rounded-full mb-2">
           <div
-            className="h-1 bg-[#00b6b6] rounded-full"
+            className="h-2 bg-[#00b6b6] rounded-full transition-all duration-300"
             style={{ width: `${progressPercent}%` }}
           ></div>
         </div>
 
-        <p className="text-[11px] text-gray-500 text-right">
-          Lesson {course.progress} of {course.totalLessons}
-        </p>
+        <div className="flex justify-between items-center">
+          <p className="text-[11px] text-gray-500">
+            Progress: <span className="font-bold">{progressPercent.toFixed(0)}%</span>
+          </p>
+          {/* ✅ Hiển thị số chapters */}
+          <p className="text-[11px] text-gray-500">
+            {course.numOfChapter} {course.numOfChapter === 1 ? 'chapter' : 'chapters'}
+          </p>
+        </div>
       </div>
     </div>
   );
