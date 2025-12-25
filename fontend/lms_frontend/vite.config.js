@@ -20,6 +20,16 @@ export default defineConfig({
           });
         },
       },
+      '/enroll': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        secure: false,
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            proxyReq.setHeader('Origin', 'http://localhost:8081');
+          });
+        },
+      },
     },
   },
 })
