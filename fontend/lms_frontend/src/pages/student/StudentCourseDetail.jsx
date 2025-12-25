@@ -264,7 +264,7 @@ const handleEnroll = async () => {
   };
 
   const formatLessonDuration = (seconds) => {
-    if (!seconds) return "Not updated";
+    if (!seconds) return "None";
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
