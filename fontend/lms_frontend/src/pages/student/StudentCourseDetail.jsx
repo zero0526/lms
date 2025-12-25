@@ -14,10 +14,12 @@ import {
   checkEnrollmentStatus 
 } from "../../api/user/courseApi";
 import { submitCourseReview, getCourseReviews } from "../../api/student/reviewApi";
+import courseplaceholder from "../../assets/courseplaceholder.png";
 
 export default function StudentCourseDetail() {
   const navigate = useNavigate();
   const { courseId } = useParams();
+  const cimgplaceholder = courseplaceholder;
 
   const [openChapters, setOpenChapters] = useState({ 0: true });
   const [isEnrolled, setIsEnrolled] = useState(false); 
@@ -73,23 +75,40 @@ export default function StudentCourseDetail() {
     setOpenChapters({ 0: true });
   }, [courseId]);
 
-  // ✅ Fetch course data
-  useEffect(() => {
-    const fetchCourseData = async () => {
-      if (!currentUser?.userId || !courseId) return;
+// ✅ Fetch course data
+useEffect(() => {
+  const fetchCourseData = async () => {
+    if (!courseId) return;
 
-      try {
-        setIsLoading(true);
+    try {
+      setIsLoading(true);
 
-        console.log("📚 Fetching course data for courseId:", courseId);
+      console.log("📚 Fetching course data for courseId:", courseId);
 
-        const detailsData = await getCourseDetails(courseId);
-        setCourseDetails(detailsData.data);
+      // ✅ 1. Fetch course details
+      const detailsData = await getCourseDetails(courseId);
+      setCourseDetails(detailsData.data);
 
+      // ✅ 2. Check if user is logged in
+      if (!currentUser?.userId) {
+        console.log("👤 Guest user - fetching public outline");
+        
+        // ✅ Guest: Fetch public outline
+        const publicOutline = await getCourseOutlinePublic(courseId);
+        
+        console.log("📦 Public Outline:", publicOutline);
+        
+        setIsEnrolled(false);
+        setCourseOutline(publicOutline.data?.chapters || []);
+      } else {
+        console.log("👤 Logged in user - checking enrollment");
+        
+        // ✅ Logged in: Check enrollment status
         const enrolled = await checkEnrollmentStatus(currentUser.userId, courseId);
         console.log("✅ Enrollment status:", enrolled);
         setIsEnrolled(enrolled);
 
+        // ✅ Fetch appropriate outline based on enrollment
         let outlineData;
         if (enrolled) {
           outlineData = await getCourseOutlineEnrolled(currentUser.userId, courseId);
@@ -97,17 +116,53 @@ export default function StudentCourseDetail() {
           outlineData = await getCourseOutlinePublic(courseId);
         }
         
-        setCourseOutline(outlineData.data || []);
-        setIsLoading(false);
-      } catch (err) {
-        console.error("❌ Failed to fetch course data:", err);
-        setError("Unable to load course information. Please try again later.");
-        setIsLoading(false);
+        console.log("📦 Outline data:", outlineData);
+        setCourseOutline(outlineData.data?.chapters || []);
       }
-    };
+      
+      setIsLoading(false);
+    } catch (err) {
+      console.error("❌ Failed to fetch course data:", err);
+      setError("Unable to load course information. Please try again later.");
+      setIsLoading(false);
+    }
+  };
 
-    fetchCourseData();
-  }, [currentUser, courseId]);
+  fetchCourseData();
+}, [currentUser, courseId]);
+
+// ✅ Handle enroll - Update outline sau khi enroll
+const handleEnroll = async () => {
+  if (!currentUser?.userId) {
+    alert("Please log in to enroll in this course.");
+    navigate("/login");
+    return;
+  }
+
+  try {
+    setIsLoading(true);
+    
+    const enrollResult = await enrollCourse(currentUser.userId, courseId);
+
+    if (enrollResult.status === 200) {
+      alert("Successfully enrolled in the course! Start learning now.");
+      
+      // ✅ Fetch lại enrolled outline sau khi enroll
+      const enrolledOutline = await getCourseOutlineEnrolled(currentUser.userId, courseId);
+      
+      console.log("📦 Enrolled outline after enroll:", enrolledOutline);
+      
+      setIsEnrolled(enrolledOutline.data?.isEnrolled || true);
+      setCourseOutline(enrolledOutline.data?.chapters || []);
+    }
+
+    setIsLoading(false);
+  } catch (error) {
+    console.error("Enroll error:", error);
+    alert(error.response?.data?.message || "Failed to enroll in the course. Please try again.");
+    setIsLoading(false);
+  }
+};
 
   // ✅ Fetch reviews
   useEffect(() => {
@@ -140,30 +195,6 @@ export default function StudentCourseDetail() {
       ...prev,
       [index]: !prev[index],
     }));
-  };
-
-  const handleEnroll = async () => {
-    if (!currentUser?.userId) return;
-
-    try {
-      setIsLoading(true);
-      
-      const enrollResult = await enrollCourse(currentUser.userId, courseId);
-
-      if (enrollResult.status === 200) {
-        alert("Successfully enrolled in the course! Start learning now.");
-        setIsEnrolled(true);
-
-        const enrolledOutline = await getCourseOutlineEnrolled(currentUser.userId, courseId);
-        setCourseOutline(enrolledOutline.data || []);
-      }
-
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Enroll error:", error);
-      alert(error.response?.data?.message || "Failed to enroll in the course. Please try again.");
-      setIsLoading(false);
-    }
   };
 
   const handleLessonClick = (lessonId) => {
@@ -335,7 +366,7 @@ export default function StudentCourseDetail() {
                   src={convertDriveLink(courseDetails.teachAvatarUrl)} 
                   alt="instructor" 
                   className="w-10 h-10 rounded-full object-cover"
-                  onError={(e) => { e.target.src = 'https://via.placeholder.com/40' }}
+                  onError={(e) => { e.target.src = cimgplaceholder }}
                 />
                 <div>
                   <p className="text-sm font-bold text-gray-800">
@@ -603,7 +634,7 @@ export default function StudentCourseDetail() {
                     src={convertDriveLink(courseDetails.thumbnailUrl)} 
                     alt="Thumbnail" 
                     className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                    onError={(e) => { e.target.src = 'https://via.placeholder.com/300x200?text=Course+Thumbnail' }}
+                    onError={(e) => { e.target.src = cimgplaceholder }}
                   />
                 </div>
                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
