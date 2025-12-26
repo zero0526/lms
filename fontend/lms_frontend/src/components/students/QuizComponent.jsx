@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { HelpCircle, Clock, CheckCircle, XCircle, AlertTriangle, Loader, ChevronLeft, ChevronRight, Info } from "lucide-react";
-import { startQuiz } from "../../api/student/quizApi";
+import { startQuiz, submitQuiz } from "../../api/student/quizApi";
 import { getCurrentUserId } from "../../api/user/userUtils";
 import { convertDriveLink } from "../../api/user/userUtils";
 
 export default function QuizComponent({ quizzes }) {
-  const [quizState, setQuizState] = useState("preview"); // preview, active, completed
+  const [quizState, setQuizState] = useState("preview"); // preview, active, completed, submitting
   const [questions, setQuestions] = useState([]);
   const [attemptId, setAttemptId] = useState(null);
   const [timeLimit, setTimeLimit] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState({}); // ✅ Format: { questionId: [answerId1, answerId2, ...] }
+  const [answers, setAnswers] = useState({});
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
 
   // Empty state
   if (!quizzes || quizzes.length === 0) {
@@ -91,7 +92,7 @@ export default function QuizComponent({ quizzes }) {
     }
   };
 
-  // ✅ Handle answer selection (multiple answers)
+  // Handle answer selection (multiple answers)
   const handleSelectAnswer = (questionId, answerId) => {
     setAnswers(prev => {
       const currentAnswers = prev[questionId] || [];
@@ -113,13 +114,44 @@ export default function QuizComponent({ quizzes }) {
     });
   };
 
-  // Handle submit quiz
-  const handleSubmitQuiz = () => {
-    // TODO: Call submit API
-    console.log("Submitting quiz with answers:", answers);
-    console.log("Attempt ID:", attemptId);
-    alert("Quiz submitted! (Submit API will be implemented next)");
-    setQuizState("completed");
+  const handleSubmitQuiz = async () => {
+    // Validation: Check if all questions are answered
+    const unansweredQuestions = questions.filter(q => {
+      const questionAnswers = answers[q.questionId];
+      return !questionAnswers || questionAnswers.length === 0;
+    });
+
+    if (unansweredQuestions.length > 0) {
+      const confirmSubmit = window.confirm(
+        `You have ${unansweredQuestions.length} unanswered question(s). Do you want to submit anyway?`
+      );
+      
+      if (!confirmSubmit) {
+        return;
+      }
+    }
+
+    try {
+      setQuizState("submitting");
+      setSubmitError(null);
+
+      console.log("Submitting quiz...");
+      console.log("Attempt ID:", attemptId);
+      console.log("Answers:", answers);
+
+      // Call API
+      const response = await submitQuiz(attemptId, answers);
+
+      console.log("Quiz submitted successfully:", response);
+      
+      setQuizState("completed");
+
+    } catch (err) {
+      console.error("Failed to submit quiz:", err);
+      setSubmitError(err.message || "Failed to submit quiz. Please try again.");
+      setQuizState("active"); // Back to active state
+      alert(`Failed to submit quiz: ${err.message}`);
+    }
   };
 
   // Handle time up
@@ -218,13 +250,28 @@ export default function QuizComponent({ quizzes }) {
     );
   }
 
+  // SUBMITTING STATE
+  if (quizState === "submitting") {
+    return (
+      <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center space-y-5">
+        <div className="bg-[#00b6b6]/10 p-4 rounded-full">
+          <Loader size={48} className="text-[#00b6b6] animate-spin"/>
+        </div>
+        <h3 className="text-2xl font-bold text-gray-800">Submitting Your Quiz...</h3>
+        <p className="text-gray-600 max-w-md">
+          Please wait while we process your answers.
+        </p>
+      </div>
+    );
+  }
+
   // ACTIVE STATE
   if (quizState === "active" && questions.length > 0) {
     const currentQuestion = questions[currentQuestionIndex];
     const currentAnswers = answers[currentQuestion.questionId] || [];
     const isAnswered = currentAnswers.length > 0;
     
-    // ✅ Count questions that have at least one answer
+    // Count questions that have at least one answer
     const answeredCount = Object.values(answers).filter(arr => arr && arr.length > 0).length;
     const progressPercent = (answeredCount / questions.length) * 100;
 
@@ -251,7 +298,7 @@ export default function QuizComponent({ quizzes }) {
           </div>
         </div>
 
-        {/* ✅ Info Banner - Multiple Answers */}
+        {/* Info Banner - Multiple Answers */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center gap-2">
           <Info size={18} className="text-blue-600 flex-shrink-0"/>
           <p className="text-sm text-blue-700 font-medium">
@@ -300,7 +347,7 @@ export default function QuizComponent({ quizzes }) {
             <span className="text-xs text-gray-500 ml-auto">
               {currentQuestion.score} {currentQuestion.score > 1 ? 'points' : 'point'}
             </span>
-            {/* ✅ Show selected count */}
+            {/* Show selected count */}
             {currentAnswers.length > 0 && (
               <span className="text-xs bg-[#00b6b6] text-white px-2 py-1 rounded-full">
                 {currentAnswers.length} selected
@@ -336,7 +383,7 @@ export default function QuizComponent({ quizzes }) {
                       : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                   }`}
                 >
-                  {/* ✅ Checkbox style thay vì radio button */}
+                  {/* Checkbox style */}
                   <div className={`flex-shrink-0 w-8 h-8 rounded-lg border-2 flex items-center justify-center font-bold text-sm transition-all ${
                     isSelected
                       ? "bg-[#00b6b6] border-[#00b6b6] text-white"
@@ -399,7 +446,7 @@ export default function QuizComponent({ quizzes }) {
     );
   }
 
-  // COMPLETED STATE (placeholder)
+  // COMPLETED STATE (placeholder - will show results later)
   if (quizState === "completed") {
     return (
       <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center space-y-5">
@@ -408,7 +455,7 @@ export default function QuizComponent({ quizzes }) {
         </div>
         <h3 className="text-2xl font-bold text-gray-800">Quiz Completed!</h3>
         <p className="text-gray-600 max-w-md">
-          Your answers have been submitted. Results will be shown here after implementation.
+          Your answers have been submitted successfully. Results will be displayed here.
         </p>
       </div>
     );

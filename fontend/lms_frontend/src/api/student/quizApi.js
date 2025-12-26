@@ -11,14 +11,14 @@ export const startQuiz = async (quizId, userId) => {
     console.log("=== START QUIZ ===");
     console.log(`Quiz ID: ${quizId}, User ID: ${userId}`);
 
-    const response = await apiClient.get(`/quiz`,  {
+    const response = await apiClient.get(`/quiz`, {
       params: { quizId, userId }
     });
 
-    console.log("✅ Quiz started successfully:", response.data);
+    console.log("Quiz started successfully:", response.data);
     return response.data;
   } catch (error) {
-    console.error("❌ Failed to start quiz:", error);
+    console.error("Failed to start quiz:", error);
     
     if (error.response) {
       console.error("Error Response:", error.response.data);
@@ -32,24 +32,36 @@ export const startQuiz = async (quizId, userId) => {
 /**
  * Submit quiz answers
  * @param {number} attemptId - Attempt ID from startQuiz
- * @param {Array} answers - Array of {questionId, selectedAnswerId}
+ * @param {Object} answersMap - Object map: { questionId: [answerId1, answerId2, ...] }
  * @returns {Promise} Quiz result
  */
-export const submitQuiz = async (attemptId, answers) => {
+export const submitQuiz = async (attemptId, answersMap) => {
   try {
     console.log("=== SUBMIT QUIZ ===");
     console.log(`Attempt ID: ${attemptId}`);
-    console.log("Answers:", answers);
+    console.log("Answers Map:", answersMap);
 
-    const response = await apiClient.post(`/quiz/submit`, {
+    // Transform answers từ object map sang array format
+    const answers = Object.entries(answersMap).map(([questionId, selectedChoiceIds]) => ({
+      questionId: parseInt(questionId),
+      selectedChoiceIds: selectedChoiceIds || []
+    }));
+
+    console.log("Transformed answers:", answers);
+
+    const payload = {
       attemptId,
       answers
-    });
+    };
 
-    console.log("✅ Quiz submitted successfully:", response.data);
+    console.log("Sending payload:", JSON.stringify(payload, null, 2));
+
+    const response = await apiClient.post(`/quiz/submit`, payload);
+
+    console.log("Quiz submitted successfully:", response.data);
     return response.data;
   } catch (error) {
-    console.error("❌ Failed to submit quiz:", error);
+    console.error("Failed to submit quiz:", error);
     
     if (error.response) {
       console.error("Error Response:", error.response.data);

@@ -2,24 +2,24 @@ import apiClient from '../axiosConfig';
 
 export const getEnrolledCourses = async (userId) => {
   if (!userId || userId === 'undefined' || userId === undefined) {
-    console.error("❌ Invalid userId:", userId);
+    console.error("Invalid userId:", userId);
     throw new Error("User ID is required to fetch enrolled courses");
   }
 
   try {
-    console.log("📚 Fetching enrolled courses for userId:", userId);
+    console.log("Fetching enrolled courses for userId:", userId);
     
     const response = await apiClient.get(`/course/${userId}`);
     
-    console.log("✅ Enrolled courses response:", response.data);
+    console.log("Enrolled courses response:", response.data);
     
     return response.data;
   } catch (error) {
-    console.error("❌ Get enrolled courses error:", error);
+    console.error("Get enrolled courses error:", error);
     console.error("Error response:", error.response?.data);
     
     if (error.response?.status === 404) {
-      // User chưa đăng ký khóa học nào
+      // User have no enrolled courses
       return { status: 200, data: [] };
     }
     
@@ -36,7 +36,7 @@ export const getEnrolledCourseDetail = async (userId, courseId) => {
     const response = await apiClient.get(`/course/${userId}`);
     const courses = response.data.data || [];
     
-    // Tìm course theo courseId
+    // Find course by courseId
     const course = courses.find(c => c.courseId === parseInt(courseId));
     
     if (!course) {
@@ -45,7 +45,7 @@ export const getEnrolledCourseDetail = async (userId, courseId) => {
     
     return { status: 200, data: course };
   } catch (error) {
-    console.error("❌ Get enrolled course detail error:", error);
+    console.error("Get enrolled course detail error:", error);
     throw error;
   }
 };
@@ -55,7 +55,7 @@ export const checkCourseCompletion = async (userId, courseId) => {
     const response = await getEnrolledCourseDetail(userId, courseId);
     return response.data?.isCompleted || false;
   } catch (error) {
-    console.error("❌ Check completion error:", error);
+    console.error("Check completion error:", error);
     return false;
   }
 };
