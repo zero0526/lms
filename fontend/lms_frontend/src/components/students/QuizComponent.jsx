@@ -299,12 +299,19 @@ export default function QuizComponent({ quizzes }) {
         </div>
 
         {/* Info Banner - Multiple Answers */}
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center gap-2">
-          <Info size={18} className="text-blue-600 flex-shrink-0"/>
-          <p className="text-sm text-blue-700 font-medium">
-            Each question may have multiple correct answers. Select all that apply.
-          </p>
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 space-y-2">
+        <div className="flex items-start gap-2">
+          <Info size={18} className="text-blue-600 flex-shrink-0 mt-0.5"/>
+          <div className="space-y-1">
+            <p className="text-sm text-blue-700 font-medium">
+              Each question may have multiple correct answers. Select all that apply.
+            </p>
+            <p className="text-sm text-red-700 font-medium">
+              Only select answers you are confident about or you may lose points!
+            </p>
+          </div>
         </div>
+      </div>
 
         {/* Question Navigation */}
         <div className="flex gap-2 flex-wrap">

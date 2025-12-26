@@ -26,12 +26,18 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
     fileName: "", 
     duration: "", 
     videoUrl: "",
-    autoDetectedDuration: false // Track if duration is auto-detected
+    autoDetectedDuration: false
   });
-  const [isLoadingDuration, setIsLoadingDuration] = useState(false); // Loading state
+  const [isLoadingDuration, setIsLoadingDuration] = useState(false);
   const [docData, setDocData] = useState({ id: null, file: null, fileName: "", title: "", docUrl: "" });
-  const [quizSettings, setQuizSettings] = useState({ timeLimit: 10, difficulty: "Medium", passScore: 5 });
+  const [quizSettings, setQuizSettings] = useState({ timeLimit: 10, difficulty: "Medium", score: 0 }); // ✅ Changed passScore to score
   const [quizData, setQuizData] = useState([]);
+
+  // ✅ AUTO-CALCULATE TOTAL SCORE whenever quizData changes
+  useEffect(() => {
+    const totalScore = quizData.reduce((sum, q) => sum + (parseInt(q.score) || 0), 0);
+    setQuizSettings(prev => ({ ...prev, score: totalScore }));
+  }, [quizData]);
 
   // Reset/Init Data
   useEffect(() => {
@@ -41,12 +47,11 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
       setVideoData({ file: null, fileName: "", duration: "", videoUrl: "", autoDetectedDuration: false });
       setIsLoadingDuration(false);
       setDocData({ id: null, file: null, fileName: "", title: "", docUrl: "" });
-      setQuizSettings({ timeLimit: 10, difficulty: "Medium", passScore: 5 });
+      setQuizSettings({ timeLimit: 10, difficulty: "Medium", score: 0 });
       setQuizData([]);
       return;
     }
 
-    // ← LOAD INITIAL DATA (NẾU EDIT)
     if (initialData && contentType) {
       setIsEditMode(true);
       
@@ -73,17 +78,15 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
       else if (contentType === "quiz") {
         setActiveTab("quiz");
         
-        // ← LOAD QUIZ SETTINGS
         setQuizSettings({
           title: initialData.title || "Quiz",
           description: initialData.description || "",
           precondition: initialData.precondition || "None",
           timeLimit: initialData.timeLimit || 10,
           difficulty: initialData.difficulty || "Medium",
-          passScore: initialData.passScore || 5,
+          score: initialData.score || 0, // ✅ Changed from passScore
         });
         
-        // ← LOAD QUIZ QUESTIONS (với URL images từ backend)
         setQuizData(initialData.questions || []);
         
         console.log("Loaded Quiz Data:", initialData.questions);
@@ -110,7 +113,7 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
       ...prev,
       file,
       fileName: file.name,
-      duration: "", // Clear user input duration
+      duration: "",
       videoUrl: "",
       autoDetectedDuration: false
     }));
@@ -123,13 +126,11 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
       const durationInSeconds = Math.round(videoElement.duration);
       
       console.log("✅ Video duration auto-detected:", durationInSeconds, "seconds");
-      console.log("   Duration in minutes:", (durationInSeconds / 60).toFixed(2), "minutes");
       
-      // Update with detected duration and LOCK input
       setVideoData(prev => ({
         ...prev,
         duration: durationInSeconds.toString(),
-        autoDetectedDuration: true // Lock the input
+        autoDetectedDuration: true
       }));
       
       setIsLoadingDuration(false);
@@ -137,14 +138,11 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
 
     videoElement.onerror = function() {
       console.error("Failed to load video metadata");
-      console.warn("User will need to enter duration manually");
-      
-      // Show alert and allow manual input
       alert("Unable to auto-detect video duration. Please enter the duration manually.");
       
       setVideoData(prev => ({
         ...prev,
-        autoDetectedDuration: false // Unlock for manual input
+        autoDetectedDuration: false
       }));
       
       setIsLoadingDuration(false);
@@ -168,10 +166,10 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
   const addQuestion = () => setQuizData([...quizData, { 
     id: Date.now(), 
     question: "", 
-    qImage: null, // New: Image for question
-    score: 1, // Changed default score to 1
+    qImage: null,
+    score: 1,
     options: [
-      { text: "", isCorrect: false, cImage: null }, // New: Image for option
+      { text: "", isCorrect: false, cImage: null },
       { text: "", isCorrect: false, cImage: null }, 
       { text: "", isCorrect: false, cImage: null }, 
       { text: "", isCorrect: false, cImage: null }
@@ -196,7 +194,6 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
     setQuizData(updated);
   };
 
-  // Image Upload Handlers for Quiz
   const handleQuestionImageUpload = (qIdx, e) => {
     const file = e.target.files[0];
     if (file) {
@@ -238,6 +235,14 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
         alert("Please add at least one question");
         return;
       }
+      
+      // ✅ Validation: Check if total score matches
+      const totalScore = quizData.reduce((sum, q) => sum + (parseInt(q.score) || 0), 0);
+      if (totalScore !== quizSettings.score) {
+        alert(`Total score mismatch! Expected: ${quizSettings.score}, Got: ${totalScore}`);
+        return;
+      }
+      
       onSave({ contentType: "quiz", data: { questions: quizData, settings: quizSettings } });
     }
     onClose();
@@ -349,13 +354,13 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
                  <div>
                     <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
                       Duration (seconds)
-                      {/* ✅ Loading indicator */}
+                      {/* Loading indicator */}
                       {isLoadingDuration && (
                         <span className="text-xs text-[#00b6b6] flex items-center gap-1">
                           <Loader size={12} className="animate-spin"/> Detecting...
                         </span>
                       )}
-                      {/* ✅ Auto-detected badge */}
+                      {/* Auto-detected badge */}
                       {videoData.autoDetectedDuration && !isLoadingDuration && (
                         <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
                           <CheckCircle2 size={12}/> Checked
@@ -493,15 +498,25 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
                     />
                   </div>
                 </div>
+                
+                {/* ✅ TOTAL SCORE - READ ONLY + AUTO-CALCULATED */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Pass Score</label>
-                  <input
-                    type="number"
-                    value={quizSettings.passScore}
-                    onChange={(e) => setQuizSettings({ ...quizSettings, passScore: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#00b6b6] outline-none"
-                  />
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 flex items-center gap-2">
+                    Total Score
+                    <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Auto</span>
+                  </label>
+                  <div className="relative">
+                    <CheckCircle2 size={16} className="absolute left-3 top-3 text-green-500"/>
+                    <input
+                      type="number"
+                      value={quizSettings.score}
+                      readOnly
+                      className="w-full pl-9 pr-3 py-2 border border-green-200 rounded-lg bg-green-50 text-green-700 font-bold cursor-not-allowed"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Sum of all question points</p>
                 </div>
+                
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Difficulty</label>
                   <select

@@ -25,7 +25,7 @@ export const fetchQuizDetails = async (quizId) => {
         precondition: quizData.precondition,
         timeLimit: quizData.timeLimitMinutes,
         difficulty: quizData.difficultyAvg,
-        passScore: quizData.score,
+        score: quizData.score, // ✅ Changed from passScore to score
         questions: quizData.questions.map(q => ({
           id: q.id,
           question: q.qText,
@@ -115,7 +115,7 @@ function buildQuizFormData(data, isEditMode) {
   formData.append("desc", settings.description || "Quiz description");
   formData.append("timeLimitMinutes", settings.timeLimit.toString());
   formData.append("difficultyAvg", settings.difficulty);
-  formData.append("score", settings.passScore.toString());
+  formData.append("score", settings.score.toString());
 
   // ← QUESTIONS
   questions.forEach((q, qIdx) => {
