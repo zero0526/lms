@@ -16,6 +16,7 @@ import { useParams } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import StudentCourseContent from "../../components/students/StudentCourseContent";
+import QuizComponent from "../../components/students/QuizComponent";
 import { getLessonDetail } from "../../api/student/lessonApi";
 import { getCurrentUserId } from "../../api/user/userUtils";
 import { convertDriveLink } from "../../api/user/userUtils";
@@ -233,8 +234,9 @@ export default function LessonPage() {
 
             {/* Tab Content */}
             <div className="p-6">
+              {/* Quiz component */}
               {activeTab === "quiz" ? (
-                <QuizComponent quizzes={lessonData.quizzes} />
+                <QuizComponent quizzes={lessonData.quizzes} /> 
               ) : (
                 <DocumentComponent documents={lessonData.docs} />
               )}
@@ -255,74 +257,6 @@ export default function LessonPage() {
       </div>
 
       <Footer />
-    </div>
-  );
-}
-
-// SUB-COMPONENT: QUIZ
-function QuizComponent({ quizzes }) {
-  if (!quizzes || quizzes.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center space-y-5">
-        <div className="bg-gray-100 p-4 rounded-full">
-          <AlertTriangle size={48} className="text-gray-400"/>
-        </div>
-        <h3 className="text-xl font-bold text-gray-700">No Quiz Available</h3>
-        <p className="text-gray-500 max-w-md">
-          This lesson doesn't have any quiz yet. Check back later or continue with the next lesson.
-        </p>
-      </div>
-    );
-  }
-
-  const quiz = quizzes[0]; // Lấy quiz đầu tiên
-
-  return (
-    <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center space-y-5 animate-in fade-in zoom-in duration-300">
-      <div className="bg-teal-100 p-4 rounded-full">
-        <HelpCircle size={48} className="text-[#00b6b6]"/>
-      </div>
-      <h3 className="text-2xl font-bold text-gray-800">{quiz.titleQuiz || "Multiple-choice Quiz"}</h3>
-      
-      {quiz.description && (
-        <p className="text-gray-600 max-w-md">{quiz.description}</p>
-      )}
-      
-      <div className="flex gap-8 text-left">
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-          <div className="text-3xl font-bold text-[#00b6b6] mb-1">{quiz.numOfQuestion}</div>
-          <div className="text-sm text-gray-500">Questions</div>
-        </div>
-        
-        <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-          <div className="text-3xl font-bold text-[#00b6b6] mb-1">{quiz.timeLimit}</div>
-          <div className="text-sm text-gray-500">Minutes</div>
-        </div>
-        
-        {quiz.level && (
-          <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-            <div className={`text-xl font-bold mb-1 ${
-              quiz.level === 'Easy' ? 'text-green-600' :
-              quiz.level === 'Medium' ? 'text-yellow-600' :
-              'text-red-600'
-            }`}>
-              {quiz.level}
-            </div>
-            <div className="text-sm text-gray-500">Difficulty</div>
-          </div>
-        )}
-      </div>
-      
-      <p className="text-gray-500 text-sm max-w-md">
-        Make sure you understand the lesson content before starting the quiz.
-      </p>
-      
-      <button 
-        onClick={() => alert("Quiz feature coming soon!")}
-        className="bg-[#00b6b6] hover:bg-[#009e9e] text-white px-8 py-3 rounded-full font-bold shadow-lg transition transform hover:scale-105 active:scale-95 cursor-pointer"
-      >
-        Start Quiz
-      </button>
     </div>
   );
 }
