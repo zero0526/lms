@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Video, FileText, HelpCircle, UploadCloud, X, CheckSquare, Square, Trash2, Clock, Plus, CheckCircle2, File as FileIcon, Image as ImageIcon } from "lucide-react";
+import { Video, FileText, HelpCircle, UploadCloud, X, CheckSquare, Square, Trash2, Clock, Plus, CheckCircle2, File as FileIcon, Image as ImageIcon, Loader } from "lucide-react";
 
 const convertDriveLink = (url) => {
   if (!url || typeof url !== 'string') return "";
@@ -21,7 +21,14 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
   const [isEditMode, setIsEditMode] = useState(false);
   
   // Content States
-  const [videoData, setVideoData] = useState({ file: null, fileName: "", duration: "", videoUrl: "" });
+  const [videoData, setVideoData] = useState({ 
+    file: null, 
+    fileName: "", 
+    duration: "", 
+    videoUrl: "",
+    autoDetectedDuration: false // Track if duration is auto-detected
+  });
+  const [isLoadingDuration, setIsLoadingDuration] = useState(false); // Loading state
   const [docData, setDocData] = useState({ id: null, file: null, fileName: "", title: "", docUrl: "" });
   const [quizSettings, setQuizSettings] = useState({ timeLimit: 10, difficulty: "Medium", passScore: 5 });
   const [quizData, setQuizData] = useState([]);
@@ -31,7 +38,8 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
     if (!isOpen) {
       setActiveTab("video");
       setIsEditMode(false);
-      setVideoData({ file: null, fileName: "", duration: "", videoUrl: "" });
+      setVideoData({ file: null, fileName: "", duration: "", videoUrl: "", autoDetectedDuration: false });
+      setIsLoadingDuration(false);
       setDocData({ id: null, file: null, fileName: "", title: "", docUrl: "" });
       setQuizSettings({ timeLimit: 10, difficulty: "Medium", passScore: 5 });
       setQuizData([]);
@@ -49,6 +57,7 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
           fileName: initialData.title || "Video",
           duration: initialData.duration || "",
           videoUrl: initialData.videoUrl,
+          autoDetectedDuration: false
         });
       } 
       else if (contentType === "doc") {
@@ -94,14 +103,54 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
   // --- Helpers ---
   const handleVideoUpload = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setVideoData({
-        ...videoData,
-        file,
-        fileName: file.name,
-        duration: videoData.duration, 
-      });
-    }
+    if (!file) return;
+    console.log("📹 Video file selected:", file.name);
+    setIsLoadingDuration(true);
+    setVideoData(prev => ({
+      ...prev,
+      file,
+      fileName: file.name,
+      duration: "", // Clear user input duration
+      videoUrl: "",
+      autoDetectedDuration: false
+    }));
+
+    const videoElement = document.createElement('video');
+    videoElement.preload = 'metadata';
+
+    videoElement.onloadedmetadata = function() {
+      window.URL.revokeObjectURL(videoElement.src);
+      const durationInSeconds = Math.round(videoElement.duration);
+      
+      console.log("✅ Video duration auto-detected:", durationInSeconds, "seconds");
+      console.log("   Duration in minutes:", (durationInSeconds / 60).toFixed(2), "minutes");
+      
+      // Update with detected duration and LOCK input
+      setVideoData(prev => ({
+        ...prev,
+        duration: durationInSeconds.toString(),
+        autoDetectedDuration: true // Lock the input
+      }));
+      
+      setIsLoadingDuration(false);
+    };
+
+    videoElement.onerror = function() {
+      console.error("Failed to load video metadata");
+      console.warn("User will need to enter duration manually");
+      
+      // Show alert and allow manual input
+      alert("Unable to auto-detect video duration. Please enter the duration manually.");
+      
+      setVideoData(prev => ({
+        ...prev,
+        autoDetectedDuration: false // Unlock for manual input
+      }));
+      
+      setIsLoadingDuration(false);
+    };
+
+    videoElement.src = URL.createObjectURL(file);
   };
 
   const handleDocUpload = (e) => {
@@ -298,17 +347,71 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
               
               <div className="grid grid-cols-2 gap-4">
                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Duration (seconds)</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                      Duration (seconds)
+                      {/* ✅ Loading indicator */}
+                      {isLoadingDuration && (
+                        <span className="text-xs text-[#00b6b6] flex items-center gap-1">
+                          <Loader size={12} className="animate-spin"/> Detecting...
+                        </span>
+                      )}
+                      {/* ✅ Auto-detected badge */}
+                      {videoData.autoDetectedDuration && !isLoadingDuration && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <CheckCircle2 size={12}/> Checked
+                        </span>
+                      )}
+                    </label>
                     <div className="relative">
                         <Clock size={18} className="absolute left-3 top-3 text-gray-400"/>
                         <input
                         type="number"
                         value={videoData.duration}
-                        onChange={(e) => setVideoData({ ...videoData, duration: e.target.value })}
-                        placeholder="120"
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00b6b6]"
+                        onChange={(e) => {
+                          // Only allow change if NOT auto-detected
+                          if (!videoData.autoDetectedDuration) {
+                            setVideoData({ ...videoData, duration: e.target.value });
+                          }
+                        }}
+                        placeholder={videoData.file ? "Auto-detecting..." : "Enter duration"}
+                        className={`w-full pl-10 pr-4 py-2.5 border rounded-xl focus:outline-none transition
+                          ${isLoadingDuration 
+                            ? "bg-gray-100 border-gray-200 cursor-wait" 
+                            : videoData.autoDetectedDuration 
+                              ? "bg-green-50 border-green-300 cursor-not-allowed" // Locked style
+                              : "bg-gray-50 border-gray-200 focus:ring-2 focus:ring-[#00b6b6]"
+                          }`}
+                        disabled={isLoadingDuration || videoData.autoDetectedDuration} // Disable nếu auto-detected
+                        readOnly={videoData.autoDetectedDuration}
                         />
                     </div>
+
+                    {/* Helper text */}
+                    {isLoadingDuration && (
+                      <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                        <Loader size={12} className="animate-spin"/>
+                        Reading video metadata...
+                      </p>
+                    )}
+                    
+                    {videoData.duration && !isLoadingDuration && videoData.autoDetectedDuration && (
+                      <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                        <CheckCircle2 size={12}/>
+                        = {(parseInt(videoData.duration) / 60).toFixed(2)} minutes (locked)
+                      </p>
+                    )}
+                    
+                    {videoData.duration && !isLoadingDuration && !videoData.autoDetectedDuration && videoData.file && (
+                      <p className="text-xs text-yellow-600 mt-1 flex items-center gap-1">
+                        Auto-detection failed - enter manually
+                      </p>
+                    )}
+                    
+                    {!videoData.file && !videoData.duration && !isLoadingDuration && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Upload a video to auto-detect duration
+                      </p>
+                    )}
                  </div>
               </div>
             </div>

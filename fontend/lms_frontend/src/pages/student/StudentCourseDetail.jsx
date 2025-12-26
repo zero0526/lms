@@ -370,7 +370,7 @@ const handleEnroll = async () => {
                 />
                 <div>
                   <p className="text-sm font-bold text-gray-800">
-                    Taught by <span className="text-[#00b6b6]">{courseDetails.teacherName}</span>
+                    <span className="text-[#00b6b6]">{courseDetails.teacherName}</span>
                   </p>
                   <p className="text-xs text-gray-500">Instructor</p>
                 </div>
