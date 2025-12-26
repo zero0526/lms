@@ -71,3 +71,18 @@ export const submitQuiz = async (attemptId, answersMap) => {
     throw new Error("Network error. Please try again later.");
   }
 };
+
+/**
+ * Fetch quiz attempt result
+ */
+export const fetchQuizAttemptResult = async (attemptId) => {
+  try {
+    console.log(`Fetching quiz attempt result for attemptId: ${attemptId}`);
+    const res = await apiClient.get(`/quiz-attempt/user/${attemptId}`);
+    console.log("Quiz Attempt Result:", res.data);
+    return res.data.data;
+  } catch (error) {
+    console.error("Error fetching quiz attempt result:", error);
+    throw error;
+  }
+};

@@ -18,6 +18,7 @@ import CourseDetail from "./pages/CourseDetail"; // Import component mới đổ
 import CourseStudent from "./pages/student/CourseStudent";
 import StudentCourseDetail from "./pages/student/StudentCourseDetail";
 import LessonDetail from "./pages/student/LessonDetail";
+import QuizResult from "./pages/student/QuizResult";
 
 // Teacher Pages
 import TeacherStudio from "./pages/teacher/TeacherStudio";
@@ -68,6 +69,15 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={["ROLE_STUDENT"]}>
                 <StudentCourseDetail />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route
+            path="/student/quiz-result/:attemptId" 
+            element={
+              <ProtectedRoute allowedRoles={["ROLE_STUDENT"]}>
+                <QuizResult />
               </ProtectedRoute>
             } 
           />

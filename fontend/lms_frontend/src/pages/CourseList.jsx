@@ -136,7 +136,7 @@ export default function CourseList() {
               <input
                 type="text"
                 placeholder="What do you want to learn today?"
-                className="w-full py-3 pl-12 pr-4 rounded-full text-gray-800 focus:outline-none focus:ring-4 focus:ring-[#00b6b6]/50 shadow-lg placeholder-gray-400"
+                className="w-full py-3 pl-12 pr-4 rounded-full text-white focus:outline-none focus:ring-4 focus:ring-[#00b6b6]/50 shadow-lg placeholder-gray-400"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />

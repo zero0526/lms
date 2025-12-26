@@ -3,11 +3,13 @@ import { HelpCircle, Clock, CheckCircle, XCircle, AlertTriangle, Loader, Chevron
 import { startQuiz, submitQuiz } from "../../api/student/quizApi";
 import { getCurrentUserId } from "../../api/user/userUtils";
 import { convertDriveLink } from "../../api/user/userUtils";
+import { useNavigate } from "react-router-dom";
 
 export default function QuizComponent({ quizzes }) {
+  const navigate = useNavigate();
+
   const [quizState, setQuizState] = useState("preview"); // preview, active, completed, submitting
   const [questions, setQuestions] = useState([]);
-  const [attemptId, setAttemptId] = useState(null);
   const [timeLimit, setTimeLimit] = useState(0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -15,6 +17,8 @@ export default function QuizComponent({ quizzes }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [submitError, setSubmitError] = useState(null);
+  const [attemptId, setAttemptId] = useState(null);
+  const [submittedAttemptId, setSubmittedAttemptId] = useState(null);
 
   // Empty state
   if (!quizzes || quizzes.length === 0) {
@@ -144,6 +148,7 @@ export default function QuizComponent({ quizzes }) {
 
       console.log("Quiz submitted successfully:", response);
       
+      setSubmittedAttemptId(attemptId);
       setQuizState("completed");
 
     } catch (err) {
@@ -462,7 +467,14 @@ export default function QuizComponent({ quizzes }) {
         </div>
         <h3 className="text-2xl font-bold text-gray-800">Quiz Completed!</h3>
         <p className="text-gray-600 max-w-md">
-          Your answers have been submitted successfully. Results will be displayed here.
+          Your answers have been submitted successfully.
+        <button 
+            onClick={() => navigate(`/student/quiz-result/${submittedAttemptId}`)}
+            className="text-[#00b6b6] font-bold hover:underline ml-1"
+          >
+            Click here
+          </button>
+          {" "}to view your results.
         </p>
       </div>
     );
