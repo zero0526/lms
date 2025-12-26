@@ -81,7 +81,7 @@ export const getCourseOutlinePublic = async (courseId) => {
 };
 
 /**
- * ✅ Lấy outline khóa học (enrolled - đã đăng ký)
+ * Lấy outline khóa học (enrolled - đã đăng ký)
  * Response mới:
  * {
  *   status: 200,
@@ -181,15 +181,15 @@ export const checkEnrollmentStatus = async (userId, courseId) => {
     console.log("userId:", userId);
     console.log("courseId:", courseId);
     
-    // ✅ Gọi API outline với userId
+    // Gọi API outline với userId
     const response = await apiClient.get(`/course/outline?userId=${userId}&courseId=${courseId}`);
     
     console.log("📦 Response:", response.data);
     
-    // ✅ BE đã trả về isEnrolled field rồi!
+    // BE đã trả về isEnrolled field rồi!
     const isEnrolled = response.data?.data?.isEnrolled || false;
     
-    console.log("✅ Enrollment status from BE:", isEnrolled);
+    console.log("Enrollment status from BE:", isEnrolled);
     console.log("=== END CHECK ENROLLMENT ===\n");
     
     return isEnrolled;

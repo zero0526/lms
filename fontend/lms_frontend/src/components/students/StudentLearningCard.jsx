@@ -9,7 +9,7 @@ export default function StudentLearningCard({ course }) {
 
   const progressPercent = course.progressPercent || 0;
   
-  // ✅ Đánh giá hoàn thiện dựa trên progress, không phải isCompleted
+  // Đánh giá hoàn thiện dựa trên progress, không phải isCompleted
   const isCourseCompleted = progressPercent >= 100;
 
   const handleCardClick = () => {
@@ -27,7 +27,7 @@ export default function StudentLearningCard({ course }) {
       onClick={handleCardClick}
       className="bg-white shadow-lg rounded-xl overflow-hidden hover:scale-105 transform transition duration-300 cursor-pointer relative"
     >
-      {/* ✅ Completed Badge - dựa vào progress */}
+      {/* Completed Badge - dựa vào progress */}
       {isCourseCompleted && (
         <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 z-10">
           <CheckCircle size={14} />
@@ -65,7 +65,7 @@ export default function StudentLearningCard({ course }) {
           <p className="text-[11px] text-gray-500">
             Progress: <span className="font-bold">{progressPercent.toFixed(0)}%</span>
           </p>
-          {/* ✅ Hiển thị số chapters */}
+          {/* Hiển thị số chapters */}
           <p className="text-[11px] text-gray-500">
             {course.numOfChapter} {course.numOfChapter === 1 ? 'chapter' : 'chapters'}
           </p>

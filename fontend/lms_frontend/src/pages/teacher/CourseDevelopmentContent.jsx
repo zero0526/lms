@@ -60,14 +60,14 @@ export default function CourseDevelopmentContent() {
   }, []);
 
   const handleCreateCourse = async (data) => {
-    // Bật loading để Grid hiển thị hiệu ứng xoay
+    // Open loading for Grid to spin
     setIsLoading(true);
     try {
       const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
       const user = userStr ? JSON.parse(userStr) : null;
       
       if (!user || !user.userId) {
-          alert("Bạn chưa đăng nhập hoặc phiên đăng nhập hết hạn.");
+          alert("You are not logged in or your session has expired.");
           return;
       }
 
@@ -102,7 +102,7 @@ export default function CourseDevelopmentContent() {
         setIsModalOpen(false); 
 
         if (!realId) {
-            console.warn("CẢNH BÁO: Không tìm thấy ID thật.");
+            console.warn("WARNING: Real ID not found.");
         }
       }
     } catch (error) {
@@ -110,15 +110,15 @@ export default function CourseDevelopmentContent() {
       
       if (error.response) {
           if (error.response.status === 403) {
-              alert("Lỗi 403: Server từ chối. Vui lòng kiểm tra quyền Teacher hoặc xóa Cookie JSESSIONID cũ.");
+              alert("Error 403: Server denied. Please check Teacher role or clear old JSESSIONID cookie.");
           } else {
-              alert(`Lỗi tạo khóa học: ${error.response.data.message || error.message}`);
+              alert(`Error creating course: ${error.response.data.message || error.message}`);
           }
       } else {
-          alert("Lỗi kết nối server.");
+          alert("Server connection error.");
       }
     } finally {
-      // Tắt loading sau khi hoàn tất
+      // Turn off loading after completion
       setIsLoading(false);
     }
   };

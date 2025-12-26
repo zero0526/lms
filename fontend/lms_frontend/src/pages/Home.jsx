@@ -137,9 +137,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/*  Explore Courses  */}
-      <ExploreCourses />
-
       {/* News Section */}
       <section className="py-20 text-center mb-20">
         <h2 className="text-3xl font-bold mb-8">Latest News and Resources</h2>

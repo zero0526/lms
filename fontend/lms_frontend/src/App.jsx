@@ -10,9 +10,7 @@ import BlogDetail from "./pages/BlogDetail";
 import Profile from "./pages/Profile";
 import CourseList from "./pages/CourseList";
 import ResetPassword from './pages/ResetPassword';
-
-// Shared Pages (Now Public)
-import CourseDetail from "./pages/CourseDetail"; // Import component mới đổi tên
+import CourseDetail from "./pages/CourseDetail";
 
 // Student Pages
 import CourseStudent from "./pages/student/CourseStudent";

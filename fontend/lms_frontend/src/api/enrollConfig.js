@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const enrollClient = axios.create({
-  baseURL: "/enroll", // ✅ Proxy sẽ chuyển /enroll -> http://localhost:8081/enroll
+  baseURL: "/enroll", // Proxy sẽ chuyển /enroll -> http://localhost:8081/enroll
   withCredentials: false,
 });
 

@@ -47,11 +47,11 @@ export default function LessonPage() {
           return;
         }
 
-        console.log("📖 Fetching lesson detail for lessonId:", lessonId);
+        console.log("Fetching lesson detail for lessonId:", lessonId);
         
         const response = await getLessonDetail(userId, lessonId);
         
-        console.log("✅ Lesson data:", response.data);
+        console.log("Lesson data:", response.data);
         
         setLessonData(response.data);
         setIsLoading(false);
@@ -64,7 +64,7 @@ export default function LessonPage() {
         }
         
       } catch (err) {
-        console.error("❌ Failed to fetch lesson detail:", err);
+        console.error("Failed to fetch lesson detail:", err);
         setError("Failed to load lesson content. Please try again later.");
         setIsLoading(false);
       }

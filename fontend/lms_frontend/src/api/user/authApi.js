@@ -36,7 +36,7 @@ export const changeUserPassword = async (userId, currentPassword, newPassword) =
 };
 
 /**
- * ✅ Request forgot password (send reset email)
+ * Request forgot password (send reset email)
  * @param {string} email - User email
  */
 export const requestForgotPassword = async (email) => {
@@ -48,7 +48,7 @@ export const requestForgotPassword = async (email) => {
 
     const response = await apiClient.post('/user/forgot/password', payload);
 
-    console.log("✅ Forgot password request successful:", response.data);
+    console.log("Forgot password request successful:", response.data);
     return response.data;
   } catch (error) {
     console.error("❌ Forgot password request failed:", error);

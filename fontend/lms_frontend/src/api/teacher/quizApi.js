@@ -25,7 +25,7 @@ export const fetchQuizDetails = async (quizId) => {
         precondition: quizData.precondition,
         timeLimit: quizData.timeLimitMinutes,
         difficulty: quizData.difficultyAvg,
-        score: quizData.score, // ✅ Changed from passScore to score
+        score: quizData.score, // Changed from passScore to score
         questions: quizData.questions.map(q => ({
           id: q.id,
           question: q.qText,

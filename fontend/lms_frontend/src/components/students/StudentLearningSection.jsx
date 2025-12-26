@@ -30,7 +30,7 @@ export default function StudentLearningSection() {
         
         const response = await getEnrolledCourses(userId);
         
-        console.log("✅ Response:", response);
+        console.log("Response:", response);
         
         // Transform data từ BE sang format của component
         const transformedCourses = (response.data || []).map(course => ({
