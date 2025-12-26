@@ -199,3 +199,39 @@ export const checkEnrollmentStatus = async (userId, courseId) => {
     return false;
   }
 };
+
+/**
+ * Search courses by title
+ */
+export const searchCourses = async (title, page = 0, size = 6) => {
+  try {
+    const response = await apiPublicClient.post('/course/search', {
+      title,
+      page,
+      size
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Search courses error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Get autocomplete suggestions for course search
+ */
+export const getAutocompleteSuggestions = async (keyword) => {
+  if (!keyword || keyword.trim() === '') {
+    return { status: 200, data: [] };
+  }
+  
+  try {
+    const response = await apiPublicClient.get('/course/search/auto-complete', {
+      params: { keyword }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Autocomplete error:", error);
+    return { status: 200, data: [] };
+  }
+};
