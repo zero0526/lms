@@ -59,3 +59,15 @@ export const checkCourseCompletion = async (userId, courseId) => {
     return false;
   }
 };
+
+export const getRecommendedCourses = async (userId) => {
+  try {
+    console.log(`Fetching recommended courses for user: ${userId}`);
+    const response = await apiClient.get(`/course/recommend/${userId}`);
+    console.log("Recommended courses response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch recommended courses:", error);
+    throw error;
+  }
+};

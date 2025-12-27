@@ -44,7 +44,7 @@ export const postQuestionComment = async (userId, questionId, content, parentCom
 export const fetchQuestionComments = async (questionId) => {
   try {
     console.log(`Fetching comments for question: ${questionId}`);
-    const response = await apiClient.get(`/question/question-comment/${questionId}`);
+    const response = await apiClient.get(`/question-comment/question/${questionId}`);
     console.log("Comments fetched:", response.data);
     
     // Transform response to match expected structure
@@ -127,5 +127,25 @@ export const deleteQuestionComment = async (commentId, userId) => {
     }
     
     throw new Error("Network error. Please try again later.");
+  }
+};
+
+/**
+ * Get replies for a specific comment
+ * @param {number} commentId - Parent comment ID
+ */
+export const getCommentReplies = async (commentId) => {
+  if (!commentId) {
+    throw new Error("Comment ID is required");
+  }
+
+  try {
+    console.log(`Fetching replies for comment: ${commentId}`);
+    const response = await apiClient.get(`/question-comment/question-comment/${commentId}`);
+    console.log("Replies response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Get comment replies error:", error);
+    throw error;
   }
 };
