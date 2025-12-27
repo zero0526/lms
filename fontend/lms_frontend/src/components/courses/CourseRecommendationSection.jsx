@@ -1,130 +1,78 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import CourseCard from "./CourseCard";
+import { getRecommendedCourses } from "../../api/student/courseApi";
+import { getCurrentUserId, convertDriveLink } from "../../api/user/userUtils";
 
 export default function CourseRecommendationSection() {
   const [currentPage, setCurrentPage] = useState(0);
   const [showTwoRows, setShowTwoRows] = useState(false);
+  const [courses, setCourses] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const COURSES_PER_ROW = 4;
   const coursesPerPage = showTwoRows ? COURSES_PER_ROW * 2 : COURSES_PER_ROW;
 
-  // khóa học giả để test
-  const recommendedCourses = [
-    { 
-      id: 1, 
-      title: "AWS Certified Solutions Architect", 
-      description: "Learn AWS architecture and cloud computing fundamentals", 
-      image: "https://picsum.photos/400/300?1", 
-      rating: 4.8,
-      studentNums: 2300, 
-      numOfChapter: 15,
-      chapterNums: 15,
-      instructor: "John Doe",
-      price: 0
-    },
-    { 
-      id: 2, 
-      title: "Complete Web Development Bootcamp", 
-      description: "Master HTML, CSS, JavaScript, React and Node.js", 
-      image: "https://picsum.photos/400/300?2", 
-      rating: 4.7,
-      studentNums: 1800, 
-      numOfChapter: 12,
-      chapterNums: 12,
-      instructor: "Jane Smith",
-      price: 0
-    },
-    { 
-      id: 3, 
-      title: "Python for Data Science", 
-      description: "Data analysis, visualization and machine learning with Python", 
-      image: "https://picsum.photos/400/300?3", 
-      rating: 4.9,
-      studentNums: 2100, 
-      numOfChapter: 10,
-      chapterNums: 10,
-      instructor: "Mike Johnson",
-      price: 0
-    },
-    { 
-      id: 4, 
-      title: "Digital Marketing Masterclass", 
-      description: "SEO, Social Media Marketing, Email Marketing and more", 
-      image: "https://picsum.photos/400/300?4", 
-      rating: 4.6,
-      studentNums: 1900, 
-      numOfChapter: 9,
-      chapterNums: 9,
-      instructor: "Sarah Wilson",
-      price: 0
-    },
-    { 
-      id: 5, 
-      title: "UI/UX Design Fundamentals", 
-      description: "Learn design thinking, wireframing, prototyping with Figma", 
-      image: "https://picsum.photos/400/300?5", 
-      rating: 4.8,
-      studentNums: 2500, 
-      numOfChapter: 11,
-      chapterNums: 11,
-      instructor: "Emily Davis",
-      price: 0
-    },
-    { 
-      id: 6, 
-      title: "Mobile App Development with React Native", 
-      description: "Build cross-platform mobile apps for iOS and Android", 
-      image: "https://picsum.photos/400/300?6", 
-      rating: 4.7,
-      studentNums: 1600, 
-      numOfChapter: 13,
-      chapterNums: 13,
-      instructor: "Tom Brown",
-      price: 0
-    },
-    { 
-      id: 7, 
-      title: "Blockchain and Cryptocurrency Fundamentals", 
-      description: "Understand blockchain technology, Bitcoin and Ethereum", 
-      image: "https://picsum.photos/400/300?7", 
-      rating: 4.5,
-      studentNums: 1400, 
-      numOfChapter: 8,
-      chapterNums: 8,
-      instructor: "Alex Martinez",
-      price: 0
-    },
-    { 
-      id: 8, 
-      title: "Cybersecurity Essentials", 
-      description: "Network security, ethical hacking and threat prevention", 
-      image: "https://picsum.photos/400/300?8", 
-      rating: 4.9,
-      studentNums: 2200, 
-      numOfChapter: 14,
-      chapterNums: 14,
-      instructor: "David Lee",
-      price: 0
-    },
-    { 
-      id: 9, 
-      title: "Machine Learning A-Z", 
-      description: "Neural networks, deep learning with TensorFlow and Keras", 
-      image: "https://picsum.photos/400/300?9", 
-      rating: 4.8,
-      studentNums: 2800, 
-      numOfChapter: 16,
-      chapterNums: 16,
-      instructor: "Lisa Anderson",
-      price: 0
-    },
-  ];
+  // Fetch recommended courses
+  useEffect(() => {
+    const fetchRecommendedCourses = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const userId = getCurrentUserId();
+        
+        if (!userId) {
+          console.log("⚠️ No user logged in, skipping recommendations");
+          setIsLoading(false);
+          return;
+        }
 
-  const totalPages = Math.ceil(recommendedCourses.length / coursesPerPage);
+        console.log("📚 Fetching recommended courses for user:", userId);
+        
+        const response = await getRecommendedCourses(userId);
+        
+        console.log("Recommended courses response:", response);
+        
+        // Transform data từ BE sang format của component
+        const transformedCourses = (response.data || []).map(course => ({
+          id: course.id,
+          title: course.title,
+          description: course.description,
+          image: convertDriveLink(course.thumbnailUrl),
+          rating: course.avgRating,
+          studentNums: course.numUserEnrolled,
+          numOfChapter: course.numChapters,
+          chapterNums: course.numChapters,
+          instructor: course.teacherName || "Unknown", // Nếu BE không trả về teacherName
+          price: 0, // Free courses
+          isCompleted: course.isCompleted
+        }));
+        
+        console.log("🔄 Transformed courses:", transformedCourses);
+        
+        setCourses(transformedCourses);
+        setIsLoading(false);
+      } catch (err) {
+        console.error("❌ Failed to fetch recommended courses:", err);
+        setError("Failed to load recommendations");
+        setIsLoading(false);
+      }
+    };
+
+    fetchRecommendedCourses();
+  }, []);
+
+  // Reset to first page when toggle rows
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [showTwoRows]);
+
+  const totalPages = Math.ceil(courses.length / coursesPerPage);
   const startIdx = currentPage * coursesPerPage;
   const endIdx = startIdx + coursesPerPage;
-  const currentCourses = recommendedCourses.slice(startIdx, endIdx);
+  const currentCourses = courses.slice(startIdx, endIdx);
 
   const handlePrevPage = () => {
     setCurrentPage(prev => Math.max(0, prev - 1));
@@ -136,9 +84,64 @@ export default function CourseRecommendationSection() {
 
   const toggleRows = () => {
     setShowTwoRows(!showTwoRows);
-    setCurrentPage(0); // Reset to first page when toggling
+    setCurrentPage(0);
   };
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <section className="bg-white py-12">
+        <div className="max-w-7xl mx-auto px-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-8">
+            Recommended for you
+          </h2>
+          <div className="flex justify-center items-center h-40">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00b6b6]"></div>
+            <p className="ml-4 text-gray-600">Loading recommendations...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <section className="bg-white py-12">
+        <div className="max-w-7xl mx-auto px-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-8">
+            Recommended for you
+          </h2>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <p className="text-red-600">{error}</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Empty state (no user or no recommendations)
+  if (courses.length === 0) {
+    return (
+      <section className="bg-white py-12">
+        <div className="max-w-7xl mx-auto px-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-8">
+            Recommended for you
+          </h2>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-12 text-center">
+            <p className="text-gray-500 text-lg mb-4">
+              No recommendations available yet
+            </p>
+            <p className="text-gray-400 text-sm">
+              Start enrolling in courses to get personalized recommendations!
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Main render with courses
   return (
     <section className="bg-white py-12">
       <div className="max-w-7xl mx-auto px-6">
@@ -149,7 +152,7 @@ export default function CourseRecommendationSection() {
           </h2>
           
           {/* Show expand button if more than 4 courses */}
-          {recommendedCourses.length > COURSES_PER_ROW && (
+          {courses.length > COURSES_PER_ROW && (
             <button 
               onClick={toggleRows}
               className="flex items-center gap-2 text-[#00b6b6] font-semibold hover:text-[#009e9e] transition"

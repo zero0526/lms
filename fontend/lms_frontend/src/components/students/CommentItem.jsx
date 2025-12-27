@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { MoreVertical, Send, ChevronDown, ChevronUp, Edit2, Trash2 } from "lucide-react";
 import { convertDriveLink } from "../../api/user/userUtils";
+import { getCommentReplies } from "../../api/student/commentApi";
 
 export default function CommentItem({ 
   comment, 
@@ -8,6 +9,8 @@ export default function CommentItem({
   onEdit, 
   onDelete, 
   currentUserId,
+  currentUserName,
+  currentUserAvatar,
   level = 0 
 }) {
   const [showReplyBox, setShowReplyBox] = useState(false);
@@ -16,22 +19,72 @@ export default function CommentItem({
   const [showMenu, setShowMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
+  
+  // State để lưu replies
+  const [replies, setReplies] = useState([]);
+  const [isLoadingReplies, setIsLoadingReplies] = useState(false);
+  const [repliesError, setRepliesError] = useState(null);
 
   const isOwner = currentUserId === comment.userId;
   const hasReplies = comment.numOfChild > 0;
+
+  // Fetch replies khi click "See replies"
+  const handleToggleReplies = async () => {
+    if (!showReplies && replies.length === 0) {
+      // Chưa load replies, cần fetch
+      setIsLoadingReplies(true);
+      setRepliesError(null);
+      
+      try {
+        console.log(`🔍 Fetching replies for comment ${comment.id}`);
+        const response = await getCommentReplies(comment.id);
+        
+        // Transform data
+        const transformedReplies = (response.data || []).map(reply => ({
+          id: reply.commentId,
+          userId: reply.userId,
+          userName: reply.userName,
+          userAvatar: reply.avatar,
+          content: reply.content,
+          createdAt: reply.lastEdited,
+          isEdited: reply.isEdited,
+          numOfChild: reply.numOfChild
+        }));
+        
+        console.log("Replies loaded:", transformedReplies);
+        setReplies(transformedReplies);
+        setShowReplies(true);
+      } catch (error) {
+        console.error("❌ Failed to load replies:", error);
+        setRepliesError("Failed to load replies");
+      } finally {
+        setIsLoadingReplies(false);
+      }
+    } else {
+      // Đã có replies, chỉ toggle
+      setShowReplies(!showReplies);
+    }
+  };
 
   const handleReplySubmit = () => {
     if (replyContent.trim()) {
       onReply(comment.id, replyContent);
       setReplyContent("");
       setShowReplyBox(false);
-      setShowReplies(true);
+      
+      // Sau khi reply, reload replies để hiển thị comment mới
+      setReplies([]);
+      setShowReplies(false);
+      // Hoặc có thể tự động mở replies
+      setTimeout(() => {
+        handleToggleReplies();
+      }, 500);
     }
   };
 
   const handleEditSubmit = () => {
     if (editContent.trim() && editContent !== comment.content) {
-      onEdit(comment.id, editContent); // Passing commentId and new content
+      onEdit(comment.id, editContent);
       setIsEditing(false);
     }
   };
@@ -60,7 +113,7 @@ export default function CommentItem({
   };
 
   return (
-    <div className={`${level > 0 ? "ml-12" : ""}`}>
+    <div className={`${level > 0 ? "ml-12 border-l-2 border-gray-100 pl-4" : ""}`}>
       <div className="flex items-start gap-3">
         {/* Avatar */}
         {comment.userAvatar ? (
@@ -111,7 +164,7 @@ export default function CommentItem({
                       <button
                         onClick={() => {
                           if (window.confirm("Are you sure you want to delete this comment?")) {
-                            onDelete(comment.id); // Just pass commentId, userId will be added in parent
+                            onDelete(comment.id);
                           }
                           setShowMenu(false);
                         }}
@@ -167,15 +220,22 @@ export default function CommentItem({
                 Reply
               </button>
               
+              {/* See replies button */}
               {hasReplies && (
                 <button
-                  onClick={() => setShowReplies(!showReplies)}
-                  className="text-xs font-bold text-[#00b6b6] hover:text-[#009e9e] transition flex items-center gap-1"
+                  onClick={handleToggleReplies}
+                  disabled={isLoadingReplies}
+                  className="text-xs font-bold text-[#00b6b6] hover:text-[#009e9e] transition flex items-center gap-1 disabled:opacity-50"
                 >
-                  {showReplies ? (
+                  {isLoadingReplies ? (
+                    <>
+                      <div className="w-3 h-3 border-2 border-[#00b6b6] border-t-transparent rounded-full animate-spin"></div>
+                      Loading...
+                    </>
+                  ) : showReplies ? (
                     <>
                       <ChevronUp size={14}/>
-                      Hide replies
+                      Hide {comment.numOfChild} {comment.numOfChild === 1 ? "reply" : "replies"}
                     </>
                   ) : (
                     <>
@@ -188,18 +248,25 @@ export default function CommentItem({
             </div>
           )}
 
+          {/* Error loading replies */}
+          {repliesError && (
+            <div className="mt-2 px-2 text-xs text-red-500">
+              {repliesError}
+            </div>
+          )}
+
           {/* Reply Input Box */}
           {showReplyBox && (
             <div className="mt-3 flex items-start gap-2">
-              {comment.currentUserAvatar ? (
+              {currentUserAvatar ? (
                 <img
-                  src={convertDriveLink(comment.currentUserAvatar)}
+                  src={convertDriveLink(currentUserAvatar)}
                   alt="You"
                   className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                 />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-[#00b6b6] flex items-center justify-center text-white font-bold text-xs flex-shrink-0">
-                  {comment.currentUserName ? comment.currentUserName.charAt(0).toUpperCase() : "U"}
+                  {currentUserName ? currentUserName.charAt(0).toUpperCase() : "U"}
                 </div>
               )}
               <div className="flex-1 relative">
@@ -220,6 +287,25 @@ export default function CommentItem({
                   <Send size={14}/>
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Render Replies */}
+          {showReplies && replies.length > 0 && (
+            <div className="mt-4 space-y-4">
+              {replies.map((reply) => (
+                <CommentItem
+                  key={reply.id}
+                  comment={reply}
+                  onReply={onReply}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  currentUserId={currentUserId}
+                  currentUserName={currentUserName}
+                  currentUserAvatar={currentUserAvatar}
+                  level={level + 1}
+                />
+              ))}
             </div>
           )}
         </div>
