@@ -42,7 +42,7 @@ export default function StudentLearningCard({ course }) {
             {course.title}
           </h4>
           <p className="text-yellow-500 text-sm font-bold flex-shrink-0 whitespace-nowrap">
-            {course.rating ? course.rating.toFixed(1) : "N/A"} ★
+            {course.rating ? course.rating.toFixed(1) : "0.0"} ★
           </p>
         </div>
         
