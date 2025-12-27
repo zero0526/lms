@@ -39,6 +39,42 @@ export const getLessonDetail = async (userId, lessonId) => {
 };
 
 /**
+ * Cập nhật video progress
+ * @param {number} userId - Student ID
+ * @param {number} lessonId - Lesson ID
+ * @param {number} courseId - Course ID
+ * @param {number} currentSecond - Current video time in seconds
+ * @returns {Promise} Update result
+ */
+export const updateVideoProgress = async (userId, lessonId, courseId, currentSecond) => {
+  if (!userId || !lessonId || !courseId) {
+    throw new Error("User ID, Lesson ID and Course ID are required");
+  }
+
+  try {
+    console.log("📹 Updating video progress:", {
+      userId,
+      lessonId,
+      courseId,
+      currentSecond: Math.floor(currentSecond)
+    });
+
+    const response = await apiClient.post('/course/update-progress', {
+      lessonId: parseInt(lessonId),
+      userId: parseInt(userId),
+      currentSecond: Math.floor(currentSecond),
+      courseId: parseInt(courseId)
+    });
+    
+    console.log("✅ Progress updated:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ Update video progress error:", error);
+    throw error;
+  }
+};
+
+/**
  * Cập nhật progress bài học
  * @param {number} userId - Student ID
  * @param {number} lessonId - Lesson ID

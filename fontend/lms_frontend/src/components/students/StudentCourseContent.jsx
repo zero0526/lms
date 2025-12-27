@@ -23,60 +23,76 @@ export default function StudentCourseContent({ currentLessonId, onLessonChange }
   const [completedLessons, setCompletedLessons] = useState(0);
 
   // Fetch course outline
-  useEffect(() => {
-    const fetchCourseOutline = async () => {
-      try {
-        setIsLoading(true);
-        
-        const userId = getCurrentUserId();
-        
-        if (!userId) {
-          console.error("No user logged in");
-          setError("Please log in to view course content");
-          setIsLoading(false);
-          return;
-        }
-
-        console.log("Fetching course outline for courseId:", courseId);
-        
-        const response = await getCourseOutlineEnrolled(userId, courseId);
-        
-        console.log("Course outline response:", response);
-        
-        const chaptersData = response.data?.chapters || [];
-        setChapters(chaptersData);
-        
-        // Tính tổng số lessons và completed lessons
-        let total = 0;
-        let completed = 0;
-        const openState = {};
-        
-        chaptersData.forEach((chapter, index) => {
-          openState[chapter.chapterId] = index === 0; // Mở chapter đầu tiên
-          
-          if (chapter.lessons) {
-            total += chapter.lessons.length;
-            completed += chapter.lessons.filter(lesson => 
-              lesson.progressLesson === 100
-            ).length;
-          }
-        });
-        
-        setTotalLessons(total);
-        setCompletedLessons(completed);
-        setSidebarOpen(openState);
-        
+  const fetchCourseOutline = async () => {
+    try {
+      setIsLoading(true);
+      
+      const userId = getCurrentUserId();
+      
+      if (!userId) {
+        console.error("No user logged in");
+        setError("Please log in to view course content");
         setIsLoading(false);
-      } catch (err) {
-        console.error("Failed to fetch course outline:", err);
-        setError("Failed to load course content");
-        setIsLoading(false);
+        return;
       }
-    };
 
+      console.log("Fetching course outline for courseId:", courseId);
+      
+      const response = await getCourseOutlineEnrolled(userId, courseId);
+      
+      console.log("Course outline response:", response);
+      
+      const chaptersData = response.data?.chapters || [];
+      setChapters(chaptersData);
+      
+      // Tính tổng số lessons và completed lessons
+      let total = 0;
+      let completed = 0;
+      const openState = {};
+      
+      chaptersData.forEach((chapter, index) => {
+        openState[chapter.chapterId] = index === 0; // Mở chapter đầu tiên
+        
+        if (chapter.lessons) {
+          total += chapter.lessons.length;
+          // Convert 0.0-1.0 to percentage
+          completed += chapter.lessons.filter(lesson => 
+            (lesson.progressLesson || 0) * 2 * 100 === 100
+          ).length;
+        }
+      });
+      
+      setTotalLessons(total);
+      setCompletedLessons(completed);
+      setSidebarOpen(openState);
+      
+      setIsLoading(false);
+    } catch (err) {
+      console.error("Failed to fetch course outline:", err);
+      setError("Failed to load course content");
+      setIsLoading(false);
+    }
+  };
+
+  // Initial fetch
+  useEffect(() => {
     if (courseId) {
       fetchCourseOutline();
     }
+  }, [courseId]);
+
+  // Listen for outline update events
+  useEffect(() => {
+    const handleOutlineUpdate = () => {
+      console.log("📡 Received outline update event, refreshing...");
+      fetchCourseOutline();
+    };
+
+    window.addEventListener('course-outline-updated', handleOutlineUpdate);
+
+    return () => {
+      window.removeEventListener('course-outline-updated', handleOutlineUpdate);
+    };
   }, [courseId]);
 
   const toggleChapter = (chapterId) => {
@@ -167,9 +183,11 @@ export default function StudentCourseContent({ currentLessonId, onLessonChange }
                 <div className="divide-y divide-gray-50">
                   {chapter.lessons && chapter.lessons.length > 0 ? (
                     chapter.lessons.map((lesson) => {
-                      const isDone = lesson.progressLesson === 100;
+                      // Convert 0.0-1.0 to percentage
+                      const progressPercent = (lesson.progressLesson || 0) * 2 * 100;
+                      const isDone = progressPercent === 100;
                       const isCurrent = lesson.lessonId === parseInt(currentLessonId);
-                      const isLocked = false; // Có thể thêm logic lock sau
+                      const isLocked = false;
 
                       return (
                         <div 
@@ -207,9 +225,9 @@ export default function StudentCourseContent({ currentLessonId, onLessonChange }
                               <span className="text-xs text-gray-400 flex items-center gap-1">
                                 <Play size={10} /> {formatDuration(lesson.duration)}
                               </span>
-                              {lesson.progressLesson > 0 && lesson.progressLesson < 100 && (
+                              {progressPercent > 0 && progressPercent < 100 && (
                                 <span className="text-xs text-[#00b6b6] font-medium">
-                                  {lesson.progressLesson}%
+                                  {progressPercent.toFixed(0)}%
                                 </span>
                               )}
                             </div>

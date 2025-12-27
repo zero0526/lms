@@ -9,26 +9,69 @@ import {
   ExternalLink,
   AlertCircle,
   VideoOff,
-  FileX,
-  AlertTriangle
+  FileX
 } from "lucide-react";
 import { useParams } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import StudentCourseContent from "../../components/students/StudentCourseContent";
 import QuizComponent from "../../components/students/QuizComponent";
-import { getLessonDetail } from "../../api/student/lessonApi";
+import { getLessonDetail, updateVideoProgress } from "../../api/student/lessonApi";
+import { getCourseOutlineEnrolled } from "../../api/user/courseApi";
 import { getCurrentUserId } from "../../api/user/userUtils";
 import { convertDriveLink } from "../../api/user/userUtils";
 
 export default function LessonPage() {
   const { courseId, lessonId } = useParams();
   const videoRef = useRef(null);
+  const youtubePlayerRef = useRef(null);
+  const progressIntervalRef = useRef(null);
   
   const [activeTab, setActiveTab] = useState("quiz");
   const [lessonData, setLessonData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [videoEnded, setVideoEnded] = useState(false);
+  const [youtubeReady, setYoutubeReady] = useState(false);
+
+  // Load YouTube IFrame API
+  useEffect(() => {
+    // Check if API is already loaded
+    if (window.YT && window.YT.Player) {
+      setYoutubeReady(true);
+      return;
+    }
+
+    // Load YouTube API script
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    // API ready callback
+    window.onYouTubeIframeAPIReady = () => {
+      console.log("YouTube IFrame API Ready");
+      setYoutubeReady(true);
+    };
+
+    return () => {
+      window.onYouTubeIframeAPIReady = null;
+    };
+  }, []);
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+      if (youtubePlayerRef.current) {
+        youtubePlayerRef.current.destroy();
+        youtubePlayerRef.current = null;
+      }
+    };
+  }, []);
 
   // Fetch lesson detail
   useEffect(() => {
@@ -54,6 +97,7 @@ export default function LessonPage() {
         console.log("Lesson data:", response.data);
         
         setLessonData(response.data);
+        setVideoEnded(false);
         setIsLoading(false);
         
         // Auto-select tab based on available content
@@ -73,10 +117,218 @@ export default function LessonPage() {
     fetchLessonDetail();
   }, [lessonId]);
 
-  // Handle video ended
-  const handleVideoEnded = () => {
-    console.log("Video ended - marking as completed");
-    // TODO: Call API to update progress to 100%
+  // Initialize YouTube Player
+  useEffect(() => {
+    if (!lessonData || !youtubeReady || !lessonData.urlVideo) return;
+
+    const isYouTube = lessonData.urlVideo.includes('youtube') || lessonData.urlVideo.includes('youtu.be');
+    if (!isYouTube) return;
+
+    const videoId = getYoutubeVideoId(lessonData.urlVideo);
+    if (!videoId) {
+      console.error("Could not extract YouTube video ID");
+      return;
+    }
+
+    console.log("🎬 Initializing YouTube Player with ID:", videoId);
+
+    // Destroy existing player
+    if (youtubePlayerRef.current) {
+      youtubePlayerRef.current.destroy();
+    }
+
+    // Create new player
+    youtubePlayerRef.current = new window.YT.Player('youtube-player', {
+      videoId: videoId,
+      playerVars: {
+        autoplay: 0,
+        controls: 1,
+        modestbranding: 1,
+        rel: 0,
+      },
+      events: {
+        onReady: onPlayerReady,
+        onStateChange: onPlayerStateChange,
+      },
+    });
+
+  }, [lessonData, youtubeReady]);
+
+  // YouTube Player Ready
+  const onPlayerReady = (event) => {
+    console.log("YouTube Player Ready");
+  };
+
+  // YouTube Player State Change
+  const onPlayerStateChange = (event) => {
+    const userId = getCurrentUserId();
+    if (!userId) return;
+
+    // Playing state
+    if (event.data === window.YT.PlayerState.PLAYING) {
+      console.log("▶️ Video Playing");
+      startYouTubeProgressTracking();
+    }
+
+    // Paused state
+    if (event.data === window.YT.PlayerState.PAUSED) {
+      console.log("⏸️ Video Paused");
+      stopProgressTracking();
+    }
+
+    // Ended state
+    if (event.data === window.YT.PlayerState.ENDED) {
+      console.log("🎉 Video Ended");
+      handleVideoEnded();
+    }
+  };
+
+  // Start YouTube Progress Tracking
+  const startYouTubeProgressTracking = () => {
+    const userId = getCurrentUserId();
+    if (!userId || !youtubePlayerRef.current) return;
+
+    // Clear existing interval
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+    }
+
+    console.log("📹 Starting YouTube progress tracking (every 10 seconds)");
+
+    progressIntervalRef.current = setInterval(async () => {
+      try {
+        if (!youtubePlayerRef.current) return;
+
+        const currentTime = Math.floor(youtubePlayerRef.current.getCurrentTime());
+        
+        console.log(`⏱️ YouTube Progress: ${currentTime}s`);
+
+        await updateVideoProgress(userId, lessonId, courseId, currentTime);
+      } catch (error) {
+        console.error("Failed to update YouTube progress:", error);
+      }
+    }, 10000); // Every 10 seconds
+  };
+
+  // Stop Progress Tracking
+  const stopProgressTracking = () => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+      console.log("⏹️ Progress tracking stopped");
+    }
+  };
+
+  // Setup HTML5 video progress tracking (for non-YouTube videos)
+  useEffect(() => {
+    const video = videoRef.current;
+    
+    if (!video || !lessonData || videoEnded) return;
+
+    const isYouTube = lessonData.urlVideo?.includes('youtube') || lessonData.urlVideo?.includes('youtu.be');
+    if (isYouTube) return; // Skip for YouTube videos
+
+    const userId = getCurrentUserId();
+    if (!userId) return;
+
+    // Start tracking progress every 10 seconds
+    const startProgressTracking = () => {
+      console.log("📹 Starting HTML5 video progress tracking");
+      
+      progressIntervalRef.current = setInterval(async () => {
+        if (video.paused || video.ended) return;
+        
+        const currentTime = Math.floor(video.currentTime);
+        
+        console.log(`⏱️ HTML5 Progress: ${currentTime}s`);
+        
+        try {
+          await updateVideoProgress(userId, lessonId, courseId, currentTime);
+        } catch (error) {
+          console.error("Failed to update progress:", error);
+        }
+      }, 10000); // Every 10 seconds
+    };
+
+    // Handle video play
+    const handlePlay = () => {
+      if (!progressIntervalRef.current) {
+        startProgressTracking();
+      }
+    };
+
+    // Handle video pause - stop tracking
+    const handlePause = () => {
+      stopProgressTracking();
+    };
+
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
+
+    // Auto start if video is already playing
+    if (!video.paused) {
+      startProgressTracking();
+    }
+
+    return () => {
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+      stopProgressTracking();
+    };
+  }, [lessonData, courseId, lessonId, videoEnded]);
+
+  // Handle video ended (both YouTube and HTML5)
+  const handleVideoEnded = async () => {
+    console.log("🎉 Video ended - updating final progress");
+    
+    setVideoEnded(true);
+    stopProgressTracking();
+
+    const userId = getCurrentUserId();
+    if (!userId) return;
+
+    try {
+      let finalTime = 0;
+
+      // Get duration from YouTube player or HTML5 video
+      if (youtubePlayerRef.current) {
+        finalTime = Math.floor(youtubePlayerRef.current.getDuration());
+      } else if (videoRef.current) {
+        finalTime = Math.floor(videoRef.current.duration);
+      }
+      
+      console.log(`📤 Sending final progress: ${finalTime}s`);
+
+      // Update final progress
+      await updateVideoProgress(userId, lessonId, courseId, finalTime);
+      
+      console.log("Final progress updated, refreshing course outline...");
+      
+      // Refresh course outline to get updated progress
+      await getCourseOutlineEnrolled(userId, courseId);
+      
+      // Trigger refresh of StudentCourseContent component
+      window.dispatchEvent(new CustomEvent('course-outline-updated'));
+      
+    } catch (error) {
+      console.error("Failed to update final progress:", error);
+    }
+  };
+
+  // Extract YouTube Video ID
+  const getYoutubeVideoId = (url) => {
+    if (!url) return null;
+    
+    const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+    const match = url.match(regExp);
+    
+    return (match && match[7].length === 11) ? match[7] : null;
+  };
+
+  // Convert YouTube URL to embed (legacy support)
+  const getYoutubeEmbedUrl = (url) => {
+    const videoId = getYoutubeVideoId(url);
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
   };
 
   // Format duration
@@ -85,19 +337,6 @@ export default function LessonPage() {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // Convert YouTube URL to embed
-  const getYoutubeEmbedUrl = (url) => {
-    if (!url) return null;
-    
-    const videoIdMatch = url.match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/watch\?.+&v=))([^&\n?#]+)/);
-    
-    if (videoIdMatch && videoIdMatch[1]) {
-      return `https://www.youtube.com/embed/${videoIdMatch[1]}`;
-    }
-    
-    return url;
   };
 
   // Loading state
@@ -136,7 +375,11 @@ export default function LessonPage() {
   const hasVideo = lessonData.urlVideo && lessonData.urlVideo.trim() !== '';
   const hasDocs = lessonData.docs && lessonData.docs.length > 0;
   const hasQuizzes = lessonData.quizzes && lessonData.quizzes.length > 0;
-  const isCompleted = lessonData.progressLesson === 100;
+  const isYouTube = lessonData.urlVideo?.includes('youtube') || lessonData.urlVideo?.includes('youtu.be');
+  
+  // Convert 0.0-0.5 to 0-100%
+  const progressPercent = (lessonData.progressLesson || 0) * 2 * 100;
+  const isCompleted = progressPercent === 100;
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 font-sans">
@@ -150,18 +393,11 @@ export default function LessonPage() {
           {/* VIDEO PLAYER AREA */}
           <div className="bg-black rounded-xl overflow-hidden shadow-lg aspect-video relative group border-4 border-white">
             {hasVideo ? (
-              lessonData.urlVideo.includes('youtube') ? (
-                <iframe
-                  ref={videoRef}
-                  src={getYoutubeEmbedUrl(lessonData.urlVideo)}
-                  title={lessonData.title}
-                  className="w-full h-full"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  onEnded={handleVideoEnded}
-                ></iframe>
+              isYouTube ? (
+                // YouTube Player with API
+                <div id="youtube-player" className="w-full h-full"></div>
               ) : (
+                // HTML5 Video
                 <video 
                   ref={videoRef}
                   controls 
@@ -186,16 +422,16 @@ export default function LessonPage() {
             <h1 className="text-2xl font-bold text-gray-800 mb-2">{lessonData.title}</h1>
             <div className="flex items-center text-sm text-gray-500 gap-4 mb-4 flex-wrap">
               <span className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded">
-                <Clock size={16}/> {formatDuration(lessonData.duration)}
+                <CheckCircle size={16}/> Length
               </span>
               <span className={`flex items-center gap-1 px-2 py-1 rounded ${
                 isCompleted ? "bg-teal-50 text-[#00b6b6]" : "bg-gray-100 text-gray-500"
               }`}>
-                <CheckCircle size={16}/> {isCompleted ? "Completed" : "Not completed"}
+                <Clock size={16}/> {formatDuration(lessonData.duration)}
               </span>
-              {lessonData.progressLesson > 0 && lessonData.progressLesson < 100 && (
+              {progressPercent > 0 && !isCompleted && (
                 <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded">
-                  Progress: {lessonData.progressLesson}%
+                  Progress: {progressPercent}%
                 </span>
               )}
             </div>
@@ -234,7 +470,6 @@ export default function LessonPage() {
 
             {/* Tab Content */}
             <div className="p-6">
-              {/* Quiz component */}
               {activeTab === "quiz" ? (
                 <QuizComponent quizzes={lessonData.quizzes} /> 
               ) : (
@@ -250,6 +485,12 @@ export default function LessonPage() {
           <StudentCourseContent 
             currentLessonId={lessonId}
             onLessonChange={(newLessonId) => {
+              // Clear interval and destroy player before changing lesson
+              stopProgressTracking();
+              if (youtubePlayerRef.current) {
+                youtubePlayerRef.current.destroy();
+                youtubePlayerRef.current = null;
+              }
               window.location.href = `/student/courses/${courseId}/lessons/${newLessonId}`;
             }}
           />

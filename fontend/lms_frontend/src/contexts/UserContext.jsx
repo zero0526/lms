@@ -25,7 +25,7 @@ export const UserProvider = ({ children }) => {
   const updateUser = (newUserData) => {
     console.log("Updating user context:", newUserData);
     
-    // ← NORMALIZE: Nếu có pictureUrl thì đồng bộ sang avatar
+    // Normalize avatar and pictureUrl fields
     const normalizedData = {
       ...newUserData,
       avatar: newUserData.pictureUrl || newUserData.avatar,
@@ -43,7 +43,7 @@ export const UserProvider = ({ children }) => {
   };
 
   return (
-    <UserContext.Provider value={{ user, setUser, updateUser }}> {/* ← ĐÃ ĐÚNG */}
+    <UserContext.Provider value={{ user, setUser, updateUser }}>
       {children}
     </UserContext.Provider>
   );

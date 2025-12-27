@@ -58,7 +58,7 @@ useEffect(() => {
     }));
   };
 
-  // ✅ Redirect to login or student course detail
+  // Redirect to login or student course detail
   const handleViewCourse = () => {
     const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
   

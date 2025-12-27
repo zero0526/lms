@@ -1,22 +1,20 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { CheckCircle } from "lucide-react";
 import courseplaceholder from "../../assets/courseplaceholder.png";
+import student from "../../assets/person.svg";
+import lesson from "../../assets/lesson.svg";
 
 export default function StudentLearningCard({ course }) {
   const navigate = useNavigate();
   const imgplaceholder = courseplaceholder;
 
-  const progressPercent = course.progressPercent || 0;
-  
-  // Đánh giá hoàn thiện dựa trên progress, không phải isCompleted
-  const isCourseCompleted = progressPercent >= 100;
+  // Nhân 2 vì BE trả về 0-0.5
+  const progressPercent = (course.progressPercent || 0);
 
   const handleCardClick = () => {
     navigate(`/student/courses/${course.id}`, { 
       state: { 
         isRegistered: true,
-        progress: course.progress,
         progressPercent: progressPercent
       } 
     });
@@ -25,50 +23,51 @@ export default function StudentLearningCard({ course }) {
   return (
     <div 
       onClick={handleCardClick}
-      className="bg-white shadow-lg rounded-xl overflow-hidden hover:scale-105 transform transition duration-300 cursor-pointer relative"
+      className="w-full bg-white shadow-lg rounded-xl overflow-hidden flex flex-col h-full transform hover:-translate-y-2 hover:shadow-xl transition duration-300 cursor-pointer border border-gray-100"
     >
-      {/* Completed Badge - dựa vào progress */}
-      {isCourseCompleted && (
-        <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 z-10">
-          <CheckCircle size={14} />
-          Completed
-        </div>
-      )}
-
-      <img
-        src={course.image}
-        alt={course.title}
-        className="w-full h-40 object-cover"
-        onError={(e) => { 
-          e.target.src = imgplaceholder; 
-        }}
-      />
-
-      <div className="p-4">
-        <h4 className="font-semibold text-gray-800 text-sm mb-2 line-clamp-2">
-          {course.title}
-        </h4>
-
-        <div className="flex items-center gap-2 mb-3">
-          <p className="text-gray-600 text-xs">{course.instructor}</p>
-        </div>
-
-        {/* Progress bar */}
-        <div className="w-full bg-gray-200 h-2 rounded-full mb-2">
-          <div
-            className="h-2 bg-[#00b6b6] rounded-full transition-all duration-300"
-            style={{ width: `${progressPercent}%` }}
-          ></div>
-        </div>
-
-        <div className="flex justify-between items-center">
-          <p className="text-[11px] text-gray-500">
-            Progress: <span className="font-bold">{progressPercent.toFixed(0)}%</span>
+      <div className="relative h-44 overflow-hidden">
+         <img 
+           src={course.image} 
+           alt={course.title} 
+           className="w-full h-full object-cover transition duration-500 hover:scale-110" 
+           onError={(e) => { 
+             e.target.src = imgplaceholder; 
+           }}
+         />
+      </div>
+      
+      <div className="p-4 flex flex-col flex-1">
+        <div className="flex flex-row justify-between items-start mb-2">
+          <h4 className="font-bold text-gray-800 text-sm line-clamp-2 flex-1 pr-2">
+            {course.title}
+          </h4>
+          <p className="text-yellow-500 text-sm font-bold flex-shrink-0 whitespace-nowrap">
+            {course.rating ? course.rating.toFixed(1) : "N/A"} ★
           </p>
-          {/* Hiển thị số chapters */}
-          <p className="text-[11px] text-gray-500">
-            {course.numOfChapter} {course.numOfChapter === 1 ? 'chapter' : 'chapters'}
-          </p>
+        </div>
+        
+        <p className="text-gray-500 text-xs mb-4 line-clamp-2">
+          {course.description || course.instructor}
+        </p>
+        
+        <div className="mt-auto">
+          <div className="flex items-center justify-between border-t border-gray-100 pt-3 mb-3">
+            <span className="flex items-center gap-1 text-xs text-gray-600">
+              <img className="w-4 h-4 opacity-70" src={student} alt="student" />
+              {course.studentNums || 0}
+            </span>
+            <span className="flex items-center gap-1 text-xs text-gray-600">
+              <img className="w-4 h-4 opacity-70" src={lesson} alt="lesson" />
+              {course.numOfChapter || course.chapterNums || 0}
+            </span>
+            <span className="font-bold text-teal-600 text-sm">
+              Enrolled
+            </span>
+          </div>
+
+          <button className="w-full border border-[#00b6b6] text-[#00b6b6] rounded-lg py-2 text-sm font-semibold hover:bg-[#00b6b6] hover:text-white transition duration-300">
+            Continue
+          </button>
         </div>
       </div>
     </div>
