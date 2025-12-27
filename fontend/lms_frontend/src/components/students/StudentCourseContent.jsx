@@ -45,20 +45,20 @@ export default function StudentCourseContent({ currentLessonId, onLessonChange }
       const chaptersData = response.data?.chapters || [];
       setChapters(chaptersData);
       
-      // Tính tổng số lessons và completed lessons
+      // Calculate total lessons and completed lessons
       let total = 0;
       let completed = 0;
       const openState = {};
-      
+
       chaptersData.forEach((chapter, index) => {
-        openState[chapter.chapterId] = index === 0; // Mở chapter đầu tiên
+        openState[chapter.chapterId] = index === 0;
         
         if (chapter.lessons) {
           total += chapter.lessons.length;
-          // Convert 0.0-1.0 to percentage
-          completed += chapter.lessons.filter(lesson => 
-            (lesson.progressLesson || 0) * 2 * 100 === 100
-          ).length;
+          completed += chapter.lessons.filter(lesson => {
+            const progressPercent = Math.min((lesson.progressLesson || 0) * 2 * 100, 100);
+            return progressPercent >= 100;
+          }).length;
         }
       });
       
@@ -184,8 +184,8 @@ export default function StudentCourseContent({ currentLessonId, onLessonChange }
                   {chapter.lessons && chapter.lessons.length > 0 ? (
                     chapter.lessons.map((lesson) => {
                       // Convert 0.0-1.0 to percentage
-                      const progressPercent = (lesson.progressLesson || 0) * 2 * 100;
-                      const isDone = progressPercent === 100;
+                      const progressPercent = Math.min(Math.round((lesson.progressLesson || 0) * 2 * 100), 100);
+                      const isDone = progressPercent >= 100;
                       const isCurrent = lesson.lessonId === parseInt(currentLessonId);
                       const isLocked = false;
 

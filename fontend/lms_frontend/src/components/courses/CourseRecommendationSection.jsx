@@ -41,11 +41,11 @@ export default function CourseRecommendationSection() {
           title: course.title,
           description: course.description,
           image: convertDriveLink(course.thumbnailUrl),
-          rating: course.avgRating,
+          rating: course.avgRating || 0,
           studentNums: course.numUserEnrolled,
           numOfChapter: course.numChapters,
           chapterNums: course.numChapters,
-          instructor: course.teacherName || "Unknown", // Nếu BE không trả về teacherName
+          instructor: course.teacherName || "Unknown",
           price: 0, // Free courses
           isCompleted: course.isCompleted
         }));
