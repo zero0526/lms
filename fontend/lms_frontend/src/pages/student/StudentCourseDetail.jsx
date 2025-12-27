@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { 
-  PlayCircle, Check, Plus, Minus, Clock, Film, Award, Battery, Star 
+  PlayCircle, Check, Plus, Minus, Clock, Film, Award, Battery, Star, CheckCircle
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { convertDriveLink } from "../../api/user/userUtils";
@@ -30,7 +30,7 @@ export default function StudentCourseDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // ✅ Review states
+  // Review states
   const [reviews, setReviews] = useState([]);
   const [reviewPage, setReviewPage] = useState(0);
   const [reviewLimit] = useState(10);
@@ -42,7 +42,7 @@ export default function StudentCourseDetail() {
   const [userComment, setUserComment] = useState("");
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
-  // ✅ Load user info
+  // Load user info
   useEffect(() => {
     const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
     if (userStr) {
@@ -55,7 +55,7 @@ export default function StudentCourseDetail() {
     }
   }, []);
 
-  // ✅ Reset all states when courseId changes
+  // Reset all states when courseId changes
   useEffect(() => {
     console.log("🔄 Course ID changed to:", courseId);
     
@@ -75,96 +75,96 @@ export default function StudentCourseDetail() {
     setOpenChapters({ 0: true });
   }, [courseId]);
 
-// ✅ Fetch course data
-useEffect(() => {
-  const fetchCourseData = async () => {
-    if (!courseId) return;
+  // Fetch course data
+  useEffect(() => {
+    const fetchCourseData = async () => {
+      if (!courseId) return;
+
+      try {
+        setIsLoading(true);
+
+        console.log("📚 Fetching course data for courseId:", courseId);
+
+        // 1. Fetch course details
+        const detailsData = await getCourseDetails(courseId);
+        setCourseDetails(detailsData.data);
+
+        // 2. Check if user is logged in
+        if (!currentUser?.userId) {
+          console.log("👤 Guest user - fetching public outline");
+          
+          // Guest: Fetch public outline
+          const publicOutline = await getCourseOutlinePublic(courseId);
+          
+          console.log("📦 Public Outline:", publicOutline);
+          
+          setIsEnrolled(false);
+          setCourseOutline(publicOutline.data?.chapters || []);
+        } else {
+          console.log("👤 Logged in user - checking enrollment");
+          
+          // Logged in: Check enrollment status
+          const enrolled = await checkEnrollmentStatus(currentUser.userId, courseId);
+          console.log("Enrollment status:", enrolled);
+          setIsEnrolled(enrolled);
+
+          // Fetch appropriate outline based on enrollment
+          let outlineData;
+          if (enrolled) {
+            outlineData = await getCourseOutlineEnrolled(currentUser.userId, courseId);
+          } else {
+            outlineData = await getCourseOutlinePublic(courseId);
+          }
+          
+          console.log("📦 Outline data:", outlineData);
+          setCourseOutline(outlineData.data?.chapters || []);
+        }
+        
+        setIsLoading(false);
+      } catch (err) {
+        console.error("❌ Failed to fetch course data:", err);
+        setError("Unable to load course information. Please try again later.");
+        setIsLoading(false);
+      }
+    };
+
+    fetchCourseData();
+  }, [currentUser, courseId]);
+
+  // Handle enroll - Update outline sau khi enroll
+  const handleEnroll = async () => {
+    if (!currentUser?.userId) {
+      alert("Please log in to enroll in this course.");
+      navigate("/login");
+      return;
+    }
 
     try {
       setIsLoading(true);
-
-      console.log("📚 Fetching course data for courseId:", courseId);
-
-      // ✅ 1. Fetch course details
-      const detailsData = await getCourseDetails(courseId);
-      setCourseDetails(detailsData.data);
-
-      // ✅ 2. Check if user is logged in
-      if (!currentUser?.userId) {
-        console.log("👤 Guest user - fetching public outline");
-        
-        // ✅ Guest: Fetch public outline
-        const publicOutline = await getCourseOutlinePublic(courseId);
-        
-        console.log("📦 Public Outline:", publicOutline);
-        
-        setIsEnrolled(false);
-        setCourseOutline(publicOutline.data?.chapters || []);
-      } else {
-        console.log("👤 Logged in user - checking enrollment");
-        
-        // ✅ Logged in: Check enrollment status
-        const enrolled = await checkEnrollmentStatus(currentUser.userId, courseId);
-        console.log("✅ Enrollment status:", enrolled);
-        setIsEnrolled(enrolled);
-
-        // ✅ Fetch appropriate outline based on enrollment
-        let outlineData;
-        if (enrolled) {
-          outlineData = await getCourseOutlineEnrolled(currentUser.userId, courseId);
-        } else {
-          outlineData = await getCourseOutlinePublic(courseId);
-        }
-        
-        console.log("📦 Outline data:", outlineData);
-        setCourseOutline(outlineData.data?.chapters || []);
-      }
       
+      const enrollResult = await enrollCourse(currentUser.userId, courseId);
+
+      if (enrollResult.status === 200) {
+        alert("Successfully enrolled in the course! Start learning now.");
+        
+        // Fetch lại enrolled outline sau khi enroll
+        const enrolledOutline = await getCourseOutlineEnrolled(currentUser.userId, courseId);
+        
+        console.log("📦 Enrolled outline after enroll:", enrolledOutline);
+        
+        setIsEnrolled(enrolledOutline.data?.isEnrolled || true);
+        setCourseOutline(enrolledOutline.data?.chapters || []);
+      }
+
       setIsLoading(false);
-    } catch (err) {
-      console.error("❌ Failed to fetch course data:", err);
-      setError("Unable to load course information. Please try again later.");
+    } catch (error) {
+      console.error("Enroll error:", error);
+      alert(error.response?.data?.message || "Failed to enroll in the course. Please try again.");
       setIsLoading(false);
     }
   };
 
-  fetchCourseData();
-}, [currentUser, courseId]);
-
-// ✅ Handle enroll - Update outline sau khi enroll
-const handleEnroll = async () => {
-  if (!currentUser?.userId) {
-    alert("Please log in to enroll in this course.");
-    navigate("/login");
-    return;
-  }
-
-  try {
-    setIsLoading(true);
-    
-    const enrollResult = await enrollCourse(currentUser.userId, courseId);
-
-    if (enrollResult.status === 200) {
-      alert("Successfully enrolled in the course! Start learning now.");
-      
-      // ✅ Fetch lại enrolled outline sau khi enroll
-      const enrolledOutline = await getCourseOutlineEnrolled(currentUser.userId, courseId);
-      
-      console.log("📦 Enrolled outline after enroll:", enrolledOutline);
-      
-      setIsEnrolled(enrolledOutline.data?.isEnrolled || true);
-      setCourseOutline(enrolledOutline.data?.chapters || []);
-    }
-
-    setIsLoading(false);
-  } catch (error) {
-    console.error("Enroll error:", error);
-    alert(error.response?.data?.message || "Failed to enroll in the course. Please try again.");
-    setIsLoading(false);
-  }
-};
-
-  // ✅ Fetch reviews
+  // Fetch reviews
   useEffect(() => {
     const fetchReviews = async () => {
       if (!courseId) return;
@@ -256,6 +256,26 @@ const handleEnroll = async () => {
     }
   };
 
+  // Calculate overall course progress (0-100%)
+  const calculateCourseProgress = () => {
+    if (!isEnrolled || courseOutline.length === 0) return 0;
+
+    let totalLessons = 0;
+    let totalProgress = 0;
+
+    courseOutline.forEach(chapter => {
+      if (chapter.lessons && chapter.lessons.length > 0) {
+        chapter.lessons.forEach(lesson => {
+          totalLessons++;
+          // Convert 0.0-1.0 to 0-100%
+          totalProgress += (lesson.progressLesson * 2 || 0) * 100;
+        });
+      }
+    });
+
+    return totalLessons > 0 ? Math.round(totalProgress / totalLessons) : 0;
+  };
+
   const formatDuration = (seconds) => {
     if (!seconds) return "Not updated";
     const hours = Math.floor(seconds / 3600);
@@ -264,7 +284,7 @@ const handleEnroll = async () => {
   };
 
   const formatLessonDuration = (seconds) => {
-    if (!seconds) return "Not updated";
+    if (!seconds) return "None";
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${minutes}:${secs.toString().padStart(2, '0')}`;
@@ -287,16 +307,12 @@ const handleEnroll = async () => {
     }
   };
 
-  // ✅ Format date từ array [year, month, day, hour, minute, second, nano]
+  // Format date từ array [year, month, day, hour, minute, second, nano]
   const formatReviewDate = (dateArray) => {
     if (!dateArray || !Array.isArray(dateArray)) return "";
     
     try {
-      // dateArray format: [2025, 12, 24, 5, 15, 34, 172000000]
-      // [year, month (1-12), day, hour, minute, second, nanosecond]
       const [year, month, day, hour, minute, second] = dateArray;
-      
-      // JavaScript Date month is 0-indexed, so subtract 1
       const date = new Date(year, month - 1, day, hour, minute, second);
       
       return date.toLocaleDateString('en-US', { 
@@ -347,6 +363,7 @@ const handleEnroll = async () => {
   }
 
   const whatYouWillLearn = parseTargets(courseDetails.courseTargets);
+  const overallProgress = calculateCourseProgress();
 
   return (
     <div className="bg-gray-50 min-h-screen font-sans">
@@ -370,7 +387,7 @@ const handleEnroll = async () => {
                 />
                 <div>
                   <p className="text-sm font-bold text-gray-800">
-                    Taught by <span className="text-[#00b6b6]">{courseDetails.teacherName}</span>
+                    <span className="text-[#00b6b6]">{courseDetails.teacherName}</span>
                   </p>
                   <p className="text-xs text-gray-500">Instructor</p>
                 </div>
@@ -427,38 +444,53 @@ const handleEnroll = async () => {
 
                     {openChapters[index] && (
                       <div className="divide-y divide-gray-100">
-                        {chapter.lessons.map((lesson) => (
-                          <div 
-                            key={lesson.lessonId} 
-                            onClick={() => handleLessonClick(lesson.lessonId)} 
-                            className={`flex justify-between items-center p-4 pl-10 transition cursor-pointer group 
-                              ${isEnrolled ? "hover:bg-teal-50" : "hover:bg-gray-50"}`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <PlayCircle className={`w-4 h-4 ${isEnrolled ? "text-gray-400 group-hover:text-[#00b6b6]" : "text-gray-300"}`} />
-                              
-                              <div className="flex flex-col">
-                                <span className={`text-sm group-hover:text-gray-900 ${isEnrolled ? "text-gray-600" : "text-gray-400"}`}>
-                                  {lesson.title}
-                                </span>
-                                {isEnrolled && lesson.progressLesson !== undefined && (
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <div className="w-20 bg-gray-200 rounded-full h-1">
-                                      <div 
-                                        className="bg-[#00b6b6] h-1 rounded-full" 
-                                        style={{width: `${lesson.progressLesson}%`}}
-                                      ></div>
-                                    </div>
-                                    <span className="text-xs text-gray-400">{lesson.progressLesson.toFixed(0)}%</span>
-                                  </div>
+                        {chapter.lessons.map((lesson) => {
+                          // Convert 0.0-1.0 to 0-100%
+                          const progressPercent = Math.round((lesson.progressLesson * 2 || 0) * 100);
+                          const isCompleted = progressPercent === 100;
+
+                          return (
+                            <div 
+                              key={lesson.lessonId} 
+                              onClick={() => handleLessonClick(lesson.lessonId)} 
+                              className={`flex justify-between items-center p-4 pl-10 transition cursor-pointer group 
+                                ${isEnrolled ? "hover:bg-teal-50" : "hover:bg-gray-50"}`}
+                            >
+                              <div className="flex items-center gap-3 flex-1">
+                                {/* Icon based on completion status */}
+                                {isEnrolled && isCompleted ? (
+                                  <CheckCircle className="w-4 h-4 text-[#00b6b6] fill-teal-50 flex-shrink-0" />
+                                ) : (
+                                  <PlayCircle className={`w-4 h-4 flex-shrink-0 ${isEnrolled ? "text-gray-400 group-hover:text-[#00b6b6]" : "text-gray-300"}`} />
                                 )}
+                                
+                                <div className="flex flex-col flex-1">
+                                  <span className={`text-sm group-hover:text-gray-900 ${isEnrolled ? "text-gray-600" : "text-gray-400"}`}>
+                                    {lesson.title}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-3">
+                                {/* Show progress percentage if enrolled */}
+                                {isEnrolled && progressPercent > 0 && (
+                                  <span className={`text-xs font-medium px-2 py-1 rounded ${
+                                    isCompleted 
+                                      ? "bg-teal-50 text-[#00b6b6]" 
+                                      : "bg-blue-50 text-blue-600"
+                                  }`}>
+                                    {progressPercent}%
+                                  </span>
+                                )}
+                                
+                                {/* Duration */}
+                                <span className="text-xs text-gray-400">
+                                  {formatLessonDuration(lesson.duration)}
+                                </span>
                               </div>
                             </div>
-                            <span className="text-xs text-gray-400">
-                              {formatLessonDuration(lesson.duration)}
-                            </span>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -529,26 +561,23 @@ const handleEnroll = async () => {
                 </div>
               )}
 
-              {/* ✅ Reviews List - Fixed field mapping */}
+              {/* Reviews List */}
               <div className="space-y-4">
                 {reviews.length > 0 ? (
                   <>
                     {reviews.map((review, index) => {
-                      // ✅ Lấy chữ cái đầu từ fullName
                       const firstLetter = review.fullName?.charAt(0).toUpperCase() || "?";
                       const avatarUrl = review.avatarUrl ? convertDriveLink(review.avatarUrl) : null;
                       
                       return (
                         <div key={index} className="bg-white border border-gray-200 p-6 rounded-xl shadow-sm">
                           <div className="flex items-start gap-4">
-                            {/* ✅ Avatar - Hiển thị ảnh nếu có, nếu không hiển thị chữ cái */}
                             {avatarUrl ? (
                               <img 
                                 src={avatarUrl}
                                 alt={review.fullName}
                                 className="w-10 h-10 rounded-full object-cover flex-shrink-0"
                                 onError={(e) => {
-                                  // Fallback to letter avatar if image fails
                                   e.target.style.display = 'none';
                                   e.target.nextSibling.style.display = 'flex';
                                 }}
@@ -564,7 +593,6 @@ const handleEnroll = async () => {
                             
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                {/* ✅ Hiển thị fullName */}
                                 <h4 className="font-bold text-gray-800">{review.fullName || "Anonymous"}</h4>
                                 <div className="flex gap-0.5">
                                   {[...Array(5)].map((_, i) => (
@@ -579,14 +607,12 @@ const handleEnroll = async () => {
                                     />
                                   ))}
                                 </div>
-                                {/* ✅ Hiển thị badge "Edited" nếu isEdit = true */}
                                 {review.isEdit && (
                                   <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
                                     Edited
                                   </span>
                                 )}
                               </div>
-                              {/* ✅ Format date từ array */}
                               <p className="text-xs text-gray-500 mb-2">
                                 {formatReviewDate(review.lastUpdated)}
                               </p>
@@ -597,7 +623,6 @@ const handleEnroll = async () => {
                       );
                     })}
                     
-                    {/* Load More Button */}
                     {hasMoreReviews && (
                       <div className="text-center">
                         <button
@@ -645,24 +670,24 @@ const handleEnroll = async () => {
               <div className="p-6 text-center">
                 {isEnrolled ? (
                   <div className="mb-6">
-                    <p className="text-sm text-gray-500 mb-2 text-left">Learning Progress</p>
-                    <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-                      <div 
-                        className="bg-[#00b6b6] h-2 rounded-full transition-all duration-300" 
-                        style={{
-                          width: `${
-                            courseOutline.length > 0 
-                              ? courseOutline.reduce((acc, chapter) => {
-                                  const chapterProgress = chapter.lessons.reduce((sum, lesson) => 
-                                    sum + (lesson.progressLesson || 0), 0
-                                  ) / chapter.lessons.length;
-                                  return acc + chapterProgress;
-                                }, 0) / courseOutline.length
-                              : 0
-                          }%`
-                        }}
-                      ></div>
+                    <p className="text-sm text-gray-500 mb-3 text-left font-medium">Learning Progress</p>
+                    
+                    {/* Progress Bar with Percentage */}
+                    <div className="relative mb-4">
+                      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                        <div 
+                          className="bg-gradient-to-r from-[#00b6b6] to-[#009e9e] h-3 rounded-full transition-all duration-500 ease-out" 
+                          style={{ width: `${overallProgress}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-xs text-gray-500">Progress</span>
+                        <span className="text-sm font-bold text-[#00b6b6]">
+                          {overallProgress}%
+                        </span>
+                      </div>
                     </div>
+
                     <button 
                       onClick={() => {
                         const firstLesson = courseOutline[0]?.lessons[0];
@@ -670,7 +695,7 @@ const handleEnroll = async () => {
                       }}
                       className="w-full bg-[#00b6b6] text-white font-bold text-lg py-3 rounded-full hover:bg-[#009e9e] transition shadow-lg transform active:scale-95"
                     >
-                      CONTINUE LEARNING
+                      CONTINUE
                     </button>
                   </div>
                 ) : (
@@ -680,7 +705,7 @@ const handleEnroll = async () => {
                       onClick={handleEnroll} 
                       className="w-full bg-[#00b6b6] text-white font-bold text-lg py-3 rounded-full hover:bg-[#009e9e] transition shadow-lg transform active:scale-95"
                     >
-                      ENROLL NOW
+                      ENROLL
                     </button>
                   </div>
                 )}

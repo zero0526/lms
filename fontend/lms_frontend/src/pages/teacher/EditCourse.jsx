@@ -526,7 +526,7 @@ export default function EditCourse() {
           </div>
 
           <div className="max-w-7xl mx-auto px-6 flex gap-8">
-            {["curriculum", "info", "settings", "students"].map((tab) => (
+            {["curriculum"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveMainTab(tab)}

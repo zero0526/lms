@@ -107,7 +107,7 @@ export default function CourseFilter({ onFilterChange, categories }) {
 
         <div className="border-t border-gray-100 my-4"></div>
 
-        {/* ✅ Sort By */}
+        {/* Sort By */}
         <div className="mb-6">
           <h4 className="font-semibold text-gray-700 mb-3 text-sm">Sort By</h4>
           <div className="space-y-2">

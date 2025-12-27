@@ -125,7 +125,7 @@ export const LessonItem = ({
             <ContentRow 
                 key={quiz.quizId || idx}
                 icon={HelpCircle} 
-                color="text-purple-500"
+                color="text-white-500"
                 title={quiz.titleQuiz || `Quiz ${idx + 1}`}
                 subtitle={`${quiz.numOfQuestion} Questions • ${quiz.timeLimit} mins • ${quiz.level}`}
                 onEdit={(e) => {

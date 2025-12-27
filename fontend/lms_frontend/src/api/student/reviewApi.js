@@ -24,7 +24,7 @@ export const submitCourseReview = async (reviewData) => {
   }
   
   try {
-    // ✅ Gửi đúng format theo BE yêu cầu
+    // Gửi đúng format theo BE yêu cầu
     const response = await apiClient.post('/review/review-course', {
       rating: reviewData.rating,
       userid: reviewData.userid,

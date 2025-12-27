@@ -9,7 +9,7 @@ export const fetchCourseInfo = async (courseId) => {
     const details = res.data.data;
 
     console.log(`Fetched details for course ${courseId}:`, details);
-    return details; // ✅ Trả về data
+    return details; // Trả về data
   } catch (error) {
     console.error(`Failed to fetch details for course ${courseId}`, error);
     throw error;
@@ -28,7 +28,7 @@ export const fetchCourseOutline = async (userId, courseId) => {
 
     console.log("Course Outline Response (Raw):", res.data);
 
-    const rawChapters = res.data.data || [];
+    const rawChapters = res.data?.data?.chapters || [];
 
     // LOG ALL CHAPTER & LESSON IDS
     console.log("=== COURSE STRUCTURE ===");

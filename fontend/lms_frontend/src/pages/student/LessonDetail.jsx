@@ -1,94 +1,385 @@
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Play, 
-  CheckCircle, 
-  Circle, 
-  Lock, 
+  CheckCircle,
   Clock, 
   FileText, 
   HelpCircle, 
   Download,
-  ChevronDown,
-  ChevronUp,
-  RotateCcw,
   ExternalLink,
+  AlertCircle,
+  VideoOff,
+  FileX
 } from "lucide-react";
+import { useParams } from "react-router-dom";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
+import StudentCourseContent from "../../components/students/StudentCourseContent";
+import QuizComponent from "../../components/students/QuizComponent";
+import { getLessonDetail, updateVideoProgress } from "../../api/student/lessonApi";
+import { getCourseOutlineEnrolled } from "../../api/user/courseApi";
+import { getCurrentUserId } from "../../api/user/userUtils";
+import { convertDriveLink } from "../../api/user/userUtils";
 
-// --- MOCK DATA ---
-const lessonData = {
-  id: 1,
-  title: "Lesson 1: Overview of ReactJS and the Component Model",
-  videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
-  duration: "12:30",
-  views: 1250,
-  description: "In this lesson we will learn about Components, JSX and the Virtual DOM."
-};
-
-const courseContent = [
-  {
-    id: 1,
-    title: "Chapter 1: Introduction",
-    lessons: [
-      { id: 101, title: "1. ReactJS Overview", duration: "12:30", isCompleted: true },
-      { id: 102, title: "2. Setting up the environment", duration: "08:15", isCompleted: true },
-      { id: 103, title: "3. What is JSX?", duration: "15:00", isCompleted: false, isActive: true }, // current lesson
-    ]
-  },
-  {
-    id: 2,
-    title: "Chapter 2: Components & Props",
-    lessons: [
-      { id: 201, title: "4. Function Component", duration: "10:20", isCompleted: false },
-      { id: 202, title: "5. What are Props?", duration: "14:10", isCompleted: false, isLocked: true },
-      { id: 203, title: "6. Props Practice", duration: "20:00", isCompleted: false, isLocked: true },
-    ]
-  }
-];
-
-const quizData = [
-  {
-    id: 1,
-    question: "What is ReactJS?",
-    options: ["A Framework", "A Library", "A Programming Language", "A Database"],
-  },
-  {
-    id: 2,
-    question: "Which function is used to create state in a Functional Component?",
-    options: ["useState", "useEffect", "useReducer", "useRef"],
-  },
-  {
-    id: 3,
-    question: "What does JSX stand for?",
-    options: ["Java XML", "JavaScript XML", "JSON XML", "Java Syntax Extension"],
-  }
-];
-
-const documentsData = [
-  { id: 1, title: "Lecture Slides (PDF)", link: "#", type: "PDF" },
-  { id: 2, title: "Sample Source Code (Zip)", link: "#", type: "ZIP" },
-  { id: 3, title: "Reference: React Docs", link: "#", type: "LINK" },
-];
-
-// MAIN COMPONENT: LESSON PAGE
 export default function LessonPage() {
-  const [activeTab, setActiveTab] = useState("quiz"); // 'quiz' | 'document'
-  const [completedLessons, setCompletedLessons] = useState([101, 102]); // IDs of completed lessons
-  const [sidebarOpen, setSidebarOpen] = useState({ 1: true, 2: true }); // Chapter open/close state
+  const { courseId, lessonId } = useParams();
+  const videoRef = useRef(null);
+  const youtubePlayerRef = useRef(null);
+  const progressIntervalRef = useRef(null);
   
-  // Handle video ended -> mark as completed
-  const handleVideoEnded = () => {
-    // Assume current lesson has ID 103
-    if (!completedLessons.includes(103)) {
-      setCompletedLessons([...completedLessons, 103]);
+  const [activeTab, setActiveTab] = useState("quiz");
+  const [lessonData, setLessonData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [videoEnded, setVideoEnded] = useState(false);
+  const [youtubeReady, setYoutubeReady] = useState(false);
 
+  // Load YouTube IFrame API
+  useEffect(() => {
+    // Check if API is already loaded
+    if (window.YT && window.YT.Player) {
+      setYoutubeReady(true);
+      return;
+    }
+
+    // Load YouTube API script
+    const tag = document.createElement('script');
+    tag.src = 'https://www.youtube.com/iframe_api';
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    // API ready callback
+    window.onYouTubeIframeAPIReady = () => {
+      console.log("YouTube IFrame API Ready");
+      setYoutubeReady(true);
+    };
+
+    return () => {
+      window.onYouTubeIframeAPIReady = null;
+    };
+  }, []);
+
+  // Cleanup interval on unmount
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+      if (youtubePlayerRef.current) {
+        youtubePlayerRef.current.destroy();
+        youtubePlayerRef.current = null;
+      }
+    };
+  }, []);
+
+  // Fetch lesson detail
+  useEffect(() => {
+    const fetchLessonDetail = async () => {
+      if (!lessonId) return;
+
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const userId = getCurrentUserId();
+        
+        if (!userId) {
+          setError("Please log in to view lesson content");
+          setIsLoading(false);
+          return;
+        }
+
+        console.log("Fetching lesson detail for lessonId:", lessonId);
+        
+        const response = await getLessonDetail(userId, lessonId);
+        
+        console.log("Lesson data:", response.data);
+        
+        setLessonData(response.data);
+        setVideoEnded(false);
+        setIsLoading(false);
+        
+        // Auto-select tab based on available content
+        if (response.data.quizzes && response.data.quizzes.length > 0) {
+          setActiveTab("quiz");
+        } else if (response.data.docs && response.data.docs.length > 0) {
+          setActiveTab("document");
+        }
+        
+      } catch (err) {
+        console.error("Failed to fetch lesson detail:", err);
+        setError("Failed to load lesson content. Please try again later.");
+        setIsLoading(false);
+      }
+    };
+
+    fetchLessonDetail();
+  }, [lessonId]);
+
+  // Initialize YouTube Player
+  useEffect(() => {
+    if (!lessonData || !youtubeReady || !lessonData.urlVideo) return;
+
+    const isYouTube = lessonData.urlVideo.includes('youtube') || lessonData.urlVideo.includes('youtu.be');
+    if (!isYouTube) return;
+
+    const videoId = getYoutubeVideoId(lessonData.urlVideo);
+    if (!videoId) {
+      console.error("Could not extract YouTube video ID");
+      return;
+    }
+
+    console.log("🎬 Initializing YouTube Player with ID:", videoId);
+
+    // Destroy existing player
+    if (youtubePlayerRef.current) {
+      youtubePlayerRef.current.destroy();
+    }
+
+    // Create new player
+    youtubePlayerRef.current = new window.YT.Player('youtube-player', {
+      videoId: videoId,
+      playerVars: {
+        autoplay: 0,
+        controls: 1,
+        modestbranding: 1,
+        rel: 0,
+      },
+      events: {
+        onReady: onPlayerReady,
+        onStateChange: onPlayerStateChange,
+      },
+    });
+
+  }, [lessonData, youtubeReady]);
+
+  // YouTube Player Ready
+  const onPlayerReady = (event) => {
+    console.log("YouTube Player Ready");
+  };
+
+  // YouTube Player State Change
+  const onPlayerStateChange = (event) => {
+    const userId = getCurrentUserId();
+    if (!userId) return;
+
+    // Playing state
+    if (event.data === window.YT.PlayerState.PLAYING) {
+      console.log("▶️ Video Playing");
+      startYouTubeProgressTracking();
+    }
+
+    // Paused state
+    if (event.data === window.YT.PlayerState.PAUSED) {
+      console.log("⏸️ Video Paused");
+      stopProgressTracking();
+    }
+
+    // Ended state
+    if (event.data === window.YT.PlayerState.ENDED) {
+      console.log("🎉 Video Ended");
+      handleVideoEnded();
     }
   };
 
-  const toggleChapter = (id) => {
-    setSidebarOpen(prev => ({ ...prev, [id]: !prev[id] }));
+  // Start YouTube Progress Tracking
+  const startYouTubeProgressTracking = () => {
+    const userId = getCurrentUserId();
+    if (!userId || !youtubePlayerRef.current) return;
+
+    // Clear existing interval
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+    }
+
+    console.log("📹 Starting YouTube progress tracking (every 10 seconds)");
+
+    progressIntervalRef.current = setInterval(async () => {
+      try {
+        if (!youtubePlayerRef.current) return;
+
+        const currentTime = Math.floor(youtubePlayerRef.current.getCurrentTime());
+        
+        console.log(`⏱️ YouTube Progress: ${currentTime}s`);
+
+        await updateVideoProgress(userId, lessonId, courseId, currentTime);
+      } catch (error) {
+        console.error("Failed to update YouTube progress:", error);
+      }
+    }, 10000); // Every 10 seconds
   };
+
+  // Stop Progress Tracking
+  const stopProgressTracking = () => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+      console.log("⏹️ Progress tracking stopped");
+    }
+  };
+
+  // Setup HTML5 video progress tracking (for non-YouTube videos)
+  useEffect(() => {
+    const video = videoRef.current;
+    
+    if (!video || !lessonData || videoEnded) return;
+
+    const isYouTube = lessonData.urlVideo?.includes('youtube') || lessonData.urlVideo?.includes('youtu.be');
+    if (isYouTube) return; // Skip for YouTube videos
+
+    const userId = getCurrentUserId();
+    if (!userId) return;
+
+    // Start tracking progress every 10 seconds
+    const startProgressTracking = () => {
+      console.log("📹 Starting HTML5 video progress tracking");
+      
+      progressIntervalRef.current = setInterval(async () => {
+        if (video.paused || video.ended) return;
+        
+        const currentTime = Math.floor(video.currentTime);
+        
+        console.log(`⏱️ HTML5 Progress: ${currentTime}s`);
+        
+        try {
+          await updateVideoProgress(userId, lessonId, courseId, currentTime);
+        } catch (error) {
+          console.error("Failed to update progress:", error);
+        }
+      }, 10000); // Every 10 seconds
+    };
+
+    // Handle video play
+    const handlePlay = () => {
+      if (!progressIntervalRef.current) {
+        startProgressTracking();
+      }
+    };
+
+    // Handle video pause - stop tracking
+    const handlePause = () => {
+      stopProgressTracking();
+    };
+
+    video.addEventListener('play', handlePlay);
+    video.addEventListener('pause', handlePause);
+
+    // Auto start if video is already playing
+    if (!video.paused) {
+      startProgressTracking();
+    }
+
+    return () => {
+      video.removeEventListener('play', handlePlay);
+      video.removeEventListener('pause', handlePause);
+      stopProgressTracking();
+    };
+  }, [lessonData, courseId, lessonId, videoEnded]);
+
+  // Handle video ended (both YouTube and HTML5)
+  const handleVideoEnded = async () => {
+    console.log("🎉 Video ended - updating final progress");
+    
+    setVideoEnded(true);
+    stopProgressTracking();
+
+    const userId = getCurrentUserId();
+    if (!userId) return;
+
+    try {
+      let finalTime = 0;
+
+      // Get duration from YouTube player or HTML5 video
+      if (youtubePlayerRef.current) {
+        finalTime = Math.floor(youtubePlayerRef.current.getDuration());
+      } else if (videoRef.current) {
+        finalTime = Math.floor(videoRef.current.duration);
+      }
+      
+      console.log(`📤 Sending final progress: ${finalTime}s`);
+
+      // Update final progress
+      await updateVideoProgress(userId, lessonId, courseId, finalTime);
+      
+      console.log("Final progress updated, refreshing course outline...");
+      
+      // Refresh course outline to get updated progress
+      await getCourseOutlineEnrolled(userId, courseId);
+      
+      // Trigger refresh of StudentCourseContent component
+      window.dispatchEvent(new CustomEvent('course-outline-updated'));
+      
+    } catch (error) {
+      console.error("Failed to update final progress:", error);
+    }
+  };
+
+  // Extract YouTube Video ID
+  const getYoutubeVideoId = (url) => {
+    if (!url) return null;
+    
+    const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+    const match = url.match(regExp);
+    
+    return (match && match[7].length === 11) ? match[7] : null;
+  };
+
+  // Convert YouTube URL to embed (legacy support)
+  const getYoutubeEmbedUrl = (url) => {
+    const videoId = getYoutubeVideoId(url);
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+  };
+
+  // Format duration
+  const formatDuration = (seconds) => {
+    if (!seconds) return "N/A";
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-gray-50 font-sans">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center pt-24">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#00b6b6] mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading lesson...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !lessonData) {
+    return (
+      <div className="flex flex-col min-h-screen bg-gray-50 font-sans">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center pt-24 px-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-8 text-center max-w-md">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-red-800 mb-2">Failed to load lesson</h2>
+            <p className="text-red-600">{error || "Lesson not found"}</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  const hasVideo = lessonData.urlVideo && lessonData.urlVideo.trim() !== '';
+  const hasDocs = lessonData.docs && lessonData.docs.length > 0;
+  const hasQuizzes = lessonData.quizzes && lessonData.quizzes.length > 0;
+  const isYouTube = lessonData.urlVideo?.includes('youtube') || lessonData.urlVideo?.includes('youtu.be');
+  
+  // Convert 0.0-0.5 to 0-100%
+  const progressPercent = (lessonData.progressLesson || 0) * 2 * 100;
+  const isCompleted = progressPercent === 100;
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 font-sans">
@@ -96,35 +387,60 @@ export default function LessonPage() {
 
       <div className="flex-1 max-w-7xl mx-auto w-full pt-24 pb-10 px-4 gap-6 grid grid-cols-1 lg:grid-cols-3">
         
-        {/* === CỘT TRÁI (Video + Tabs) === */}
+        {/* LEFT COLUMN (Video + Tabs) */}
         <div className="lg:col-span-2 space-y-6">
           
-          {/* 1. VIDEO PLAYER AREA */}
+          {/* VIDEO PLAYER AREA */}
           <div className="bg-black rounded-xl overflow-hidden shadow-lg aspect-video relative group border-4 border-white">
-            <video 
-              controls 
-              className="w-full h-full object-cover"
-              onEnded={handleVideoEnded}
-            >
-              <source src={lessonData.videoUrl} type="video/mp4" />
-              Your browser does not support the video tag.
-            </video>
+            {hasVideo ? (
+              isYouTube ? (
+                // YouTube Player with API
+                <div id="youtube-player" className="w-full h-full"></div>
+              ) : (
+                // HTML5 Video
+                <video 
+                  ref={videoRef}
+                  controls 
+                  className="w-full h-full object-cover"
+                  onEnded={handleVideoEnded}
+                >
+                  <source src={lessonData.urlVideo} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              )
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-white">
+                <VideoOff size={64} className="mb-4 opacity-50" />
+                <p className="text-lg font-medium">No video available</p>
+                <p className="text-sm text-gray-400 mt-2">This lesson doesn't have video content yet</p>
+              </div>
+            )}
           </div>
 
           {/* INFO BAR */}
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <h1 className="text-2xl font-bold text-gray-800 mb-2">{lessonData.title}</h1>
             <div className="flex items-center text-sm text-gray-500 gap-4 mb-4 flex-wrap">
-               <span className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded"><Clock size={16}/> {lessonData.duration}</span>
-               <span className={`flex items-center gap-1 px-2 py-1 rounded ${completedLessons.includes(103) ? "bg-teal-50 text-[#00b6b6]" : "bg-gray-100 text-gray-500"}`}>
-                 <CheckCircle size={16}/> {completedLessons.includes(103) ? "Completed" : "Not completed"}
-               </span>
-               <span className="px-2 py-1">{lessonData.views} views</span>
+              <span className="flex items-center gap-1 bg-gray-100 px-2 py-1 rounded">
+                <CheckCircle size={16}/> Length
+              </span>
+              <span className={`flex items-center gap-1 px-2 py-1 rounded ${
+                isCompleted ? "bg-teal-50 text-[#00b6b6]" : "bg-gray-100 text-gray-500"
+              }`}>
+                <Clock size={16}/> {formatDuration(lessonData.duration)}
+              </span>
+              {progressPercent > 0 && !isCompleted && (
+                <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded">
+                  Progress: {progressPercent}%
+                </span>
+              )}
             </div>
-            <p className="text-gray-600 leading-relaxed">{lessonData.description}</p>
+            {lessonData.description && (
+              <p className="text-gray-600 leading-relaxed">{lessonData.description}</p>
+            )}
           </div>
 
-          {/* 2. TABS SECTION (Quiz & Document) */}
+          {/* TABS SECTION (Quiz & Document) */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden min-h-[450px]">
             {/* Tab Header */}
             <div className="flex border-b border-gray-200">
@@ -136,6 +452,7 @@ export default function LessonPage() {
               >
                 <HelpCircle size={20}/> 
                 Quiz
+                {!hasQuizzes && <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded">Empty</span>}
                 {activeTab === "quiz" && <div className="absolute bottom-0 left-0 w-full h-1 bg-[#00b6b6]"></div>}
               </button>
               <button 
@@ -145,89 +462,38 @@ export default function LessonPage() {
                 `}
               >
                 <FileText size={20}/> 
-                Course Documents
+                Documents
+                {!hasDocs && <span className="text-xs bg-gray-200 text-gray-500 px-2 py-0.5 rounded">Empty</span>}
                 {activeTab === "document" && <div className="absolute bottom-0 left-0 w-full h-1 bg-[#00b6b6]"></div>}
               </button>
             </div>
 
             {/* Tab Content */}
             <div className="p-6">
-              {activeTab === "quiz" ? <QuizComponent /> : <DocumentComponent />}
+              {activeTab === "quiz" ? (
+                <QuizComponent quizzes={lessonData.quizzes} /> 
+              ) : (
+                <DocumentComponent documents={lessonData.docs} />
+              )}
             </div>
           </div>
 
         </div>
 
-        {/* === RIGHT COLUMN (Course content) === */}
+        {/* RIGHT COLUMN (Course content) */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl shadow-md border border-gray-100 sticky top-28 overflow-hidden flex flex-col max-h-[calc(100vh-140px)]">
-            <div className="p-4 bg-[#00b6b6] text-white font-bold text-lg flex justify-between items-center flex-shrink-0">
-              <span>Course Content</span>
-              <span className="text-xs font-medium bg-white/20 px-2 py-1 rounded">3/12 lessons</span>
-            </div>
-            
-            <div className="overflow-y-auto custom-scrollbar flex-1">
-              {courseContent.map((chapter) => (
-                <div key={chapter.id} className="border-b border-gray-100 last:border-0">
-                  {/* Chapter Title */}
-                  <div 
-                    onClick={() => toggleChapter(chapter.id)}
-                    className="bg-gray-50 p-3 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition select-none"
-                  >
-                    <h3 className="font-semibold text-gray-700 text-sm">{chapter.title}</h3>
-                    {sidebarOpen[chapter.id] ? <ChevronUp size={16} className="text-[#00b6b6]"/> : <ChevronDown size={16}/>}
-                  </div>
-
-                  {/* Lessons List */}
-                  {sidebarOpen[chapter.id] && (
-                    <div className="divide-y divide-gray-50">
-                      {chapter.lessons.map((lesson) => {
-                         const isDone = completedLessons.includes(lesson.id) || lesson.isCompleted;
-                         const isCurrent = lesson.isActive;
-                         const isLocked = lesson.isLocked;
-
-                         return (
-                          <div 
-                            key={lesson.id} 
-                            className={`p-3 pl-4 flex items-center gap-3 transition cursor-pointer relative group
-                              ${isCurrent ? "bg-teal-50" : "hover:bg-gray-50"}
-                              ${isLocked ? "opacity-60 cursor-not-allowed" : ""}
-                            `}
-                          >
-                            {/* Active Indicator Bar */}
-                            {isCurrent && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#00b6b6]"></div>}
-
-                            {/* Icon status */}
-                            <div className="flex-shrink-0">
-                              {isDone ? (
-                                <CheckCircle size={18} className="text-[#00b6b6] fill-teal-50" />
-                              ) : isLocked ? (
-                                <Lock size={18} className="text-gray-400" />
-                              ) : (
-                                <Circle size={18} className="text-gray-300 group-hover:text-[#00b6b6] transition" />
-                              )}
-                            </div>
-
-                            {/* Info */}
-                            <div className="flex-1 min-w-0">
-                              <p className={`text-sm font-medium truncate ${isCurrent ? "text-[#00b6b6]" : "text-gray-700"}`}>
-                                {lesson.title}
-                              </p>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-xs text-gray-400 flex items-center gap-1">
-                                  <Play size={10} /> {lesson.duration}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                         );
-                      })}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+          <StudentCourseContent 
+            currentLessonId={lessonId}
+            onLessonChange={(newLessonId) => {
+              // Clear interval and destroy player before changing lesson
+              stopProgressTracking();
+              if (youtubePlayerRef.current) {
+                youtubePlayerRef.current.destroy();
+                youtubePlayerRef.current = null;
+              }
+              window.location.href = `/student/courses/${courseId}/lessons/${newLessonId}`;
+            }}
+          />
         </div>
       </div>
 
@@ -236,192 +502,77 @@ export default function LessonPage() {
   );
 }
 
-// --- SUB-COMPONENT: QUIZ ---
-function QuizComponent() {
-  const [started, setStarted] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes = 600 seconds
-  const [answers, setAnswers] = useState({}); // Store answers { questionId: optionIndex }
-  const [submitted, setSubmitted] = useState(false);
-
-  // Timer logic
-  useEffect(() => {
-    let timer;
-    if (started && timeLeft > 0 && !submitted) {
-      timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
-    }
-    return () => clearInterval(timer);
-  }, [started, timeLeft, submitted]);
-
-  // Format time MM:SS
-  const formatTime = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
-  };
-
-  const handleSelect = (qId, optionIdx) => {
-    if (submitted) return;
-    setAnswers(prev => ({ ...prev, [qId]: optionIdx }));
-  };
-
-  const clearChoice = (qId) => {
-    if (submitted) return;
-    const newAnswers = { ...answers };
-    delete newAnswers[qId];
-    setAnswers(newAnswers);
-  };
-
-  const handleSubmit = () => {
-    // Check if all questions answered (optional)
-    const answeredCount = Object.keys(answers).length;
-    if (answeredCount < quizData.length) {
-      if(!window.confirm(`You have answered ${answeredCount}/${quizData.length} questions. Are you sure you want to submit?`)) {
-        return;
-      }
-    }
-    setSubmitted(true);
-    alert("Submission successful! View results...");
-  };
-
-  // Start screen
-  if (!started) {
+// SUB-COMPONENT: DOCUMENT
+function DocumentComponent({ documents }) {
+  if (!documents || documents.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center space-y-5 animate-in fade-in zoom-in duration-300">
-        <div className="bg-teal-100 p-4 rounded-full">
-           <HelpCircle size={48} className="text-[#00b6b6]"/>
+      <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center space-y-5">
+        <div className="bg-gray-100 p-4 rounded-full">
+          <FileX size={48} className="text-gray-400"/>
         </div>
-        <h3 className="text-2xl font-bold text-gray-800">Multiple-choice Quiz</h3>
+        <h3 className="text-xl font-bold text-gray-700">No Documents Available</h3>
         <p className="text-gray-500 max-w-md">
-          This quiz contains <strong className="text-gray-700">{quizData.length} questions</strong>.
-          You have <strong className="text-gray-700">10 minutes</strong> to complete it.
-          Make sure you understand the lesson content before starting.
+          This lesson doesn't have any documents yet. Focus on the video content and quiz.
         </p>
-        <button 
-          onClick={() => setStarted(true)}
-          className="bg-[#00b6b6] hover:bg-[#009e9e] text-white px-8 py-3 rounded-full font-bold shadow-lg transition transform hover:scale-105 active:scale-95 cursor-pointer"
-        >
-          Start Quiz
-        </button>
       </div>
     );
   }
 
-  // Quiz screen
-  return (
-    <div className="relative animate-in slide-in-from-right-4 duration-300">
-      {/* Timer Header */}
-      <div className="flex justify-between items-center bg-gray-50 p-4 rounded-xl mb-6 sticky top-0 z-10 shadow-sm border border-gray-100">
-        <span className="font-bold text-gray-700">Progress: <span className="text-[#00b6b6]">{Object.keys(answers).length}/{quizData.length}</span></span>
-        <div className={`flex items-center gap-2 font-mono font-bold text-lg bg-white px-3 py-1 rounded shadow-sm ${timeLeft < 60 ? "text-red-500 animate-pulse" : "text-[#00b6b6]"}`}>
-          <Clock size={20}/> {formatTime(timeLeft)}
-        </div>
-      </div>
+  const getFileIcon = (fileType) => {
+    if (!fileType) return <FileText size={24}/>;
+    
+    if (fileType.includes('pdf')) return <FileText size={24} className="text-white"/>;
+    if (fileType.includes('doc')) return <FileText size={24} className="text-white"/>;
+    if (fileType.includes('zip')) return <Download size={24} className="text-white"/>;
+    
+    return <FileText size={24}/>;
+  };
 
-      <div className="space-y-8 pb-20">
-        {quizData.map((q, index) => (
-          <div key={q.id} className="border border-gray-100 rounded-xl p-6 shadow-sm hover:shadow-md transition bg-white">
-            <h4 className="font-semibold text-lg text-gray-800 mb-4 flex gap-3">
-              <span className="bg-[#00b6b6] text-white w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm">
-                {index + 1}
-              </span> 
-              {q.question}
-            </h4>
-            
-            <div className="space-y-3 pl-11">
-              {q.options.map((opt, i) => (
-                <label 
-                  key={i} 
-                  className={`flex items-center p-3 rounded-lg border cursor-pointer transition select-none
-                    ${answers[q.id] === i 
-                      ? "border-[#00b6b6] bg-teal-50/50 ring-1 ring-[#00b6b6]" 
-                      : "border-gray-200 hover:bg-gray-50"
-                    }
-                  `}
-                >
-                  <div className={`w-5 h-5 rounded-full border flex items-center justify-center mr-3 transition-colors
-                    ${answers[q.id] === i ? "border-[#00b6b6]" : "border-gray-400"}
-                  `}>
-                    {answers[q.id] === i && <div className="w-2.5 h-2.5 rounded-full bg-[#00b6b6]"></div>}
-                  </div>
-                  <input 
-                    type="radio" 
-                    name={`q-${q.id}`} 
-                    className="hidden" 
-                    checked={answers[q.id] === i}
-                    onChange={() => handleSelect(q.id, i)}
-                  />
-                  <span className="text-gray-700">{opt}</span>
-                </label>
-              ))}
-            </div>
+  const getFileColor = (fileType) => {
+    if (!fileType) return "bg-gray-500";
+    
+    if (fileType.includes('pdf')) return "bg-red-500";
+    if (fileType.includes('doc')) return "bg-blue-500";
+    if (fileType.includes('zip')) return "bg-purple-500";
+    
+    return "bg-gray-500";
+  };
 
-            {/* Clear Choice Button */}
-            {answers[q.id] !== undefined && !submitted && (
-              <div className="pl-11 mt-3">
-                <button 
-                  onClick={() => clearChoice(q.id)}
-                  className="text-sm text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded-full flex items-center gap-1 font-medium transition"
-                >
-                  <RotateCcw size={14} /> Clear choice
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div className="pt-4 border-t border-gray-200 sticky bottom-0 bg-white pb-2">
-        <button 
-          onClick={handleSubmit}
-          disabled={submitted}
-          className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg transition transform active:scale-[0.99]
-            ${submitted 
-              ? "bg-gray-400 text-white cursor-not-allowed" 
-              : "bg-[#00b6b6] hover:bg-[#009e9e] text-white cursor-pointer"
-            }
-          `}
-        >
-          {submitted ? "Submitted" : "Submit Test"}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// --- SUB-COMPONENT: DOCUMENT ---
-function DocumentComponent() {
   return (
     <div className="space-y-4 animate-in fade-in duration-300">
-      <h3 className="font-bold text-gray-800 mb-4 text-lg border-l-4 border-[#00b6b6] pl-3">Study Materials</h3>
-      {documentsData.map((doc) => (
-        <a 
-          key={doc.id} 
-          href={doc.link}
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md hover:border-[#00b6b6] transition group"
-        >
-          <div className="flex items-center gap-4">
-            <div className={`p-3 rounded-lg text-white transition-colors
-               ${doc.type === "PDF" ? "bg-red-500" : doc.type === "ZIP" ? "bg-blue-500" : "bg-green-500"}
-            `}>
-              {doc.type === "PDF" ? <FileText size={24}/> : doc.type === "ZIP" ? <Download size={24}/> : <ExternalLink size={24}/>}
-            </div>
-            <div>
-              <h4 className="font-semibold text-gray-700 group-hover:text-[#00b6b6] transition">{doc.title}</h4>
-              <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                {doc.type} • Click to view details
-              </p>
-            </div>
-          </div>
-          <ExternalLink size={18} className="text-gray-300 group-hover:text-[#00b6b6] transition"/>
-        </a>
-      ))}
+      <h3 className="font-bold text-gray-800 mb-4 text-lg border-l-4 border-[#00b6b6] pl-3">
+        Study Materials ({documents.length})
+      </h3>
       
-      <div className="mt-8 bg-amber-50 p-4 rounded-xl border border-amber-200 text-sm text-amber-800 flex gap-3 items-start">
-         <div className="bg-amber-100 p-1 rounded-full mt-0.5"><Lock size={14}/></div>
-         <p><strong>Note:</strong> Documents are stored on a secure system. Please sign in with a student account to access and download materials.</p>
-      </div>
+      {documents.map((doc, index) => {
+        const downloadUrl = convertDriveLink(doc.docUrl);
+        const displayTitle = doc.title || `Document ${index + 1}`;
+        
+        return (
+          <a 
+            key={doc.id} 
+            href={downloadUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md hover:border-[#00b6b6] transition group"
+          >
+            <div className="flex items-center gap-4">
+              <div className={`p-3 rounded-lg text-white transition-colors ${getFileColor(doc.fileType)}`}>
+                {getFileIcon(doc.fileType)}
+              </div>
+              <div>
+                <h4 className="font-semibold text-gray-700 group-hover:text-[#00b6b6] transition">
+                  {displayTitle}
+                </h4>
+                <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                  {doc.fileType || 'Unknown type'} • Click to view or download
+                </p>
+              </div>
+            </div>
+            <ExternalLink size={18} className="text-gray-300 group-hover:text-[#00b6b6] transition"/>
+          </a>
+        );
+      })}
     </div>
   );
 }

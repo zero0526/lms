@@ -9,14 +9,14 @@ import Blog from "./pages/Blog";
 import BlogDetail from "./pages/BlogDetail";
 import Profile from "./pages/Profile";
 import CourseList from "./pages/CourseList";
-
-// Shared Pages (Now Public)
-import CourseDetail from "./pages/CourseDetail"; // Import component mới đổi tên
+import ResetPassword from './pages/ResetPassword';
+import CourseDetail from "./pages/CourseDetail";
 
 // Student Pages
 import CourseStudent from "./pages/student/CourseStudent";
 import StudentCourseDetail from "./pages/student/StudentCourseDetail";
 import LessonDetail from "./pages/student/LessonDetail";
+import QuizResult from "./pages/student/QuizResult";
 
 // Teacher Pages
 import TeacherStudio from "./pages/teacher/TeacherStudio";
@@ -37,19 +37,9 @@ export default function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:category" element={<BlogDetail/>} />
-          
-          <Route 
-            path="/courses" 
-            element={
-              <CourseList />
-            } 
-          />
-          
-          {/* Trang chi tiết khóa học giờ là Public Route */}
-          <Route 
-            path="/courses/:courseId" 
-            element={<CourseDetail />} 
-          />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/courses" element={<CourseList />} />
+          <Route path="/courses/:courseId" element={<CourseDetail />} />
 
           {/* --- PROTECTED ROUTES --- */}
           <Route 
@@ -77,6 +67,15 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={["ROLE_STUDENT"]}>
                 <StudentCourseDetail />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route
+            path="/student/quiz-result/:attemptId" 
+            element={
+              <ProtectedRoute allowedRoles={["ROLE_STUDENT"]}>
+                <QuizResult />
               </ProtectedRoute>
             } 
           />

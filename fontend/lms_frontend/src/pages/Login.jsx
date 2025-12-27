@@ -4,6 +4,7 @@ import { Eye, EyeOff, ArrowLeft, Github } from "lucide-react";
 import { AxiosError } from "axios";
 import apiClient from "../api/axiosConfig";
 import { useUser } from "../contexts/UserContext";
+import ForgotPasswordModal from "../components/ForgotPasswordModal";
 
 const BACKEND_URL = "http://localhost:8081";
 
@@ -35,10 +36,15 @@ export default function Login() {
   const [remember, setRemember] = useState(false);
   const [roleName, setRoleName] = useState("ROLE_STUDENT");
   const [error, setError] = useState("");
+  const [isForgotPasswordOpen, setIsForgotPasswordOpen] = useState(false);
   
   const location = useLocation();
   const navigate = useNavigate();
   const { setUser } = useUser();
+
+  // Lấy thông tin redirect từ navigation state
+  const redirectTo = location.state?.from;
+  const courseName = location.state?.courseName;
 
   // --- XỬ LÝ OAUTH2 CALLBACK ---
   useEffect(() => {
@@ -94,7 +100,9 @@ export default function Login() {
       setUser(userToSave);
 
       window.history.replaceState({}, document.title, location.pathname);
-      navigate('/home');
+      
+      // Redirect after OAuth login
+      handleSuccessfulLogin(userToSave);
 
     } catch (err) {
       console.error("Failed to fetch user profile after OAuth:", err);
@@ -104,8 +112,49 @@ export default function Login() {
   };
 
   const handleSocialLogin = (provider) => {
+    // Save redirect info to sessionStorage before switching to OAuth
+    if (redirectTo) {
+      sessionStorage.setItem('oauth_redirect', redirectTo);
+      if (courseName) {
+        sessionStorage.setItem('oauth_course_name', courseName);
+      }
+    }
+    
     const targetUrl = `${BACKEND_URL}/oauth2/authorization/${provider}?role=${encodeURIComponent(roleName)}`;
     window.location.href = targetUrl;
+  };
+
+  // Function to handle redirect after successful login
+  const handleSuccessfulLogin = (user) => {
+    console.log("Login successful, user role:", user.role);
+    
+    // Check if there is a saved redirect URL
+    let targetUrl = redirectTo;
+    
+    // If login via OAuth, check sessionStorage
+    if (!targetUrl) {
+      targetUrl = sessionStorage.getItem('oauth_redirect');
+      sessionStorage.removeItem('oauth_redirect');
+      sessionStorage.removeItem('oauth_course_name');
+    }
+    
+    if (targetUrl) {
+      console.log("🔀 Redirecting to saved URL:", targetUrl);
+      
+      // Kiểm tra role trước khi redirect
+      if (targetUrl.includes('/student/') && user.role !== 'ROLE_STUDENT') {
+        setError("You must be logged in as a student to access this course.");
+        setTimeout(() => navigate('/home'), 2000);
+        return;
+      }
+      
+      navigate(targetUrl, { replace: true });
+    } else {
+      // Default redirect based on role
+      console.log("No redirect URL, navigating to default page");
+      
+      navigate('/home', { replace: true });
+    }
   };
 
   const handleLogin = async (e) => {
@@ -152,7 +201,9 @@ export default function Login() {
       // set user vào Context sau khi login thành công
       setUser(userToSave);
 
-      navigate('/home');
+      // Gọi hàm redirect thay vì navigate trực tiếp
+      handleSuccessfulLogin(userToSave);
+      
     } catch (err) {
       console.error("Login Error:", err);
       
@@ -174,6 +225,11 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100">
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal 
+        isOpen={isForgotPasswordOpen} 
+        onClose={() => setIsForgotPasswordOpen(false)} 
+      />
       <div className="bg-white shadow-lg rounded-2xl flex flex-col md:flex-row max-w-5xl w-full overflow-hidden relative">
         {/* Left Image Section */}
         <div className="hidden md:block md:w-1/2 relative">
@@ -229,6 +285,7 @@ export default function Login() {
           <h2 className="text-xl font-semibold mb-2 text-center">
             Welcome to TOTC
           </h2>
+          
           <p className="text-gray-500 text-center mb-6">
             Empowering your learning journey with modern online courses.
           </p>
@@ -298,7 +355,9 @@ export default function Login() {
               <label className="flex items-center gap-2">
                 <input type="checkbox" className="accent-teal-500" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Remember me
               </label>
-              <a href="#" className="text-teal-500 hover:underline">
+              <a 
+                className="text-teal-500 hover:underline cursor-pointer" onClick={() => setIsForgotPasswordOpen(true)}
+              >
                 Forgot Password?
               </a>
             </div>

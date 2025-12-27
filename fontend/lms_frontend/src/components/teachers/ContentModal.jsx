@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Video, FileText, HelpCircle, UploadCloud, X, CheckSquare, Square, Trash2, Clock, Plus, CheckCircle2, File as FileIcon, Image as ImageIcon } from "lucide-react";
+import { Video, FileText, HelpCircle, UploadCloud, X, CheckSquare, Square, Trash2, Clock, Plus, CheckCircle2, File as FileIcon, Image as ImageIcon, Loader } from "lucide-react";
 
 const convertDriveLink = (url) => {
   if (!url || typeof url !== 'string') return "";
@@ -21,24 +21,37 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
   const [isEditMode, setIsEditMode] = useState(false);
   
   // Content States
-  const [videoData, setVideoData] = useState({ file: null, fileName: "", duration: "", videoUrl: "" });
+  const [videoData, setVideoData] = useState({ 
+    file: null, 
+    fileName: "", 
+    duration: "", 
+    videoUrl: "",
+    autoDetectedDuration: false
+  });
+  const [isLoadingDuration, setIsLoadingDuration] = useState(false);
   const [docData, setDocData] = useState({ id: null, file: null, fileName: "", title: "", docUrl: "" });
-  const [quizSettings, setQuizSettings] = useState({ timeLimit: 10, difficulty: "Medium", passScore: 5 });
+  const [quizSettings, setQuizSettings] = useState({ timeLimit: 10, difficulty: "Medium", score: 0 }); // ✅ Changed passScore to score
   const [quizData, setQuizData] = useState([]);
+
+  // ✅ AUTO-CALCULATE TOTAL SCORE whenever quizData changes
+  useEffect(() => {
+    const totalScore = quizData.reduce((sum, q) => sum + (parseInt(q.score) || 0), 0);
+    setQuizSettings(prev => ({ ...prev, score: totalScore }));
+  }, [quizData]);
 
   // Reset/Init Data
   useEffect(() => {
     if (!isOpen) {
       setActiveTab("video");
       setIsEditMode(false);
-      setVideoData({ file: null, fileName: "", duration: "", videoUrl: "" });
+      setVideoData({ file: null, fileName: "", duration: "", videoUrl: "", autoDetectedDuration: false });
+      setIsLoadingDuration(false);
       setDocData({ id: null, file: null, fileName: "", title: "", docUrl: "" });
-      setQuizSettings({ timeLimit: 10, difficulty: "Medium", passScore: 5 });
+      setQuizSettings({ timeLimit: 10, difficulty: "Medium", score: 0 });
       setQuizData([]);
       return;
     }
 
-    // ← LOAD INITIAL DATA (NẾU EDIT)
     if (initialData && contentType) {
       setIsEditMode(true);
       
@@ -49,6 +62,7 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
           fileName: initialData.title || "Video",
           duration: initialData.duration || "",
           videoUrl: initialData.videoUrl,
+          autoDetectedDuration: false
         });
       } 
       else if (contentType === "doc") {
@@ -64,17 +78,15 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
       else if (contentType === "quiz") {
         setActiveTab("quiz");
         
-        // ← LOAD QUIZ SETTINGS
         setQuizSettings({
           title: initialData.title || "Quiz",
           description: initialData.description || "",
           precondition: initialData.precondition || "None",
           timeLimit: initialData.timeLimit || 10,
           difficulty: initialData.difficulty || "Medium",
-          passScore: initialData.passScore || 5,
+          score: initialData.score || 0, // ✅ Changed from passScore
         });
         
-        // ← LOAD QUIZ QUESTIONS (với URL images từ backend)
         setQuizData(initialData.questions || []);
         
         console.log("Loaded Quiz Data:", initialData.questions);
@@ -94,14 +106,49 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
   // --- Helpers ---
   const handleVideoUpload = (e) => {
     const file = e.target.files[0];
-    if (file) {
-      setVideoData({
-        ...videoData,
-        file,
-        fileName: file.name,
-        duration: videoData.duration, 
-      });
-    }
+    if (!file) return;
+    console.log("📹 Video file selected:", file.name);
+    setIsLoadingDuration(true);
+    setVideoData(prev => ({
+      ...prev,
+      file,
+      fileName: file.name,
+      duration: "",
+      videoUrl: "",
+      autoDetectedDuration: false
+    }));
+
+    const videoElement = document.createElement('video');
+    videoElement.preload = 'metadata';
+
+    videoElement.onloadedmetadata = function() {
+      window.URL.revokeObjectURL(videoElement.src);
+      const durationInSeconds = Math.round(videoElement.duration);
+      
+      console.log("✅ Video duration auto-detected:", durationInSeconds, "seconds");
+      
+      setVideoData(prev => ({
+        ...prev,
+        duration: durationInSeconds.toString(),
+        autoDetectedDuration: true
+      }));
+      
+      setIsLoadingDuration(false);
+    };
+
+    videoElement.onerror = function() {
+      console.error("Failed to load video metadata");
+      alert("Unable to auto-detect video duration. Please enter the duration manually.");
+      
+      setVideoData(prev => ({
+        ...prev,
+        autoDetectedDuration: false
+      }));
+      
+      setIsLoadingDuration(false);
+    };
+
+    videoElement.src = URL.createObjectURL(file);
   };
 
   const handleDocUpload = (e) => {
@@ -119,10 +166,10 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
   const addQuestion = () => setQuizData([...quizData, { 
     id: Date.now(), 
     question: "", 
-    qImage: null, // New: Image for question
-    score: 1, // Changed default score to 1
+    qImage: null,
+    score: 1,
     options: [
-      { text: "", isCorrect: false, cImage: null }, // New: Image for option
+      { text: "", isCorrect: false, cImage: null },
       { text: "", isCorrect: false, cImage: null }, 
       { text: "", isCorrect: false, cImage: null }, 
       { text: "", isCorrect: false, cImage: null }
@@ -147,7 +194,6 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
     setQuizData(updated);
   };
 
-  // Image Upload Handlers for Quiz
   const handleQuestionImageUpload = (qIdx, e) => {
     const file = e.target.files[0];
     if (file) {
@@ -189,6 +235,14 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
         alert("Please add at least one question");
         return;
       }
+      
+      // ✅ Validation: Check if total score matches
+      const totalScore = quizData.reduce((sum, q) => sum + (parseInt(q.score) || 0), 0);
+      if (totalScore !== quizSettings.score) {
+        alert(`Total score mismatch! Expected: ${quizSettings.score}, Got: ${totalScore}`);
+        return;
+      }
+      
       onSave({ contentType: "quiz", data: { questions: quizData, settings: quizSettings } });
     }
     onClose();
@@ -298,17 +352,71 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
               
               <div className="grid grid-cols-2 gap-4">
                  <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-2">Duration (seconds)</label>
+                    <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                      Duration (seconds)
+                      {/* Loading indicator */}
+                      {isLoadingDuration && (
+                        <span className="text-xs text-[#00b6b6] flex items-center gap-1">
+                          <Loader size={12} className="animate-spin"/> Detecting...
+                        </span>
+                      )}
+                      {/* Auto-detected badge */}
+                      {videoData.autoDetectedDuration && !isLoadingDuration && (
+                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <CheckCircle2 size={12}/> Checked
+                        </span>
+                      )}
+                    </label>
                     <div className="relative">
                         <Clock size={18} className="absolute left-3 top-3 text-gray-400"/>
                         <input
                         type="number"
                         value={videoData.duration}
-                        onChange={(e) => setVideoData({ ...videoData, duration: e.target.value })}
-                        placeholder="120"
-                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00b6b6]"
+                        onChange={(e) => {
+                          // Only allow change if NOT auto-detected
+                          if (!videoData.autoDetectedDuration) {
+                            setVideoData({ ...videoData, duration: e.target.value });
+                          }
+                        }}
+                        placeholder={videoData.file ? "Auto-detecting..." : "Enter duration"}
+                        className={`w-full pl-10 pr-4 py-2.5 border rounded-xl focus:outline-none transition
+                          ${isLoadingDuration 
+                            ? "bg-gray-100 border-gray-200 cursor-wait" 
+                            : videoData.autoDetectedDuration 
+                              ? "bg-green-50 border-green-300 cursor-not-allowed" // Locked style
+                              : "bg-gray-50 border-gray-200 focus:ring-2 focus:ring-[#00b6b6]"
+                          }`}
+                        disabled={isLoadingDuration || videoData.autoDetectedDuration} // Disable nếu auto-detected
+                        readOnly={videoData.autoDetectedDuration}
                         />
                     </div>
+
+                    {/* Helper text */}
+                    {isLoadingDuration && (
+                      <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                        <Loader size={12} className="animate-spin"/>
+                        Reading video metadata...
+                      </p>
+                    )}
+                    
+                    {videoData.duration && !isLoadingDuration && videoData.autoDetectedDuration && (
+                      <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                        <CheckCircle2 size={12}/>
+                        = {(parseInt(videoData.duration) / 60).toFixed(2)} minutes (locked)
+                      </p>
+                    )}
+                    
+                    {videoData.duration && !isLoadingDuration && !videoData.autoDetectedDuration && videoData.file && (
+                      <p className="text-xs text-yellow-600 mt-1 flex items-center gap-1">
+                        Auto-detection failed - enter manually
+                      </p>
+                    )}
+                    
+                    {!videoData.file && !videoData.duration && !isLoadingDuration && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Upload a video to auto-detect duration
+                      </p>
+                    )}
                  </div>
               </div>
             </div>
@@ -390,15 +498,25 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
                     />
                   </div>
                 </div>
+                
+                {/* ✅ TOTAL SCORE - READ ONLY + AUTO-CALCULATED */}
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Pass Score</label>
-                  <input
-                    type="number"
-                    value={quizSettings.passScore}
-                    onChange={(e) => setQuizSettings({ ...quizSettings, passScore: parseInt(e.target.value) || 0 })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#00b6b6] outline-none"
-                  />
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 flex items-center gap-2">
+                    Total Score
+                    <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Auto</span>
+                  </label>
+                  <div className="relative">
+                    <CheckCircle2 size={16} className="absolute left-3 top-3 text-green-500"/>
+                    <input
+                      type="number"
+                      value={quizSettings.score}
+                      readOnly
+                      className="w-full pl-9 pr-3 py-2 border border-green-200 rounded-lg bg-green-50 text-green-700 font-bold cursor-not-allowed"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Sum of all question points</p>
                 </div>
+                
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Difficulty</label>
                   <select
