@@ -21,9 +21,9 @@ const ContentRow = ({ icon: Icon, color, title, subtitle, onEdit, onDelete, isEd
         <button onClick={onEdit} className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded" title="Edit">
             <Edit2 size={14} />
         </button>
-        <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded" title="Delete">
+        {/* <button onClick={onDelete} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded" title="Delete">
             <Trash2 size={14} />
-        </button>
+        </button> */}
         </div>
     )}
   </div>
