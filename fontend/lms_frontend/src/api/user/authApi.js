@@ -51,7 +51,7 @@ export const requestForgotPassword = async (email) => {
     console.log("Forgot password request successful:", response.data);
     return response.data;
   } catch (error) {
-    console.error("❌ Forgot password request failed:", error);
+    console.error("Forgot password request failed:", error);
     
     if (error.response) {
       console.error("Error Response:", error.response.data);
@@ -133,12 +133,68 @@ export const resetPassword = async (token, userId, newPassword) => {
 };
 
 /**
- * Logout user (clear storage)
+ * Logout user - Clear HTTP-only cookies và storage
+ * @param {Object} userData - User data from storage
  */
-export const logoutUser = () => {
+export const logoutUser = async (userData) => {
+  try {
+    console.log("🚪 Logging out...");
+    
+    if (!userData || !userData.email) {
+      console.warn("⚠️ No user data found, clearing storage only");
+      clearStorage();
+      return;
+    }
+
+    // Prepare logout payload
+    const logoutPayload = {
+      email: userData.email,
+      password: "", // Backend có thể không cần password khi logout
+      fullName: userData.fullName || userData.userName || "",
+      roleName: userData.role || "ROLE_STUDENT"
+    };
+
+    console.log("📤 Sending logout request:", { email: logoutPayload.email, role: logoutPayload.roleName });
+
+    // Gọi backend để xóa HTTP-only cookies
+    const response = await apiClient.post('/auth/logout', logoutPayload, {
+      withCredentials: true // ← Gửi cookies
+    });
+
+    if (response.status === 200) {
+      console.log("Backend logout successful:", response.data);
+    }
+
+  } catch (error) {
+    console.error("⚠️ Logout API error:", error);
+    
+    if (error.response) {
+      console.error("Error status:", error.response.status);
+      console.error("Error data:", error.response.data);
+    }
+    
+    // Vẫn tiếp tục clear storage dù API lỗi
+    console.log("⚠️ Continuing to clear storage despite API error");
+  } finally {
+    // Luôn clear storage
+    clearStorage();
+    console.log("User logged out from frontend");
+  }
+};
+
+/**
+ * Clear all authentication storage
+ */
+const clearStorage = () => {
   localStorage.removeItem("user");
-  sessionStorage.removeItem("user");
   localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+  sessionStorage.removeItem("user");
   sessionStorage.removeItem("accessToken");
-  console.log("User logged out");
+  sessionStorage.removeItem("refreshToken");
+  
+  // Clear any OAuth session data
+  sessionStorage.removeItem("oauth_remember");
+  sessionStorage.removeItem("oauth_redirect");
+  sessionStorage.removeItem("oauth_course_name");
 };

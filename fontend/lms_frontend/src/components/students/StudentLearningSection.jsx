@@ -55,7 +55,7 @@ export default function StudentLearningSection() {
         setCourses(transformedCourses);
         setIsLoading(false);
       } catch (err) {
-        console.error("❌ Failed to fetch enrolled courses:", err);
+        console.error("Failed to fetch enrolled courses:", err);
         setError("Failed to load your courses. Please try again later.");
         setIsLoading(false);
       }

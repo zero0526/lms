@@ -55,7 +55,7 @@ export default function CommentItem({
         setReplies(transformedReplies);
         setShowReplies(true);
       } catch (error) {
-        console.error("❌ Failed to load replies:", error);
+        console.error("Failed to load replies:", error);
         setRepliesError("Failed to load replies");
       } finally {
         setIsLoadingReplies(false);

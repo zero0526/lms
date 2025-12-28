@@ -30,10 +30,10 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
   });
   const [isLoadingDuration, setIsLoadingDuration] = useState(false);
   const [docData, setDocData] = useState({ id: null, file: null, fileName: "", title: "", docUrl: "" });
-  const [quizSettings, setQuizSettings] = useState({ timeLimit: 10, difficulty: "Medium", score: 0 }); // ✅ Changed passScore to score
+  const [quizSettings, setQuizSettings] = useState({ timeLimit: 10, difficulty: "Medium", score: 0 }); // Changed passScore to score
   const [quizData, setQuizData] = useState([]);
 
-  // ✅ AUTO-CALCULATE TOTAL SCORE whenever quizData changes
+  // AUTO-CALCULATE TOTAL SCORE whenever quizData changes
   useEffect(() => {
     const totalScore = quizData.reduce((sum, q) => sum + (parseInt(q.score) || 0), 0);
     setQuizSettings(prev => ({ ...prev, score: totalScore }));
@@ -84,7 +84,7 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
           precondition: initialData.precondition || "None",
           timeLimit: initialData.timeLimit || 10,
           difficulty: initialData.difficulty || "Medium",
-          score: initialData.score || 0, // ✅ Changed from passScore
+          score: initialData.score || 0, // Changed from passScore
         });
         
         setQuizData(initialData.questions || []);
@@ -125,7 +125,7 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
       window.URL.revokeObjectURL(videoElement.src);
       const durationInSeconds = Math.round(videoElement.duration);
       
-      console.log("✅ Video duration auto-detected:", durationInSeconds, "seconds");
+      console.log("Video duration auto-detected:", durationInSeconds, "seconds");
       
       setVideoData(prev => ({
         ...prev,
@@ -236,7 +236,7 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
         return;
       }
       
-      // ✅ Validation: Check if total score matches
+      // Validation: Check if total score matches
       const totalScore = quizData.reduce((sum, q) => sum + (parseInt(q.score) || 0), 0);
       if (totalScore !== quizSettings.score) {
         alert(`Total score mismatch! Expected: ${quizSettings.score}, Got: ${totalScore}`);
@@ -499,7 +499,7 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
                   </div>
                 </div>
                 
-                {/* ✅ TOTAL SCORE - READ ONLY + AUTO-CALCULATED */}
+                {/* TOTAL SCORE - READ ONLY + AUTO-CALCULATED */}
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1 flex items-center gap-2">
                     Total Score

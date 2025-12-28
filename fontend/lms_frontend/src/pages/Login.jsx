@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Eye, EyeOff, ArrowLeft, Github } from "lucide-react";
 import { AxiosError } from "axios";
 import apiClient from "../api/axiosConfig";
@@ -42,77 +42,15 @@ export default function Login() {
   const navigate = useNavigate();
   const { setUser } = useUser();
 
-  // Lấy thông tin redirect từ navigation state
   const redirectTo = location.state?.from;
   const courseName = location.state?.courseName;
 
-  // --- XỬ LÝ OAUTH2 CALLBACK ---
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const token = params.get("accessToken");
-    const errorMsg = params.get("error");
-
-    if (errorMsg) {
-      setError("Login failed: " + errorMsg);
-      window.history.replaceState({}, document.title, location.pathname);
-      return;
-    }
-
-    if (token) {
-      console.log("OAuth2 Success. Token received:", token);
-      
-      if (remember) {
-        localStorage.setItem('accessToken', token);
-      } else {
-        sessionStorage.setItem('accessToken', token);
-        localStorage.setItem('accessToken', token); 
-      }
-
-      fetchUserProfile(token);
-    }
-  }, [location, remember]);
-
-  const fetchUserProfile = async (token) => {
-    try {
-      const response = await apiClient.get('/auth/profile');
-      
-      const responseData = response.data.data || response.data;
-      
-      const userToSave = {
-          userId: responseData.userId || responseData.id,
-          userName: responseData.userName || responseData.name || responseData.email,
-          email: responseData.email,
-          role: responseData.role || "ROLE_STUDENT",
-          avatar: responseData.avatar || null
-      };
-
-      const userString = JSON.stringify(userToSave);
-      
-      if (remember) {
-          localStorage.setItem('user', userString);
-      } else {
-          sessionStorage.setItem('user', userString);
-          localStorage.removeItem('accessToken');
-          sessionStorage.setItem('accessToken', token);
-      }
-
-      // set user vào Context
-      setUser(userToSave);
-
-      window.history.replaceState({}, document.title, location.pathname);
-      
-      // Redirect after OAuth login
-      handleSuccessfulLogin(userToSave);
-
-    } catch (err) {
-      console.error("Failed to fetch user profile after OAuth:", err);
-      setError("Login successful but failed to load user profile.");
-      navigate('/home'); 
-    }
-  };
-
+  // OAuth Login Handler
   const handleSocialLogin = (provider) => {
-    // Save redirect info to sessionStorage before switching to OAuth
+    // Save remember preference
+    sessionStorage.setItem('oauth_remember', remember ? 'true' : 'false');
+    
+    // Save redirect info
     if (redirectTo) {
       sessionStorage.setItem('oauth_redirect', redirectTo);
       if (courseName) {
@@ -120,43 +58,13 @@ export default function Login() {
       }
     }
     
+    // Redirect to OAuth
     const targetUrl = `${BACKEND_URL}/oauth2/authorization/${provider}?role=${encodeURIComponent(roleName)}`;
+    console.log("🔐 Redirecting to OAuth:", targetUrl);
     window.location.href = targetUrl;
   };
 
-  // Function to handle redirect after successful login
-  const handleSuccessfulLogin = (user) => {
-    console.log("Login successful, user role:", user.role);
-    
-    // Check if there is a saved redirect URL
-    let targetUrl = redirectTo;
-    
-    // If login via OAuth, check sessionStorage
-    if (!targetUrl) {
-      targetUrl = sessionStorage.getItem('oauth_redirect');
-      sessionStorage.removeItem('oauth_redirect');
-      sessionStorage.removeItem('oauth_course_name');
-    }
-    
-    if (targetUrl) {
-      console.log("🔀 Redirecting to saved URL:", targetUrl);
-      
-      // Kiểm tra role trước khi redirect
-      if (targetUrl.includes('/student/') && user.role !== 'ROLE_STUDENT') {
-        setError("You must be logged in as a student to access this course.");
-        setTimeout(() => navigate('/home'), 2000);
-        return;
-      }
-      
-      navigate(targetUrl, { replace: true });
-    } else {
-      // Default redirect based on role
-      console.log("No redirect URL, navigating to default page");
-      
-      navigate('/home', { replace: true });
-    }
-  };
-
+  // Normal Login Handler
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
@@ -176,60 +84,71 @@ export default function Login() {
     try {
       const response = await apiClient.post('/auth/login', payload);
       const responseData = response.data.data;
-      console.log("Login Success Raw Data:", responseData);
+      console.log("Login Success:", responseData);
 
-      const accessToken = responseData.accessToken; 
+      const accessToken = responseData.accessToken;
+      const refreshToken = responseData.refreshToken;
 
       const userToSave = {
-          userId: responseData.userId,
-          userName: responseData.userName,
-          email: responseData.email,
-          role: responseData.role,
-          avatar: responseData.avatar
+        userId: responseData.userId,
+        userName: responseData.userName,
+        email: responseData.email,
+        role: responseData.role,
+        avatar: responseData.avatar
       };
       
       const userString = JSON.stringify(userToSave);
       
       if (remember) {
-          localStorage.setItem('accessToken', accessToken);
-          localStorage.setItem('user', userString);
+        localStorage.setItem('accessToken', accessToken);
+        if (refreshToken) {
+          localStorage.setItem('refreshToken', refreshToken);
+        }
+        localStorage.setItem('user', userString);
       } else {
-          sessionStorage.setItem('accessToken', accessToken);
-          sessionStorage.setItem('user', userString);
+        sessionStorage.setItem('accessToken', accessToken);
+        if (refreshToken) {
+          sessionStorage.setItem('refreshToken', refreshToken);
+        }
+        sessionStorage.setItem('user', userString);
       }
 
-      // set user vào Context sau khi login thành công
       setUser(userToSave);
+      console.log("🔑 Normal login completed");
 
-      // Gọi hàm redirect thay vì navigate trực tiếp
-      handleSuccessfulLogin(userToSave);
+      // Redirect
+      if (redirectTo) {
+        navigate(redirectTo, { replace: true });
+      } else {
+        navigate('/home', { replace: true });
+      }
       
     } catch (err) {
-      console.error("Login Error:", err);
+      console.error("❌ Login Error:", err);
       
       if (err instanceof AxiosError) {
-          if (err.response) {
-            if (err.response.status === 500) {
-                setError("Server Error (500). Please check Backend logs.");
-            } else {
-                setError(err.response.data?.message || "Login failed. Please check your credentials.");
-            }
+        if (err.response) {
+          if (err.response.status === 500) {
+            setError("Server Error (500). Please check Backend logs.");
           } else {
-              setError("Network Error. Cannot connect to server.");
+            setError(err.response.data?.message || "Login failed. Please check your credentials.");
           }
+        } else {
+          setError("Network Error. Cannot connect to server.");
+        }
       } else {
-          setError("An unexpected error occurred");
+        setError("An unexpected error occurred");
       }
     }
-  }
+  };
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gray-100">
-      {/* Forgot Password Modal */}
       <ForgotPasswordModal 
         isOpen={isForgotPasswordOpen} 
         onClose={() => setIsForgotPasswordOpen(false)} 
       />
+      
       <div className="bg-white shadow-lg rounded-2xl flex flex-col md:flex-row max-w-5xl w-full overflow-hidden relative">
         {/* Left Image Section */}
         <div className="hidden md:block md:w-1/2 relative">
@@ -353,30 +272,35 @@ export default function Login() {
 
             <div className="flex items-center justify-between text-sm text-gray-600">
               <label className="flex items-center gap-2">
-                <input type="checkbox" className="accent-teal-500" checked={remember} onChange={(e) => setRemember(e.target.checked)} /> Remember me
+                <input 
+                  type="checkbox" 
+                  className="accent-teal-500" 
+                  checked={remember} 
+                  onChange={(e) => setRemember(e.target.checked)} 
+                /> 
+                Remember me
               </label>
               <a 
-                className="text-teal-500 hover:underline cursor-pointer" onClick={() => setIsForgotPasswordOpen(true)}
+                className="text-teal-500 hover:underline cursor-pointer" 
+                onClick={() => setIsForgotPasswordOpen(true)}
               >
                 Forgot Password?
               </a>
             </div>
 
-            {/* ERROR MESSAGE DISPLAY */}
             {error && (
-              <div className="text-red-500 text-sm font-medium mt-2 animate-pulse w-full max-w-md mx-auto text-center">
+              <div className="text-red-500 text-sm font-medium mt-2 text-center">
                 {error}
               </div>
             )}
 
             <button
               type="submit"
-              className="w-full bg-teal-500 text-white py-2 rounded-full font-medium hover:bg-teal-600 transition shadow-md cursor-pointer"
+              className="w-full bg-teal-500 text-white py-2 rounded-full font-medium hover:bg-teal-600 transition shadow-md"
             >
               Login
             </button>
 
-            {/* DIVIDER */}
             <div className="relative my-4">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300"></div>
@@ -388,12 +312,11 @@ export default function Login() {
               </div>
             </div>
 
-            {/* SOCIAL BUTTONS */}
             <div className="flex flex-col gap-3">
               <button
                 type="button"
                 onClick={() => handleSocialLogin('google')}
-                className="w-full flex items-center justify-center gap-3 border border-gray-300 text-gray-700 py-2 rounded-full hover:bg-gray-50 transition cursor-pointer"
+                className="w-full flex items-center justify-center gap-3 border border-gray-300 text-gray-700 py-2 rounded-full hover:bg-gray-50 transition"
               >
                 <GoogleIcon />
                 <span className="font-medium">Google</span>
@@ -402,7 +325,7 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => handleSocialLogin('github')}
-                className="w-full flex items-center justify-center gap-3 border border-gray-300 text-gray-700 py-2 rounded-full hover:bg-gray-50 transition cursor-pointer"
+                className="w-full flex items-center justify-center gap-3 border border-gray-300 text-gray-700 py-2 rounded-full hover:bg-gray-50 transition"
               >
                 <Github size={20} />
                 <span className="font-medium">GitHub</span>

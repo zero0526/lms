@@ -2,11 +2,12 @@ import axios from "axios";
 
 const apiClient = axios.create({
   baseURL: "/api",
-  withCredentials: false,
+  withCredentials: true, // Enable cookies
 });
 
 apiClient.interceptors.request.use(
   (config) => {
+    // Ưu tiên token từ storage (normal login)
     let accessToken = localStorage.getItem("accessToken");
 
     if (!accessToken) {
@@ -15,6 +16,10 @@ apiClient.interceptors.request.use(
 
     if (accessToken) {
       config.headers["Authorization"] = `Bearer ${accessToken}`;
+      console.log('🔑 Using token from storage');
+    } else {
+      // Nếu không có token, axios tự động gửi cookies (OAuth)
+      console.log('🍪 Using cookie-based auth');
     }
 
     return config;
@@ -28,12 +33,71 @@ apiClient.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
-    if (error.response && error.response.status === 401) {
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Handle 401 - Token expired
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        console.log('🔄 Token expired, attempting refresh...');
+
+        // Try refresh token from storage (normal login)
+        const refreshToken = localStorage.getItem('refreshToken') || 
+                            sessionStorage.getItem('refreshToken');
+
+        if (refreshToken) {
+          // Normal login: refresh with token
+          console.log('🔑 Refreshing with storage token');
+          const response = await axios.post(
+            '/api/auth/refresh',
+            { refreshToken },
+            { withCredentials: true }
+          );
+
+          const newAccessToken = response.data.data.accessToken;
+
+          if (localStorage.getItem('accessToken')) {
+            localStorage.setItem('accessToken', newAccessToken);
+          } else {
+            sessionStorage.setItem('accessToken', newAccessToken);
+          }
+
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+          return apiClient(originalRequest);
+        } else {
+          // OAuth login: refresh with cookie
+          console.log('🍪 Refreshing with cookie');
+          await axios.post('/api/auth/refresh', {}, { withCredentials: true });
+          
+          // Retry original request (new token in cookie)
+          return apiClient(originalRequest);
+        }
+      } catch (refreshError) {
+        console.error('❌ Refresh failed');
+        
+        // Clear all credentials
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("user");
+        sessionStorage.removeItem("accessToken");
+        sessionStorage.removeItem("refreshToken");
+        sessionStorage.removeItem("user");
+        
+        window.location.href = "/login";
+        return Promise.reject(refreshError);
+      }
+    }
+
+    if (error.response?.status === 401) {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("user");
+      sessionStorage.removeItem("accessToken");
+      sessionStorage.removeItem("user");
       window.location.href = "/login";
     }
+    
     return Promise.reject(error);
   }
 );

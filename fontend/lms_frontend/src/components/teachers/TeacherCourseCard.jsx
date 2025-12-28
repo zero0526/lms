@@ -22,7 +22,7 @@ export default function StudentCourseCard({ course }) {
       <div className="p-4 flex flex-col flex-1">
         <div className="flex flex-row justify-between items-start mb-2">
           <h4 className="font-bold text-gray-800 text-sm line-clamp-2 flex-1 pr-2">{course.title}</h4>
-          <p className="text-yellow-500 text-sm font-bold flex-shrink-0 whitespace-nowrap">{course.rating} ★</p>
+          <p className="text-yellow-500 text-sm font-bold flex-shrink-0 whitespace-nowrap">{course.rating.toFixed(1)} ★</p>
         </div>
         
         <p className="text-gray-500 text-xs mb-4 line-clamp-2">{course.description}</p>

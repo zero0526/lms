@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { 
-  PlayCircle, Check, Plus, Minus, Clock, Film, Award, Battery, Star, CheckCircle
+  PlayCircle, Check, Plus, Minus, Clock, Film, Award, Battery, Star, CheckCircle, MessageSquare
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { convertDriveLink } from "../../api/user/userUtils";
@@ -205,76 +205,105 @@ export default function StudentCourseDetail() {
     navigate(`/student/courses/${courseId}/lessons/${lessonId}`);
   };
 
-  const handleSubmitReview = async () => {
-    if (!currentUser?.userId) {
-      alert("Please log in to review the course.");
-      return;
+// Refresh reviews function
+const refreshReviews = async () => {
+  try {
+    setIsLoadingReviews(true);
+    
+    // Fetch reviews again from page 0
+    const reviewsData = await getCourseReviews(courseId, 0, reviewLimit);
+    console.log("Refreshed reviews:", reviewsData);
+    
+    if (reviewsData.data && reviewsData.data.content) {
+      setReviews(reviewsData.data.content);
+      setHasMoreReviews(!reviewsData.data.last);
+      setReviewPage(0); // Reset to page 0
     }
+    
+    setIsLoadingReviews(false);
+  } catch (err) {
+    console.error("Failed to refresh reviews:", err);
+    setIsLoadingReviews(false);
+  }
+};
 
-    if (userRating === 0) {
-      alert("Please select a star rating.");
-      return;
-    }
+// Used in handleSubmitReview
+const handleSubmitReview = async () => {
+  if (!currentUser?.userId) {
+    alert("Please log in to review the course.");
+    return;
+  }
 
-    if (!userComment || userComment.trim() === '') {
-      alert("Please enter your review content.");
-      return;
-    }
+  if (userRating === 0) {
+    alert("Please select a star rating.");
+    return;
+  }
 
+  if (!userComment || userComment.trim() === '') {
+    alert("Please enter your review content.");
+    return;
+  }
+
+  try {
+    setIsSubmittingReview(true);
+
+    const reviewData = {
+      rating: userRating,
+      userid: currentUser.userId,
+      at: new Date().toISOString(),
+      courseId: parseInt(courseId),
+      comment: userComment.trim()
+    };
+
+    console.log("Submitting review:", reviewData);
+
+    await submitCourseReview(reviewData);
+    
+    alert("Your review has been submitted successfully!");
+    
+    // Reset form
+    setUserRating(0);
+    setHoverRating(0);
+    setUserComment("");
+    
+    // Call refresh reviews function
+    await refreshReviews();
+    
+    // Fetch course details again to update rating
     try {
-      setIsSubmittingReview(true);
-
-      const reviewData = {
-        rating: userRating,
-        userid: currentUser.userId,
-        at: new Date().toISOString(),
-        courseId: parseInt(courseId),
-        comment: userComment.trim()
-      };
-
-      console.log("Submitting review:", reviewData);
-
-      await submitCourseReview(reviewData);
-      
-      alert("Your review has been submitted successfully!");
-      
-      setUserRating(0);
-      setHoverRating(0);
-      setUserComment("");
-      
-      setReviewPage(0);
-      setReviews([]);
-      
       const detailsData = await getCourseDetails(courseId);
       setCourseDetails(detailsData.data);
-      
-      setIsSubmittingReview(false);
-    } catch (error) {
-      console.error("Submit review error:", error);
-      alert(error.message || "Failed to submit review. Please try again.");
-      setIsSubmittingReview(false);
+    } catch (err) {
+      console.error("Failed to refresh course details:", err);
     }
-  };
+    
+    setIsSubmittingReview(false);
+  } catch (error) {
+    console.error("Submit review error:", error);
+    alert(error.message || "Failed to submit review. Please try again.");
+    setIsSubmittingReview(false);
+  }
+};
 
   // Calculate overall course progress (0-100%)
   const calculateCourseProgress = () => {
-    if (!isEnrolled || courseOutline.length === 0) return 0;
+  if (!isEnrolled || courseOutline.length === 0) return 0;
 
-    let totalLessons = 0;
-    let totalProgress = 0;
+  let totalLessons = 0;
+  let totalProgress = 0;
 
-    courseOutline.forEach(chapter => {
-      if (chapter.lessons && chapter.lessons.length > 0) {
-        chapter.lessons.forEach(lesson => {
-          totalLessons++;
-          // Convert 0.0-1.0 to 0-100%
-          totalProgress += (lesson.progressLesson * 2 || 0) * 100;
-        });
-      }
-    });
+  courseOutline.forEach(chapter => {
+    if (chapter.lessons && chapter.lessons.length > 0) {
+      chapter.lessons.forEach(lesson => {
+        totalLessons++;
+        const progressPercent = Math.min((lesson.progressLesson * 2 || 0) * 100, 100);
+        totalProgress += progressPercent;
+      });
+    }
+  });
 
-    return totalLessons > 0 ? Math.round(totalProgress / totalLessons) : 0;
-  };
+  return totalLessons > 0 ? Math.round(totalProgress / totalLessons) : 0;
+};
 
   const formatDuration = (seconds) => {
     if (!seconds) return "Not updated";
@@ -307,7 +336,7 @@ export default function StudentCourseDetail() {
     }
   };
 
-  // Format date từ array [year, month, day, hour, minute, second, nano]
+  // Format date from array [year, month, day, hour, minute, second, nano]
   const formatReviewDate = (dateArray) => {
     if (!dateArray || !Array.isArray(dateArray)) return "";
     
@@ -446,8 +475,8 @@ export default function StudentCourseDetail() {
                       <div className="divide-y divide-gray-100">
                         {chapter.lessons.map((lesson) => {
                           // Convert 0.0-1.0 to 0-100%
-                          const progressPercent = Math.round((lesson.progressLesson * 2 || 0) * 100);
-                          const isCompleted = progressPercent === 100;
+                          const progressPercent = Math.min(Math.round((lesson.progressLesson * 2 || 0) * 100), 100);
+                          const isCompleted = progressPercent >= 100;
 
                           return (
                             <div 
@@ -696,6 +725,14 @@ export default function StudentCourseDetail() {
                       className="w-full bg-[#00b6b6] text-white font-bold text-lg py-3 rounded-full hover:bg-[#009e9e] transition shadow-lg transform active:scale-95"
                     >
                       CONTINUE
+                    </button>
+
+                    {/* Forum Button */}
+                    <button 
+                      onClick={() => navigate(`/forum/${courseId}`)}
+                      className="w-full mt-3 bg-white border-2 border-[#00b6b6] text-[#00b6b6] font-bold text-lg py-3 rounded-full hover:bg-[#00b6b6] hover:text-white transition shadow-md transform active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <MessageSquare size={20} /> Forum
                     </button>
                   </div>
                 ) : (

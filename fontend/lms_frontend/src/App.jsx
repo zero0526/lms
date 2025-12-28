@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { UserProvider } from "./contexts/UserContext";
+import React, { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { UserProvider, useUser } from "./contexts/UserContext";
 
 // Public Pages
 import Home from "./pages/Home";
@@ -23,14 +24,104 @@ import TeacherStudio from "./pages/teacher/TeacherStudio";
 import TeacherCourseDetail from "./pages/teacher/TeacherCourseDetail";
 import EditCourse from "./pages/teacher/EditCourse";
 
+// Forum Page
+import Forum from "./pages/Forum";
+
+// Notification Page
+import Notification from "./pages/Notification";
+
 import ProtectedRoute from "./components/ProtectedRoute";
+
+function OAuthCallbackHandler() {
+  const location = useLocation();
+  const { setUser } = useUser();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    
+    const userId = params.get("id");
+    const userName = params.get("fullName");
+    const userEmail = params.get("email");
+    const userRole = params.get("role");
+    const userAvatar = params.get("pictureUrl");
+    const errorMsg = params.get("error");
+
+    // Nếu có error từ OAuth
+    if (errorMsg) {
+      console.error("OAuth Error:", errorMsg);
+      alert("Login failed: " + errorMsg);
+      window.history.replaceState({}, document.title, location.pathname);
+      return;
+    }
+
+    if (userId && userEmail) {
+      console.log("OAuth2 Success - Processing user data");
+      console.log("URL params:", { userId, userName, userEmail, userRole, userAvatar });
+
+      const savedRemember = sessionStorage.getItem('oauth_remember') === 'true';
+      console.log("Remember preference:", savedRemember);
+
+      const cleanRole = userRole?.replace('ROLE_ROLE_', 'ROLE_') || "ROLE_STUDENT";
+      
+      const userToSave = {
+        userId: parseInt(userId),
+        userName: decodeURIComponent(userName || userEmail.split('@')[0]),
+        email: userEmail,
+        role: cleanRole,
+        avatar: userAvatar || null,
+        pictureUrl: userAvatar || null
+      };
+
+      console.log("User data to save:", userToSave);
+
+      const userString = JSON.stringify(userToSave);
+
+      if (savedRemember) {
+        console.log("Saving user to localStorage");
+        localStorage.setItem('user', userString);
+        // Clear tokens cũ nếu có (từ normal login)
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+      } else {
+        console.log("Saving user to sessionStorage");
+        sessionStorage.setItem('user', userString);
+        // Clear tokens cũ
+        sessionStorage.removeItem('accessToken');
+        sessionStorage.removeItem('refreshToken');
+      }
+
+      setUser(userToSave);
+
+      console.log("OAuth tokens are in HTTP-only cookies");
+
+      window.history.replaceState({}, document.title, location.pathname);
+      
+      console.log("OAuth login completed");
+
+      sessionStorage.removeItem('oauth_remember');
+
+      const savedRedirect = sessionStorage.getItem('oauth_redirect');
+      if (savedRedirect && savedRedirect !== location.pathname) {
+        console.log("Redirecting to saved URL:", savedRedirect);
+        sessionStorage.removeItem('oauth_redirect');
+        sessionStorage.removeItem('oauth_course_name');
+        window.location.href = savedRedirect;
+      }
+    }
+  }, [location, setUser]);
+
+  return null;
+}
 
 export default function App() {
   return (
     <BrowserRouter>
       <UserProvider>
+        {/* OAuth Handler chạy global */}
+        <OAuthCallbackHandler />
+        
         <Routes>
-          {/* --- PUBLIC ROUTES (Ai cũng xem được) --- */}
+          {/* --- PUBLIC ROUTES --- */}
           <Route path="/" element={<Navigate to="/home" />} />
           <Route path="/home" element={<Home />} />
           <Route path="/login" element={<Login />} />
@@ -61,7 +152,6 @@ export default function App() {
             } 
           />
 
-          {/* Giữ lại route cũ nếu cần backward compatibility, nhưng redirect về route public mới */}
           <Route 
             path="/student/courses/:courseId" 
             element={
@@ -113,6 +203,26 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={["ROLE_TEACHER"]}>
                 <EditCourse />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* --- FORUM ROUTE --- */}
+          <Route 
+            path="/forum/:courseId" 
+            element={
+              <ProtectedRoute allowedRoles={["ROLE_STUDENT", "ROLE_TEACHER"]}>
+                <Forum />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* --- NOTIFICATION ROUTE --- */}
+          <Route 
+            path="/notifications" 
+            element={
+              <ProtectedRoute allowedRoles={["ROLE_STUDENT", "ROLE_TEACHER"]}>
+                <Notification />
               </ProtectedRoute>
             } 
           />

@@ -66,10 +66,10 @@ export const updateVideoProgress = async (userId, lessonId, courseId, currentSec
       courseId: parseInt(courseId)
     });
     
-    console.log("✅ Progress updated:", response.data);
+    console.log("Progress updated:", response.data);
     return response.data;
   } catch (error) {
-    console.error("❌ Update video progress error:", error);
+    console.error("Update video progress error:", error);
     throw error;
   }
 };

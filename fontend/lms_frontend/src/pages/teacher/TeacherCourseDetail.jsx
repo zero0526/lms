@@ -15,7 +15,8 @@ import {
   Star,
   TrendingUp,
   BookOpen,
-  Target
+  Target,
+  MessageSquare
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { convertDriveLink } from "../../api/user/userUtils";
@@ -285,7 +286,7 @@ export default function TeacherCourseDetail() {
               </div>
 
               {/* Stats Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-white border border-gray-200 rounded-lg p-4 text-center shadow-sm">
                   <Users className="w-6 h-6 text-[#00b6b6] mx-auto mb-2" />
                   <p className="text-2xl font-bold text-gray-800">{courseDetails.numOfEnroll || 0}</p>
@@ -306,7 +307,7 @@ export default function TeacherCourseDetail() {
                   <p className="text-xl font-bold text-gray-800">{formatDuration(courseDetails.courseDuration)}</p>
                   <p className="text-xs text-gray-500">Duration</p>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Prerequisites Section */}
@@ -534,6 +535,14 @@ export default function TeacherCourseDetail() {
                     className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg py-3 rounded-full hover:from-purple-600 hover:to-pink-600 transition shadow-md transform active:scale-95 flex items-center justify-center gap-2"
                   >
                     <Video size={20} /> Start Live
+                  </button>
+
+                  {/* Forum Button */}
+                  <button 
+                    onClick={() => navigate(`/forum/${courseId}`)}
+                    className="w-full bg-white border-2 border-[#00b6b6] text-[#00b6b6] font-bold text-lg py-3 rounded-full hover:bg-[#00b6b6] hover:text-white transition shadow-md transform active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    <MessageSquare size={20} /> Forum
                   </button>
                 </div>
 
