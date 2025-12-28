@@ -15,7 +15,8 @@ import {
   Star,
   TrendingUp,
   BookOpen,
-  Target
+  Target,
+  MessageSquare
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { convertDriveLink } from "../../api/user/userUtils";
@@ -534,6 +535,14 @@ export default function TeacherCourseDetail() {
                     className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold text-lg py-3 rounded-full hover:from-purple-600 hover:to-pink-600 transition shadow-md transform active:scale-95 flex items-center justify-center gap-2"
                   >
                     <Video size={20} /> Start Live
+                  </button>
+
+                  {/* Forum Button */}
+                  <button 
+                    onClick={() => navigate(`/forum/${courseId}`)}
+                    className="w-full bg-white border-2 border-[#00b6b6] text-[#00b6b6] font-bold text-lg py-3 rounded-full hover:bg-[#00b6b6] hover:text-white transition shadow-md transform active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    <MessageSquare size={20} /> Forum
                   </button>
                 </div>
 

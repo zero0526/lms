@@ -24,6 +24,9 @@ import TeacherStudio from "./pages/teacher/TeacherStudio";
 import TeacherCourseDetail from "./pages/teacher/TeacherCourseDetail";
 import EditCourse from "./pages/teacher/EditCourse";
 
+// Forum Page
+import Forum from "./pages/Forum";
+
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function OAuthCallbackHandler() {
@@ -197,6 +200,16 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={["ROLE_TEACHER"]}>
                 <EditCourse />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* --- FORUM ROUTE --- */}
+          <Route 
+            path="/forum/:courseId" 
+            element={
+              <ProtectedRoute allowedRoles={["ROLE_STUDENT", "ROLE_TEACHER"]}>
+                <Forum />
               </ProtectedRoute>
             } 
           />

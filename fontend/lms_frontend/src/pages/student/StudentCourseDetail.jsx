@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Navbar from "../../components/Navbar";
 import Footer from "../../components/Footer";
 import { 
-  PlayCircle, Check, Plus, Minus, Clock, Film, Award, Battery, Star, CheckCircle
+  PlayCircle, Check, Plus, Minus, Clock, Film, Award, Battery, Star, CheckCircle, MessageSquare
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { convertDriveLink } from "../../api/user/userUtils";
@@ -725,6 +725,14 @@ const handleSubmitReview = async () => {
                       className="w-full bg-[#00b6b6] text-white font-bold text-lg py-3 rounded-full hover:bg-[#009e9e] transition shadow-lg transform active:scale-95"
                     >
                       CONTINUE
+                    </button>
+
+                    {/* Forum Button */}
+                    <button 
+                      onClick={() => navigate(`/forum/${courseId}`)}
+                      className="w-full mt-3 bg-white border-2 border-[#00b6b6] text-[#00b6b6] font-bold text-lg py-3 rounded-full hover:bg-[#00b6b6] hover:text-white transition shadow-md transform active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <MessageSquare size={20} /> Forum
                     </button>
                   </div>
                 ) : (
