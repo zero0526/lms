@@ -93,3 +93,23 @@ export const fetchPublishedCourses = async (userId) => {
     throw error;
   }
 };
+
+/**
+ * Create a new meeting for live streaming
+ * @param {number} courseId - Course ID
+ * @param {string} title - Meeting title
+ * @param {string} description - Meeting description
+ */
+export const createMeeting = async (courseId, title, description) => {
+  try {
+    const res = await apiClient.post("/meeting/create", {
+      courseId: parseInt(courseId),
+      title,
+      description
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Error creating meeting:", error);
+    throw error;
+  }
+};
