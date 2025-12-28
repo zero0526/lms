@@ -3,11 +3,13 @@ import { Search, Bell, User, LogOut } from "lucide-react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
 import { convertDriveLink, getAvatarLabel } from "../api/user/userUtils";
+import { logoutUser } from "../api/user/authApi";
 
 export default function Navbar() {
   const [searchTerm, setSearchTerm] = useState("");
-  const { user } = useUser();
+  const { user, setUser } = useUser();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   const dropdownRef = useRef(null); 
   const navigate = useNavigate();
@@ -29,15 +31,32 @@ export default function Navbar() {
     navigate("/home");
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("user");
-    sessionStorage.removeItem("accessToken");
-    sessionStorage.removeItem("user");
+const handleLogout = async () => {
+    if (isLoggingOut) return; // Prevent double click
     
+    setIsLoggingOut(true);
     setIsDropdownOpen(false);
-    navigate("/home");
-    window.location.reload();
+
+    try {
+      // Gọi API logout với user data
+      await logoutUser(user);
+      
+      // Clear user context
+      setUser(null);
+      
+      // Redirect về home
+      navigate("/home");
+      
+      // Optional: Reload để clear mọi state
+      window.location.reload();
+    } catch (error) {
+      console.error("Logout failed:", error);
+      setUser(null);
+      navigate("/home");
+      window.location.reload();
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   const handleProfileClick = () => {
