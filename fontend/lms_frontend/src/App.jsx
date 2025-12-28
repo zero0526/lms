@@ -45,7 +45,7 @@ function OAuthCallbackHandler() {
 
     // Nếu có error từ OAuth
     if (errorMsg) {
-      console.error("❌ OAuth Error:", errorMsg);
+      console.error("OAuth Error:", errorMsg);
       alert("Login failed: " + errorMsg);
       window.history.replaceState({}, document.title, location.pathname);
       return;
@@ -69,18 +69,18 @@ function OAuthCallbackHandler() {
         pictureUrl: userAvatar || null
       };
 
-      console.log("📦 User data to save:", userToSave);
+      console.log("User data to save:", userToSave);
 
       const userString = JSON.stringify(userToSave);
 
       if (savedRemember) {
-        console.log("💾 Saving user to localStorage");
+        console.log("Saving user to localStorage");
         localStorage.setItem('user', userString);
         // Clear tokens cũ nếu có (từ normal login)
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
       } else {
-        console.log("💾 Saving user to sessionStorage");
+        console.log("Saving user to sessionStorage");
         sessionStorage.setItem('user', userString);
         // Clear tokens cũ
         sessionStorage.removeItem('accessToken');
@@ -89,7 +89,7 @@ function OAuthCallbackHandler() {
 
       setUser(userToSave);
 
-      console.log("🍪 OAuth tokens are in HTTP-only cookies");
+      console.log("OAuth tokens are in HTTP-only cookies");
 
       window.history.replaceState({}, document.title, location.pathname);
       
@@ -99,7 +99,7 @@ function OAuthCallbackHandler() {
 
       const savedRedirect = sessionStorage.getItem('oauth_redirect');
       if (savedRedirect && savedRedirect !== location.pathname) {
-        console.log("🔀 Redirecting to saved URL:", savedRedirect);
+        console.log("Redirecting to saved URL:", savedRedirect);
         sessionStorage.removeItem('oauth_redirect');
         sessionStorage.removeItem('oauth_course_name');
         window.location.href = savedRedirect;

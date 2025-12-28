@@ -59,9 +59,9 @@ export const processOAuthTokens = () => {
     try {
       userData = JSON.parse(decodeURIComponent(userDataStr));
       storage.setItem('user', JSON.stringify(userData));
-      console.log("✅ Saved user data to storage:", userData);
+      console.log("Saved user data to storage:", userData);
     } catch (e) {
-      console.error("❌ Failed to parse userData cookie:", e);
+      console.error("Failed to parse userData cookie:", e);
     }
   }
   

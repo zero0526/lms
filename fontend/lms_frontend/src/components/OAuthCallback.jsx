@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import { processOAuthTokens, getOAuthRedirect } from './utils/oauthUtils';
+import { processOAuthTokens, getOAuthRedirect } from '../api/utils/oauthUtils';
 import { useUser } from '../contexts/UserContext';
 
 export default function OAuthCallback() {

@@ -286,7 +286,7 @@ export default function TeacherCourseDetail() {
               </div>
 
               {/* Stats Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-white border border-gray-200 rounded-lg p-4 text-center shadow-sm">
                   <Users className="w-6 h-6 text-[#00b6b6] mx-auto mb-2" />
                   <p className="text-2xl font-bold text-gray-800">{courseDetails.numOfEnroll || 0}</p>
@@ -307,7 +307,7 @@ export default function TeacherCourseDetail() {
                   <p className="text-xl font-bold text-gray-800">{formatDuration(courseDetails.courseDuration)}</p>
                   <p className="text-xs text-gray-500">Duration</p>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Prerequisites Section */}

@@ -223,7 +223,7 @@ export default function Forum() {
         </div>
 
         {/* Search Bar */}
-        <div className="relative mb-6">
+        {/* <div className="relative mb-6">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
           <input
             type="text"
@@ -232,7 +232,7 @@ export default function Forum() {
             placeholder="Search posts..."
             className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#00b6b6] focus:border-transparent outline-none transition bg-white"
           />
-        </div>
+        </div> */}
 
         {/* Posts List */}
         {isLoading ? (

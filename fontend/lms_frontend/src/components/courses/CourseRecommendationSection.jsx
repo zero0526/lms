@@ -55,7 +55,7 @@ export default function CourseRecommendationSection() {
         setCourses(transformedCourses);
         setIsLoading(false);
       } catch (err) {
-        console.error("❌ Failed to fetch recommended courses:", err);
+        console.error("Failed to fetch recommended courses:", err);
         setError("Failed to load recommendations");
         setIsLoading(false);
       }

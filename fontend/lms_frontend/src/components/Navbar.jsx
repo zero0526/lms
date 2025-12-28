@@ -79,7 +79,7 @@ const handleLogout = async () => {
   console.log("User object:", user);
 
   return (
-    <nav className="flex justify-between items-center px-4 md:px-10 py-4 bg-[#00b6b6] text-white fixed top-0 w-full z-50 shadow-md">
+    <nav className="flex justify-between items-center px-4 md:px-10 py-4 bg-[#00b6b6] text-white fixed top-0 w-full z-50">
       {/* Logo */}
       <div className="flex items-center space-x-2 cursor-pointer" onClick={handleLogoClick}>
         <div className="bg-white text-[#00b6b6] font-bold text-lg px-2 py-1 rounded shadow-sm">

@@ -51,7 +51,7 @@ export const requestForgotPassword = async (email) => {
     console.log("Forgot password request successful:", response.data);
     return response.data;
   } catch (error) {
-    console.error("❌ Forgot password request failed:", error);
+    console.error("Forgot password request failed:", error);
     
     if (error.response) {
       console.error("Error Response:", error.response.data);
@@ -162,7 +162,7 @@ export const logoutUser = async (userData) => {
     });
 
     if (response.status === 200) {
-      console.log("✅ Backend logout successful:", response.data);
+      console.log("Backend logout successful:", response.data);
     }
 
   } catch (error) {
@@ -178,7 +178,7 @@ export const logoutUser = async (userData) => {
   } finally {
     // Luôn clear storage
     clearStorage();
-    console.log("✅ User logged out from frontend");
+    console.log("User logged out from frontend");
   }
 };
 

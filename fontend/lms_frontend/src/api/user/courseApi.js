@@ -93,7 +93,7 @@ export const getCourseOutlinePublic = async (courseId) => {
  */
 export const getCourseOutlineEnrolled = async (userId, courseId) => {
   if (!userId || userId === 'undefined' || userId === undefined) {
-    console.error("❌ Invalid userId:", userId);
+    console.error("Invalid userId:", userId);
     throw new Error("User ID is required to fetch enrolled course outline");
   }
 
@@ -108,12 +108,12 @@ export const getCourseOutlineEnrolled = async (userId, courseId) => {
  */
 export const enrollCourse = async (userId, courseId) => {
   if (!userId || userId === 'undefined' || userId === undefined) {
-    console.error("❌ Invalid userId:", userId);
+    console.error("Invalid userId:", userId);
     throw new Error("User ID is required to enroll in a course");
   }
 
   if (!courseId || courseId === 'undefined' || courseId === undefined) {
-    console.error("❌ Invalid courseId:", courseId);
+    console.error("Invalid courseId:", courseId);
     throw new Error("Course ID is required to enroll");
   }
 
@@ -172,7 +172,7 @@ export const checkEnrollmentStatus = async (userId, courseId) => {
   }
 
   if (!courseId || courseId === 'undefined' || courseId === undefined) {
-    console.error("❌ Invalid courseId provided to checkEnrollmentStatus:", courseId);
+    console.error("Invalid courseId provided to checkEnrollmentStatus:", courseId);
     return false;
   }
 
@@ -195,7 +195,7 @@ export const checkEnrollmentStatus = async (userId, courseId) => {
     return isEnrolled;
     
   } catch (error) {
-    console.error("❌ Check enrollment error:", error);
+    console.error("Check enrollment error:", error);
     return false;
   }
 };
