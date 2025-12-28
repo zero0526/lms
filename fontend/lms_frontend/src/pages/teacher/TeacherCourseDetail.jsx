@@ -24,8 +24,10 @@ import {
   getCourseDetails, 
   getCourseOutlinePublic
 } from "../../api/user/courseApi";
+import { createMeeting } from "../../api/teacher/courseApi";
 import { getCourseReviews } from "../../api/student/reviewApi";
 import courseplaceholder from "../../assets/courseplaceholder.png";
+import CreateMeetingModal from "../../components/teachers/CreateMeetingModal";
 
 export default function TeacherCourseDetail() {
   const { courseId } = useParams();
@@ -45,6 +47,11 @@ export default function TeacherCourseDetail() {
   const [reviewLimit] = useState(10);
   const [hasMoreReviews, setHasMoreReviews] = useState(true);
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+
+  // Meeting modal states
+  const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
+  const [isCreatingMeeting, setIsCreatingMeeting] = useState(false);
+  const [meetingResult, setMeetingResult] = useState(null);
 
   // Reset states when courseId changes
   useEffect(() => {
@@ -181,8 +188,42 @@ export default function TeacherCourseDetail() {
   };
 
   const handleStartLive = () => {
-    // TODO: Navigate to live streaming page or show modal
-    alert("Live streaming feature coming soon!");
+    setMeetingResult(null);
+    setIsMeetingModalOpen(true);
+  };
+
+  const handleCreateMeeting = async ({ title, description }) => {
+    setIsCreatingMeeting(true);
+    try {
+      const response = await createMeeting(courseId, title, description);
+      console.log("Meeting created:", response);
+      
+      // Extract link from response (response is a string like "Create new meeting successfully join meeting through http://...")
+      let link = "";
+      if (typeof response === "string") {
+        const linkMatch = response.match(/(http[s]?:\/\/[^\s]+)/);
+        if (linkMatch) {
+          link = linkMatch[1];
+        }
+      } else if (response.link) {
+        link = response.link;
+      }
+      
+      setMeetingResult({
+        message: "Meeting created successfully!",
+        link: link
+      });
+    } catch (error) {
+      console.error("Error creating meeting:", error);
+      alert(error.response?.data?.message || "Failed to create meeting. Please try again.");
+    } finally {
+      setIsCreatingMeeting(false);
+    }
+  };
+
+  const handleCloseMeetingModal = () => {
+    setIsMeetingModalOpen(false);
+    setMeetingResult(null);
   };
 
   const handleDeleteCourse = () => {
@@ -587,6 +628,15 @@ export default function TeacherCourseDetail() {
       </main>
 
       <Footer />
+
+      {/* Create Meeting Modal */}
+      <CreateMeetingModal
+        isOpen={isMeetingModalOpen}
+        onClose={handleCloseMeetingModal}
+        onSubmit={handleCreateMeeting}
+        isLoading={isCreatingMeeting}
+        successResult={meetingResult}
+      />
     </div>
   );
 }
