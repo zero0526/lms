@@ -7,19 +7,19 @@ export default function EndPage() {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Rating State (Tùy chọn: để user đánh giá chất lượng buổi học)
+  // Rating state
   const [rating, setRating] = useState(0);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  // Lấy dữ liệu từ navigation state
+  // Get data from navigation state
   const previousMeetingId = location.state?.meetingId;
   const userName = location.state?.name;
 
   const handleRejoin = () => {
     if (previousMeetingId) {
-      navigate(`/meeting/room/${previousMeetingId}${location.search}`); // Giữ nguyên params
+      navigate(`/meeting/room/${previousMeetingId}${location.search}`); // Keep params
     } else {
-      navigate(-1); // Quay lại trang trước
+      navigate(-1); // Go back to previous page
     }
   };
 
@@ -29,7 +29,7 @@ export default function EndPage() {
 
   const handleRate = (star) => {
     setRating(star);
-    // TODO: Gọi API gửi đánh giá về Backend nếu cần
+    // TODO: Call API to send rating to Backend if needed
     setTimeout(() => setIsSubmitted(true), 500);
   };
 
@@ -43,16 +43,16 @@ export default function EndPage() {
         </div>
 
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Cuộc gọi đã kết thúc</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Meeting Ended</h2>
           <p className="text-gray-500 mt-2">
-            Cảm ơn {userName || 'bạn'} đã tham gia buổi học.
+            Thank you {userName || 'you'} for attending the meeting.
           </p>
         </div>
 
-        {/* Phần đánh giá (Optional) */}
+        {/* Rating section (Optional) */}
         {!isSubmitted ? (
           <div className="py-4 border-t border-b border-gray-100">
-            <p className="text-sm font-medium text-gray-700 mb-3">Chất lượng buổi học thế nào?</p>
+            <p className="text-sm font-medium text-gray-700 mb-3">How was the session quality?</p>
             <div className="flex justify-center gap-2">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
@@ -69,11 +69,11 @@ export default function EndPage() {
           </div>
         ) : (
           <div className="py-4 text-green-600 font-medium bg-green-50 rounded-lg">
-            Cảm ơn đánh giá của bạn!
+            Thank you for your rating!
           </div>
         )}
 
-        {/* Các nút hành động */}
+        {/* Action buttons */}
         <div className="flex flex-col gap-3">
           {previousMeetingId && (
             <Button 
@@ -82,7 +82,7 @@ export default function EndPage() {
               className="w-full"
               icon={<RefreshCcw size={18} />}
             >
-              Tham gia lại
+              Rejoin
             </Button>
           )}
 
@@ -92,12 +92,12 @@ export default function EndPage() {
             className="w-full"
             icon={<Home size={18} />}
           >
-            Về trang chủ
+            Go Home
           </Button>
         </div>
         
         <div className="text-xs text-gray-400 mt-6">
-           Bạn có thể đóng tab này trình duyệt này ngay bây giờ.
+           You can close this browser tab now.
         </div>
       </Card>
     </div>

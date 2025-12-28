@@ -8,7 +8,7 @@ export const useRecording = (roomName, initialEgressId = null) => {
   const [isLoading, setIsLoading] = useState(false);
   const [egressId, setEgressId] = useState(initialEgressId);
 
-  // Kiểm tra xem có track nào đang active không
+  // Check active tracks
   const tracks = useTracks(
     [
       { source: Track.Source.Camera, withPlaceholder: false },
@@ -19,19 +19,19 @@ export const useRecording = (roomName, initialEgressId = null) => {
   );
 
   const startRecording = async () => {
-    // Kiểm tra xem có track nào đang active không
+    // Check if any track is currently active
     const activeTracks = tracks.filter(
       (t) => t.publication && !t.publication.isMuted && t.publication.track
     );
 
     if (activeTracks.length === 0) {
       const confirmed = confirm(
-        '⚠️ CẢNH BÁO: Không phát hiện tín hiệu video/audio!\n\n' +
-        'Để ghi hình thành công, vui lòng:\n' +
-        '1. BẬT CAMERA hoặc MICRO của bạn, HOẶC\n' +
-        '2. BẬT CHIA SẺ MÀN HÌNH\n\n' +
-        'Bạn có muốn tiếp tục ghi hình không?\n' +
-        '(Lưu ý: Nếu không có tín hiệu, ghi hình sẽ thất bại sau 15 giây)'
+        'WARNING: No video/audio signal detected!\n\n' +
+        'To successfully record, please:\n' +
+        '1. TURN ON your CAMERA or MICROPHONE, OR\n' +
+        '2. TURN ON SCREEN SHARING\n\n' +
+        'Do you want to continue recording?\n' +
+        '(Note: Recording will fail after 15 seconds if no signal is detected)'
       );
       
       if (!confirmed) {
@@ -47,11 +47,11 @@ export const useRecording = (roomName, initialEgressId = null) => {
         setEgressId(id);
         setIsRecording(true);
       } else {
-        throw new Error('Không nhận được ID bản ghi');
+        throw new Error('Did not receive recording ID');
       }
     } catch (error) {
       console.error('Start recording error:', error);
-      alert(error.message || "Không thể bắt đầu ghi hình");
+      alert(error.message || "Unable to start recording");
     } finally {
       setIsLoading(false);
     }
@@ -59,7 +59,7 @@ export const useRecording = (roomName, initialEgressId = null) => {
 
   const stopRecording = async () => {
     if (!egressId) {
-      alert("Không tìm thấy ID bản ghi để dừng");
+      alert("Recording ID not found to stop");
       return;
     }
     setIsLoading(true);
@@ -69,7 +69,7 @@ export const useRecording = (roomName, initialEgressId = null) => {
       setEgressId(null);
     } catch (error) {
       console.error('Stop recording error:', error);
-      alert(error.message || "Lỗi khi dừng ghi hình");
+      alert(error.message || "Error stopping recording");
     } finally {
       setIsLoading(false);
     }

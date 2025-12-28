@@ -82,11 +82,8 @@ export default function Notification() {
       // Convert absolute URL to relative path if same origin
       try {
         const url = new URL(notification.linkUrl);
-        if (url.origin === window.location.origin) {
-          navigate(url.pathname);
-        } else {
-          window.open(notification.linkUrl, '_blank');
-        }
+        // Always open in new tab
+        window.open(notification.linkUrl, '_blank', 'noopener,noreferrer'); 
       } catch {
         // If URL parsing fails, try direct navigation
         navigate(notification.linkUrl);

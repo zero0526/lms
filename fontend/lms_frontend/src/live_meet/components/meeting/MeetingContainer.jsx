@@ -19,12 +19,12 @@ export default function MeetingContainer(props) {
       serverUrl={props.wsUrl}
       data-lk-theme="default"
       style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}
-      onConnected={() => console.log('✅ LiveKit CONNECTED')}
+      onConnected={() => console.log('LiveKit CONNECTED')}
       onDisconnected={(reason) => {
-        console.log('❌ LiveKit DISCONNECTED:', reason);
+        console.log('LiveKit DISCONNECTED:', reason);
         props.onLeave();
       }}
-      onError={(err) => console.error('🚨 LiveKit ERROR:', err)}
+      onError={(err) => console.error('LiveKit ERROR:', err)}
     >
       <MeetingContent {...props} />
     </LiveKitRoom>
@@ -169,9 +169,9 @@ function MeetingContent({
           )}>
             {permAlert.allowed ? <Shield size={20} className="text-green-600" /> : <ShieldOff size={20} className="text-red-600" />}
             <div className="flex flex-col">
-              <p className="text-sm font-bold">Thông báo từ Giáo viên</p>
+              <p className="text-sm font-bold">Notification from Teacher</p>
               <p className="text-xs opacity-90">
-                {permAlert.allowed ? `Bạn đã được cấp lại quyền: ${permAlert.field}` : `Giáo viên đã thu hồi quyền: ${permAlert.field}`}
+                {permAlert.allowed ? `You have been granted permission: ${permAlert.field}` : `Teacher has revoked permission: ${permAlert.field}`}
               </p>
             </div>
             <button onClick={() => setPermAlert(null)} className="ml-2 hover:opacity-60">

@@ -13,7 +13,7 @@ export const useMeetingJoin = () => {
       return result;
     } catch (err) {
       console.error('Join meeting error:', err);
-      const msg = err.message || "Không thể tham gia phòng họp.";
+      const msg = err.message || "Unable to join the meeting.";
       setError(msg);
       return null;
     } finally {
@@ -29,7 +29,7 @@ export const useMeetingJoin = () => {
       return result;
     } catch (err) {
       console.error('Get preview error:', err);
-      setError(err.message || "Không thể lấy thông tin phòng họp.");
+      setError(err.message || "Unable to get meeting preview information.");
       return null;
     } finally {
       setIsLoading(false);

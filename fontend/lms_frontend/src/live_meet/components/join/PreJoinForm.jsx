@@ -28,11 +28,11 @@ export default function PreJoinScreen({ user, onJoin }) {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Card title="Tham gia lớp học" className="w-full max-w-md">
+      <Card title="Enter meeting" className="w-full max-w-md">
         <div className="space-y-4">
           <Input 
-            label="Họ và tên"
-            placeholder="Ví dụ: Nguyễn Văn A"
+            label="Full Name"
+            placeholder="e.g., John Doe"
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -46,7 +46,7 @@ export default function PreJoinScreen({ user, onJoin }) {
             disabled={!name.trim()}
             icon={<Video size={18} />}
           >
-            Vào phòng ngay
+            Join now
           </Button>
         </div>
       </Card>

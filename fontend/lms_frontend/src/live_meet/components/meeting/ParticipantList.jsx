@@ -19,7 +19,7 @@ export default function ParticipantList({ isTeacher }) {
       await ManagementService.muteUser(room.name, identity, true);
     } catch (error) {
       console.error("Failed to mute user:", error);
-      alert(error.message || "Không thể tắt tiếng người dùng");
+      alert(error.message || "Unable to mute user");
     } finally {
       setLoadingAction(null);
     }
@@ -31,7 +31,7 @@ export default function ParticipantList({ isTeacher }) {
       await ManagementService.muteCamera(room.name, identity, true);
     } catch (error) {
       console.error("Failed to mute camera:", error);
-      alert(error.message || "Không thể tắt camera người dùng");
+      alert(error.message || "Unable to mute user's camera");
     } finally {
       setLoadingAction(null);
     }
@@ -43,7 +43,7 @@ export default function ParticipantList({ isTeacher }) {
       await ManagementService.stopScreenShare(room.name, identity);
     } catch (error) {
       console.error("Failed to stop screen share:", error);
-      alert(error.message || "Không thể dừng chia sẻ màn hình");
+      alert(error.message || "Unable to stop screen share");
     } finally {
       setLoadingAction(null);
     }
@@ -53,27 +53,27 @@ export default function ParticipantList({ isTeacher }) {
     const participant = participants.find(p => p.identity === identity);
   
     const displayName = participant?.name || identity;
-    if (!confirm(`Bạn có chắc muốn mời ${displayName} ra khỏi phòng?`)) return;
+    if (!confirm(`Are you sure you want to remove ${displayName} from the room?`)) return;
     
     setLoadingAction(`kick-${identity}`);
     try {
       await ManagementService.kickUser(room.name, identity);
     } catch (error) {
       console.error("Failed to kick user:", error);
-      alert(error.message || "Không thể đuổi người dùng");
+      alert(error.message || "Unable to remove user");
     } finally {
       setLoadingAction(null);
     }
   };
 
   const handleKickAll = async () => {
-    if (!confirm("CẢNH BÁO: Bạn có chắc muốn mời TẤT CẢ sinh viên ra khỏi phòng và kết thúc cuộc họp?")) return;
+    if (!confirm("WARNING: Are you sure you want to remove ALL students from the room and end the meeting?")) return;
     setLoadingAction('kick-all');
     try {
       await ManagementService.kickAll(room.name);
     } catch (error) {
       console.error("Failed to kick all:", error);
-      alert("Lỗi khi mời tất cả ra khỏi phòng");
+      alert("Error removing all users from the room");
     } finally {
       setLoadingAction(null);
     }
@@ -130,7 +130,7 @@ export default function ParticipantList({ isTeacher }) {
   return (
     <div className="flex flex-col h-full bg-white border-l border-gray-200">
       <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-        <span className="font-semibold text-gray-700">Thành viên ({participants.length})</span>
+        <span className="font-semibold text-gray-700">Participants ({participants.length})</span>
         
         {/* Global Controls for Teacher */}
         {isTeacher && (
@@ -139,7 +139,7 @@ export default function ParticipantList({ isTeacher }) {
                variant="ghost" size="sm" className="p-1.5 h-8 w-8 text-orange-500 hover:bg-orange-50"
                onClick={handleMuteAll}
                disabled={loadingAction === 'mute-all'}
-               title="Tắt Mic tất cả"
+               title="Disable all microphones"
              >
                {loadingAction === 'mute-all' ? <Loader2 size={14} className="animate-spin" /> : <VolumeX size={14} />}
              </Button>
@@ -147,7 +147,7 @@ export default function ParticipantList({ isTeacher }) {
                variant="ghost" size="sm" className="p-1.5 h-8 w-8 text-red-500 hover:bg-red-50"
                onClick={handleMuteCameraAll}
                disabled={loadingAction === 'mute-cam-all'}
-               title="Tắt Camera tất cả"
+               title="Mute all cameras"
              >
                {loadingAction === 'mute-cam-all' ? <Loader2 size={14} className="animate-spin" /> : <CameraOff size={14} />}
              </Button>
@@ -155,7 +155,7 @@ export default function ParticipantList({ isTeacher }) {
                variant="ghost" size="sm" className="p-1.5 h-8 w-8 text-blue-500 hover:bg-blue-50"
                onClick={handleStopScreenShareAll}
                disabled={loadingAction === 'stop-screen-all'}
-               title="Dừng Share tất cả"
+               title="Stop all screen shares"
              >
                {loadingAction === 'stop-screen-all' ? <Loader2 size={14} className="animate-spin" /> : <MonitorOff size={14} />}
              </Button>
@@ -163,7 +163,7 @@ export default function ParticipantList({ isTeacher }) {
                variant="ghost" size="sm" className="p-1.5 h-8 w-8 text-red-600 hover:bg-red-50"
                onClick={handleKickAll}
                disabled={loadingAction === 'kick-all'}
-               title="Đuổi tất cả"
+               title="Remove all participants from room"
              >
                {loadingAction === 'kick-all' ? <Loader2 size={14} className="animate-spin" /> : <UserX size={14} />}
              </Button>
@@ -181,7 +181,7 @@ export default function ParticipantList({ isTeacher }) {
               <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-800 truncate">
                   {p.name || `User ${p.identity}`}
-                  {p.isLocal && <span className="text-blue-600 ml-1">(Bạn)</span>}
+                  {p.isLocal && <span className="text-blue-600 ml-1">(You)</span>}
                 </p>
                 <div className="flex items-center gap-2">
                   <p className="text-[10px] text-gray-500 uppercase font-bold tracking-tight">
@@ -198,57 +198,57 @@ export default function ParticipantList({ isTeacher }) {
               {/* Teacher Controls */}
               {isTeacher && !p.isLocal && (
                 <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                  {/* Quyền: Cho phép/Khóa tương tác (Mic/Cam) */}
+                  {/* Permission: Allow/Mute interaction (Mic/Cam) */}
                   <Button 
                     variant="ghost" size="sm" className={clsx("p-1 h-8 w-8", p.permissions?.canPublish ? "text-green-500 hover:bg-green-50" : "text-gray-400 hover:bg-gray-100")}
                     onClick={() => handleTogglePermission(p.identity, p.permissions, 'canPublish')}
                     disabled={loadingAction?.startsWith('perm-')}
-                    title={p.permissions?.canPublish ? "Khóa phát Cam/Mic" : "Cho phép phát Cam/Mic"}
+                    title={p.permissions?.canPublish ? "Mute Cam/Mic" : "Allow Cam/Mic"}
                   >
                     {loadingAction === `perm-${p.identity}-canPublish` ? <Loader2 size={14} className="animate-spin" /> : (p.permissions?.canPublish ? <Unlock size={14} /> : <Lock size={14} />)}
                   </Button>
 
-                  {/* Quyền: Cho phép/Khóa Chat */}
+                  {/* Permission: Allow/Mute Chat */}
                   <Button 
                     variant="ghost" size="sm" className={clsx("p-1 h-8 w-8", p.permissions?.canPublishData ? "text-blue-500 hover:bg-blue-50" : "text-gray-400 hover:bg-gray-100")}
                     onClick={() => handleTogglePermission(p.identity, p.permissions, 'canPublishData')}
                     disabled={loadingAction?.startsWith('perm-')}
-                    title={p.permissions?.canPublishData ? "Khóa Chat" : "Mở Chat"}
+                    title={p.permissions?.canPublishData ? "Mute Chat" : "Allow Chat"}
                   >
                     {loadingAction === `perm-${p.identity}-canPublishData` ? <Loader2 size={14} className="animate-spin" /> : (p.permissions?.canPublishData ? <Unlock size={14} /> : <MessageSquareOff size={14} />)}
                   </Button>
 
-                  {/* Tắt nhanh Mic nếu đang bật */}
+                  {/* Quick mute Mic if enabled */}
                   {p.isMicrophoneEnabled && (
                     <Button 
                       variant="ghost" size="sm" className="p-1 h-8 w-8 text-orange-500 hover:bg-orange-50"
                       onClick={() => handleMute(p.identity)}
                       disabled={loadingAction === `mute-${p.identity}`}
-                      title="Tắt Micro"
+                      title="Mute Microphone"
                     >
                       {loadingAction === `mute-${p.identity}` ? <Loader2 size={14} className="animate-spin" /> : <VolumeX size={14} />}
                     </Button>
                   )}
 
-                  {/* Tắt nhanh Cam nếu đang bật */}
+                  {/* Quick mute Cam if enabled */}
                   {p.isCameraEnabled && (
                     <Button 
                       variant="ghost" size="sm" className="p-1 h-8 w-8 text-red-500 hover:bg-red-50"
                       onClick={() => handleMuteCamera(p.identity)}
                       disabled={loadingAction === `mute-cam-${p.identity}`}
-                      title="Tắt Camera"
+                      title="Mute Camera"
                     >
                       {loadingAction === `mute-cam-${p.identity}` ? <Loader2 size={14} className="animate-spin" /> : <CameraOff size={14} />}
                     </Button>
                   )}
 
-                  {/* Dừng nhanh Share nếu đang share */}
+                  {/* Quick stop Share if enabled */}
                   {p.isScreenShareEnabled && (
                     <Button 
                       variant="ghost" size="sm" className="p-1 h-8 w-8 text-blue-500 hover:bg-blue-50"
                       onClick={() => handleStopScreenShare(p.identity)}
                       disabled={loadingAction === `stop-screen-${p.identity}`}
-                      title="Dừng chia sẻ màn hình"
+                      title="Stop screen sharing"
                     >
                       {loadingAction === `stop-screen-${p.identity}` ? <Loader2 size={14} className="animate-spin" /> : <MonitorOff size={14} />}
                     </Button>
@@ -258,7 +258,7 @@ export default function ParticipantList({ isTeacher }) {
                     variant="ghost" size="sm" className="p-1 h-8 w-8 text-gray-400 hover:bg-red-50 hover:text-red-600"
                     onClick={() => handleKick(p.identity)}
                     disabled={loadingAction === `kick-${p.identity}`}
-                    title="Mời ra khỏi phòng"
+                    title="Remove from room"
                   >
                     {loadingAction === `kick-${p.identity}` ? <Loader2 size={14} className="animate-spin" /> : <UserX size={14} />}
                   </Button>

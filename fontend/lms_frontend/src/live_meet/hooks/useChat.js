@@ -13,7 +13,7 @@ export const useChat = (sessionId, currentUserId, currentUserName, currentUserAv
     return String(senderId) === String(userId);
   };
 
-  // 1. Load lịch sử chat cũ
+  // 1. Load chat history
   useEffect(() => {
     if (!sessionId) return;
     ChatService.getHistory(sessionId)
@@ -29,7 +29,7 @@ export const useChat = (sessionId, currentUserId, currentUserName, currentUserAv
       });
   }, [sessionId, currentUserId]);
 
-  // 2. Lắng nghe tin nhắn Realtime từ LiveKit
+  // 2. Listen for realtime messages from LiveKit
   useEffect(() => {
     const handleDataReceived = (payload, _participant) => {
       console.log("RECEIVED DATA FROM LIVEKIT:", payload);
@@ -52,7 +52,7 @@ export const useChat = (sessionId, currentUserId, currentUserName, currentUserAv
           }
         }
       } catch (e) {
-        console.error("Lỗi parse chat data:", e);
+        console.error("Failed to parse chat data:", e);
       }
     };
 
@@ -66,14 +66,14 @@ export const useChat = (sessionId, currentUserId, currentUserName, currentUserAv
     }
   }, [room, currentUserId]);
 
-  // 3. Hàm gửi tin nhắn
+  // 3. Function to send message
   const sendMessage = useCallback(async (content, replyToMessageId) => {
     if (!content.trim()) return;
     
-    // Kiểm tra trạng thái room trước khi gửi
+    // Check room status before sending
     if (!room || room.state !== 'connected') {
       console.warn("Room not connected, cannot broadcast message");
-      alert("Kết nối phòng họp đã bị ngắt. Vui lòng tải lại trang.");
+      alert("Meeting connection lost. Please reload the page.");
       return;
     }
     
@@ -119,19 +119,18 @@ export const useChat = (sessionId, currentUserId, currentUserName, currentUserAv
           console.log("CLIENT BROADCAST SUCCESSFUL");
         } catch (broadcastErr) {
           console.warn("Failed to broadcast message (room may be disconnected):", broadcastErr);
-          // Message đã được lưu vào backend, chỉ không broadcast được
         }
       }
 
     } catch (err) {
-      console.error("Lỗi gửi tin nhắn:", err);
-      // Không hiện alert cho lỗi connection
+      console.error("Failed to send message:", err);
+      // Do not show alert for connection errors
       if (err.message?.includes('connection') || err.message?.includes('closed')) {
-        alert("Kết nối phòng họp đã bị ngắt. Tin nhắn không thể gửi.");
+        alert("Meeting connection lost. Message could not be sent.");
       } else if (err.status === 401) {
-        alert("Vui lòng đăng nhập lại");
+        alert("Please log in again to send messages.");
       } else {
-        alert("Lỗi hệ thống khi gửi tin nhắn");
+        alert("System error when sending message");
       }
     } finally {
       setIsSending(false);

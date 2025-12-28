@@ -15,20 +15,20 @@ export default function ChatPanel({
 
   const handleInitiateReply = (msg) => {
     setReplyingTo(msg);
-    // Focus vào ô input sau khi nhấn reply
+    // Focus on the input field after clicking reply
     if (inputRef.current) {
       inputRef.current.focus();
     }
   };
 
-  // Map tin nhắn theo ID để dễ dàng tra cứu parent
+  // Map messages by ID for easy parent lookup
   const messageMap = useMemo(() => {
     const map = new Map();
     messages.forEach(m => map.set(m.id, m));
     return map;
   }, [messages]);
 
-  // Tự động cuộn xuống cuối khi có tin nhắn mới
+  // Automatically scroll to the bottom when new messages arrive
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -40,7 +40,7 @@ export default function ChatPanel({
 
   const handleSend = () => {
     if (!canChat) {
-      alert("Giáo viên đã khóa quyền chat của bạn.");
+      alert("Teacher has disabled your chat permissions.");
       return;
     }
     if (!inputValue.trim()) return;
@@ -56,7 +56,7 @@ export default function ChatPanel({
   return (
     <div className="flex flex-col h-full bg-white border-l border-gray-200">
       <div className="p-4 border-b border-gray-200 font-semibold text-gray-700">
-        Trò chuyện ({messages.length})
+        Chat ({messages.length})
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 flex flex-col" ref={scrollRef}>
@@ -68,19 +68,19 @@ export default function ChatPanel({
               <Avatar name={msg.senderName} src={toGoogleDriveEmbedUrl(msg.senderAvatar)} size="sm" />
               
               <div className={clsx("flex flex-col", msg.isSelf ? "items-end" : "items-start")}>
-                 {/* Nút Reply - Cập nhật hàm onClick */}
+                 {/* Reply button - Update onClick handler */}
                  <button 
                     onClick={() => handleInitiateReply(msg)}
                     className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-blue-500 transition-opacity mb-1 flex items-center gap-1 text-[10px]"
                  >
-                    <Reply size={14} /> Phản hồi
+                    <Reply size={14} /> Reply
                  </button>
 
                  <div className={clsx(
                     "p-2 rounded-lg text-sm shadow-sm relative",
                     msg.isSelf ? "bg-blue-600 text-white rounded-br-none" : "bg-white border text-gray-800 rounded-bl-none"
                  )}>
-                    {/* Hiển thị tin nhắn cha (Quote) */}
+                    {/* Display parent message (Quote) */}
                     {parent && (
                         <div 
                           className={clsx(
@@ -88,7 +88,7 @@ export default function ChatPanel({
                              msg.isSelf ? "border-white/50" : "border-blue-500"
                           )}
                           onClick={() => {
-                            // Logic bổ sung: Cuộn đến tin nhắn gốc khi click vào phần quote
+                            // Additional logic: Scroll to the original message when clicking on the quote
                             const parentElement = document.getElementById(`msg-${parent.id}`);
                             parentElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                           }}
@@ -100,7 +100,7 @@ export default function ChatPanel({
                         </div>
                     )}
                     
-                    {/* ID tin nhắn để hỗ trợ việc cuộn (scrollIntoView) */}
+                    {/* ID message for scrolling (scrollIntoView) */}
                     <div id={`msg-${msg.id}`}>{msg.content}</div>
                  </div>
               </div>
@@ -127,7 +127,7 @@ export default function ChatPanel({
         <Input 
           ref={inputRef}
           disabled={!canChat}
-          placeholder={!canChat ? "Chat bị giáo viên khóa" : (replyingTo ? "Nhập nội dung phản hồi..." : "Nhập tin nhắn...")}
+          placeholder={!canChat ? "Chat bị giáo viên khóa" : (replyingTo ? "Enter your reply..." : "Enter your message...")}
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={handleKeyDown}

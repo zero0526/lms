@@ -1,21 +1,21 @@
 import axios from 'axios';
 
-// Lấy URL từ biến môi trường hoặc fallback về localhost
+// API base URL
 const API_URL = import.meta.env.VITE_MEETING_API_URL || 'http://localhost:8081/api';
 
-// LiveKit WebSocket URL - dùng để thay thế hostname Docker
+// LiveKit WebSocket URL - used to replace Docker hostname
 const LIVEKIT_WS_URL = import.meta.env.VITE_LIVEKIT_WS_URL || 'ws://localhost:7880';
 
 /**
- * Chuyển đổi wsUrl từ Docker hostname sang localhost/public hostname
- * Backend trả về ws://livekit:7880 nhưng browser cần ws://localhost:7880
+ * Convert wsUrl from Docker hostname to localhost/public hostname
+ * Backend returns ws://livekit:7880 but browser needs ws://localhost:7880
  */
 const normalizeWsUrl = (wsUrl) => {
   if (!wsUrl) return wsUrl;
   
   try {
     const url = new URL(wsUrl);
-    // Nếu hostname là "livekit" (Docker internal), thay thế bằng LIVEKIT_WS_URL
+    // If hostname is "livekit" (Docker internal), replace with LIVEKIT_WS_URL
     if (url.hostname === 'livekit') {
       const targetUrl = new URL(LIVEKIT_WS_URL);
       url.hostname = targetUrl.hostname;
@@ -36,23 +36,23 @@ export const api = axios.create({
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
-  withCredentials: true, // Hỗ trợ gửi cookie
+  withCredentials: true, // Support sending cookies
 });
 
 /**
- * Hàm lấy accessToken của người dùng
- * Ưu tiên: localStorage -> sessionStorage -> cookie
+ * Function to get the user's accessToken
+ * Priority: localStorage -> sessionStorage -> cookie
  */
 const getAccessToken = () => {
-  // 1. Kiểm tra localStorage
+  // 1. Check localStorage
   const localToken = localStorage.getItem('accessToken');
   if (localToken) return localToken;
 
-  // 2. Kiểm tra sessionStorage
+  // 2. Check sessionStorage
   const sessionToken = sessionStorage.getItem('accessToken');
   if (sessionToken) return sessionToken;
 
-  // 3. Kiểm tra cookie (accessToken không phải HTTP-only cookie)
+  // 3. Check cookie (accessToken is not an HTTP-only cookie)
   const cookies = document.cookie.split(';');
   for (const cookie of cookies) {
     const [name, value] = cookie.trim().split('=');
@@ -83,7 +83,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const apiError = {
-      message: error.response?.data?.message || error.message || 'Đã xảy ra lỗi không xác định',
+      message: error.response?.data?.message || error.message || 'An unknown error occurred',
       status: error.response?.status,
       response: error.response,
     };

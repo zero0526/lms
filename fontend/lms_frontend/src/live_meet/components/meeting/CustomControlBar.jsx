@@ -27,7 +27,7 @@ export default function CustomControlBar({
   const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
 
-  /* ================= MIC (GIỮ useTrackToggle) ================= */
+  /* MIC */
   const {
     toggle: toggleMic,
     enabled: isMicOn,
@@ -35,7 +35,7 @@ export default function CustomControlBar({
     source: Track.Source.Microphone,
   });
 
-  /* ================= CAMERA (DÙNG API CHUẨN) ================= */
+  /* CAMERA */
   const [camBusy, setCamBusy] = useState(false);
   const isCamOn = localParticipant?.isCameraEnabled ?? false;
 
@@ -44,7 +44,7 @@ export default function CustomControlBar({
 
     // Check Permission
     if (!localParticipant?.permissions?.canPublish) {
-      alert('Giáo viên đã khóa quyền sử dụng Camera của bạn.');
+      alert('Teacher has disabled your Camera permissions.');
       return;
     }
 
@@ -55,17 +55,17 @@ export default function CustomControlBar({
       await localParticipant.setCameraEnabled(!isCamOn);
     } catch (e) {
       console.error('Camera error:', e);
-      alert('Không thể truy cập Camera. Vui lòng kiểm tra quyền trình duyệt.');
+      alert('Cannot access Camera. Please check your browser permissions.');
     } finally {
       setCamBusy(false);
     }
   };
 
-  /* ================= MIC HANDLER ================= */
+  /* MIC HANDLER */
   const handleToggleMic = async () => {
     // Check Permission
     if (!localParticipant?.permissions?.canPublish) {
-      alert('Giáo viên đã khóa quyền sử dụng Micro của bạn.');
+      alert('Teacher has disabled your Microphone permissions.');
       return;
     }
 
@@ -76,7 +76,7 @@ export default function CustomControlBar({
     }
   };
 
-  /* ================= SCREEN SHARE + RECORD ================= */
+  /* SCREEN SHARE + RECORD */
   const { isSomeoneElseSharing, amISharing, toggleScreenShare } =
     useScreenShareProtection();
 
@@ -142,13 +142,13 @@ export default function CustomControlBar({
         >
           <Disc size={20} className={isRecording ? 'animate-pulse' : ''} />
           <span className="text-[10px] mt-1 font-medium">
-            {isRecording ? 'Dừng ghi' : 'Ghi hình'}
+            {isRecording ? 'Stop Recording' : 'Record'}
           </span>
         </Button>
       ) : isRecording && (
         <div className="flex flex-col items-center justify-center rounded-xl min-w-[64px] h-16 bg-red-500/10 text-red-500 border border-red-500/20 px-2">
           <Disc size={20} className="animate-pulse" />
-          <span className="text-[10px] mt-1 font-medium text-center leading-tight">Đang ghi...</span>
+          <span className="text-[10px] mt-1 font-medium text-center leading-tight">Recording...</span>
         </div>
       )}
 
@@ -156,7 +156,7 @@ export default function CustomControlBar({
       <Button
         onClick={async () => {
           if (isTeacher) {
-            if (confirm("Bạn có chắc chắn muốn kết thúc lớp học cho tất cả mọi người?")) {
+            if (confirm("Are you sure you want to end the meeting for all participants?")) {
               try {
                 await ManagementService.endMeeting(room.name);
                 onLeave();
@@ -174,7 +174,7 @@ export default function CustomControlBar({
         className="bg-red-600 hover:bg-red-700 text-white px-6 rounded-full ml-4"
       >
         <PhoneOff size={20} />
-        {isTeacher ? 'Kết thúc' : 'Rời khỏi'}
+        {isTeacher ? 'End' : 'Leave'}
       </Button>
     </div>
   );

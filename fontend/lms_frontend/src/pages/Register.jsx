@@ -46,7 +46,10 @@ export default function Register() {
     } catch (error) {
       console.error("Register Error:", error);
       if (error instanceof AxiosError) {
-        setError(error.response?.data?.message || "Registration failed");
+        if (error.response?.data === "detached entity passed to persist: webtech.online.course.models.User"){
+          setError("Email doesn't exist. Please check again.");
+        }
+        setError(error.response?.data || "Registration failed");
       } else {
         setError("An unexpected error occurred");
       }

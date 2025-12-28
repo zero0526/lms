@@ -10,12 +10,12 @@ export default function MeetingPage() {
   
   const { joinMeeting, getPreviewInfo, isLoading, error } = useMeetingJoin();
   
-  // State lưu thông tin kết nối
+  // State save connection data after joining
   const [connectionData, setConnectionData] = useState(null);
   
   const [previewData, setPreviewData] = useState(null);
 
-  // Sửa lại hàm handleJoin trong MeetingPage
+  // Update handleJoin function in MeetingPage
   const handleJoin = async (alias) => {
     if (!meetingId) return;
       
@@ -43,7 +43,7 @@ export default function MeetingPage() {
     }
   };
 
-  // Lấy thông tin preview trước khi join
+  // Get preview information before joining
   useEffect(() => {
     const fetchPreview = async () => {
       if (meetingId && !connectionData) {
@@ -67,7 +67,7 @@ export default function MeetingPage() {
         <div className="text-center">
            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
            <p className="text-gray-500">
-             {!previewData ? 'Đang chuẩn bị phòng học...' : 'Đang tham gia vào phòng...'}
+             {!previewData ? 'Preparing meeting room...' : 'Joining the room...'}
            </p>
         </div>
       </div>
@@ -90,7 +90,7 @@ export default function MeetingPage() {
     );
   }
 
-  // 1. Nếu chưa có Token -> Hiện màn hình nhập tên (PreJoin)
+  // 1. If no Token -> Show name input screen (PreJoin)
   if (!connectionData) {
     return (
       <PreJoinScreen 
@@ -100,7 +100,7 @@ export default function MeetingPage() {
     );
   }
 
-  // 2. Nếu đã có Token -> Hiện phòng họp
+  // 2. If Token exists -> Show meeting room
   return (
     <MeetingContainer 
       token={connectionData.token}

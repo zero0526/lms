@@ -6,39 +6,39 @@ import { ManagementService } from '../services/api';
 export const useScreenShareProtection = () => {
   const room = useRoomContext();
   
-  // 1. Lấy danh sách screen tracks trong phòng
+  // 1. Get screen share tracks
   const screenTracks = useTracks([Track.Source.ScreenShare]);
 
-  // 2. Kiểm tra xem có ai khác share không
+  // 2. Check if someone else is sharing
   const isSomeoneElseSharing = useMemo(() => {
     return screenTracks.some(
       (track) => track.participant.identity !== room.localParticipant.identity
     );
   }, [screenTracks, room.localParticipant.identity]);
 
-  // 3. Tôi có đang share không
+  // 3. Am I currently sharing
   const amISharing = room.localParticipant.isScreenShareEnabled;
 
-  // 4. Toggle screen share có đồng bộ Backend
+  // 4. Toggle screen share with Backend synchronization
   const toggleScreenShare = useCallback(async () => {
     const newState = !amISharing;
 
     try {
       if (newState) {
-        // Muốn bật: Phải xin phép Backend
+        // Want to enable: Must request permission from Backend
         await ManagementService.acquireScreenShare(room.name);
         await room.localParticipant.setScreenShareEnabled(true);
       } else {
-        // Muốn tắt: Tắt xong báo Backend release
+        // Want to disable: Disable first then notify Backend to release
         await room.localParticipant.setScreenShareEnabled(false);
         await ManagementService.releaseScreenShare(room.name);
       }
     } catch (err) {
       if (err.status === 409) {
-        alert("Đang có người khác chia sẻ màn hình. Vui lòng đợi!");
+        alert("Someone else is sharing the screen. Please wait!");
       } else {
-        console.error("Lỗi Screen Share:", err);
-        alert(err.message || "Không thể thực hiện yêu cầu chia sẻ màn hình");
+        console.error("Screen Share error:", err);
+        alert(err.message || "Unable to process screen share request");
       }
     }
   }, [amISharing, room.localParticipant, room.name]);
