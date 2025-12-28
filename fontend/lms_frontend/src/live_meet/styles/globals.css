@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+/* Override CSS variables for LiveKit */
+@layer base {
+  :root {
+    /* Map Tailwind colors to LiveKit variables */
+    --lk-bg: #111827;
+    --lk-control-bg: #1f2937;
+    --lk-accent-bg: #2563eb;
+  }
+}
+
+/* Custom Components */
+@layer components {
+  /* Buttons */
+  .btn-base {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition-property: color, background-color, border-color;
+    transition-duration: 200ms;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .btn-base:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+  }
+  
+  .btn-base:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* Card / Container */
+  .card-base {
+    background-color: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    border: 1px solid #f3f4f6;
+    overflow: hidden;
+  }
+
+  /* LiveKit overrides */
+  .lk-participant-placeholder {
+    display: none !important;
+  }
+
+  .lk-participant-metadata {
+    display: none !important;
+  }
+}

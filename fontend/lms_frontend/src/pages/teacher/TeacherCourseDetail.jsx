@@ -198,9 +198,33 @@ export default function TeacherCourseDetail() {
       const response = await createMeeting(courseId, title, description);
       console.log("Meeting created:", response);
       
-      // Extract link from response (response is a string like "Create new meeting successfully join meeting through http://...")
+      // Extract meeting ID from response to build internal link
       let link = "";
+      let meetingId = null;
+      
       if (typeof response === "string") {
+        // Try to extract meeting ID from URL in response
+        const idMatch = response.match(/\/room\/(\d+)/);
+        if (idMatch) {
+          meetingId = idMatch[1];
+        } else {
+          // Fallback: try to extract any number after "meeting" keyword
+          const numMatch = response.match(/meeting.*?(\d+)/i);
+          if (numMatch) {
+            meetingId = numMatch[1];
+          }
+        }
+      } else if (response.meetingId) {
+        meetingId = response.meetingId;
+      } else if (response.id) {
+        meetingId = response.id;
+      }
+      
+      // Build internal link
+      if (meetingId) {
+        link = `${window.location.origin}/meeting/room/${meetingId}`;
+      } else if (typeof response === "string") {
+        // Fallback: extract original link
         const linkMatch = response.match(/(http[s]?:\/\/[^\s]+)/);
         if (linkMatch) {
           link = linkMatch[1];
