@@ -635,7 +635,7 @@ export default function TeacherCourseDetail() {
                   </li>
                 </ul>
 
-                {/* Delete Button */}
+                {/* Delete Button
                 <div className="mt-6 pt-6 border-t border-gray-100">
                   <button 
                     onClick={handleDeleteCourse}
@@ -643,7 +643,7 @@ export default function TeacherCourseDetail() {
                   >
                     <Trash2 size={16} /> Delete this course
                   </button>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>

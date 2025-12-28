@@ -382,7 +382,7 @@ export default function EditCourse() {
         if (res) {
           await new Promise(resolve => setTimeout(resolve, 500));
           fetchCourseData();
-          alert("Chapter added successfully!");
+          // alert("Chapter added successfully!");
         }
       }
       else if (type === "edit_chapter") {
@@ -440,11 +440,11 @@ export default function EditCourse() {
 
       if (contentType === "video") {
         await updateLessonVideo(lessonId, data, currentTitle, currentOrder, currentDesc);
-        alert("Video updated successfully!");
+        // alert("Video updated successfully!");
       } 
       else if (contentType === "doc") {
         await updateLessonDoc(lessonId, data, currentTitle, currentOrder, currentDesc);
-        alert("Document updated successfully!");
+        // alert("Document updated successfully!");
       }
       else if (contentType === "quiz") {
         const isEditMode = !!contentModal.initialData?.id;
@@ -452,10 +452,10 @@ export default function EditCourse() {
         if (isEditMode) {
           const quizId = contentModal.initialData.id;
           await updateQuiz(quizId, data);
-          alert("Quiz updated successfully!");
+          // alert("Quiz updated successfully!");
         } else {
           await addQuiz(lessonId, data);
-          alert("Quiz added successfully!");
+          // alert("Quiz added successfully!");
         }
       }
 
