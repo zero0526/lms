@@ -27,6 +27,9 @@ import EditCourse from "./pages/teacher/EditCourse";
 // Forum Page
 import Forum from "./pages/Forum";
 
+// Notification Page
+import Notification from "./pages/Notification";
+
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function OAuthCallbackHandler() {
@@ -210,6 +213,16 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={["ROLE_STUDENT", "ROLE_TEACHER"]}>
                 <Forum />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* --- NOTIFICATION ROUTE --- */}
+          <Route 
+            path="/notifications" 
+            element={
+              <ProtectedRoute allowedRoles={["ROLE_STUDENT", "ROLE_TEACHER"]}>
+                <Notification />
               </ProtectedRoute>
             } 
           />
