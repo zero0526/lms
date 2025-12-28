@@ -10,9 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@livekit/components-react": "^2.9.17",
     "@tailwindcss/vite": "^4.1.15",
     "axios": "^1.13.2",
     "clsx": "^2.1.1",
+    "livekit-client": "^2.16.1",
     "lucide-react": "^0.546.0",
     "react": "^19.1.1",
     "react-circular-progressbar": "^2.2.0",

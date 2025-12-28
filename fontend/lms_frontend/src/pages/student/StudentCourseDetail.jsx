@@ -145,12 +145,12 @@ export default function StudentCourseDetail() {
       const enrollResult = await enrollCourse(currentUser.userId, courseId);
 
       if (enrollResult.status === 200) {
-        alert("Successfully enrolled in the course! Start learning now.");
+        // alert("Successfully enrolled in the course! Start learning now.");
         
-        // Fetch lại enrolled outline sau khi enroll
+        // Fetch the enrolled outline
         const enrolledOutline = await getCourseOutlineEnrolled(currentUser.userId, courseId);
         
-        console.log("📦 Enrolled outline after enroll:", enrolledOutline);
+        console.log("Enrolled outline after enroll:", enrolledOutline);
         
         setIsEnrolled(enrolledOutline.data?.isEnrolled || true);
         setCourseOutline(enrolledOutline.data?.chapters || []);
@@ -259,7 +259,7 @@ const handleSubmitReview = async () => {
 
     await submitCourseReview(reviewData);
     
-    alert("Your review has been submitted successfully!");
+    // alert("Your review has been submitted successfully!");
     
     // Reset form
     setUserRating(0);

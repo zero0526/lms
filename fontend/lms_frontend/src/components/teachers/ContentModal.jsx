@@ -77,6 +77,11 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
       } 
       else if (contentType === "quiz") {
         setActiveTab("quiz");
+
+        const questions = initialData.questions || [];
+        setQuizData(questions);
+
+        const totalScore = questions.reduce((sum, q) => sum + (parseInt(q.score) || 0), 0);
         
         setQuizSettings({
           title: initialData.title || "Quiz",
@@ -84,7 +89,7 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
           precondition: initialData.precondition || "None",
           timeLimit: initialData.timeLimit || 10,
           difficulty: initialData.difficulty || "Medium",
-          score: initialData.score || 0, // Changed from passScore
+          score: totalScore,
         });
         
         setQuizData(initialData.questions || []);

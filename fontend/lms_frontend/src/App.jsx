@@ -30,6 +30,10 @@ import Forum from "./pages/Forum";
 // Notification Page
 import Notification from "./pages/Notification";
 
+// Meeting Pages
+import MeetingPage from "./live_meet/pages/MeetingPage";
+import MeetingEndPage from "./live_meet/pages/EndPage";
+
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function OAuthCallbackHandler() {
@@ -223,6 +227,25 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={["ROLE_STUDENT", "ROLE_TEACHER"]}>
                 <Notification />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* --- MEETING ROUTES --- */}
+          <Route 
+            path="/meeting/room/:meetingId" 
+            element={
+              <ProtectedRoute allowedRoles={["ROLE_STUDENT", "ROLE_TEACHER"]}>
+                <MeetingPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/meeting/ended" 
+            element={
+              <ProtectedRoute allowedRoles={["ROLE_STUDENT", "ROLE_TEACHER"]}>
+                <MeetingEndPage />
               </ProtectedRoute>
             } 
           />

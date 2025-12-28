@@ -32,7 +32,6 @@ export default function CreateCourseModal({ isOpen, onClose, onCreate }) {
 
   const handleSubmit = () => {
     if (!formData.title.trim()) return alert("Please enter a course title");
-    if (!imageFile) return alert("Please select a thumbnail image");
 
     // Gửi toàn bộ dữ liệu ra ngoài cho component cha xử lý
     onCreate({
@@ -120,7 +119,7 @@ export default function CreateCourseModal({ isOpen, onClose, onCreate }) {
 
           {/* Image Upload */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-1">Thumbnail <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Thumbnail</label>
             <div 
               onClick={() => fileInputRef.current?.click()}
               className="border-2 border-dashed border-gray-300 rounded-xl h-40 flex flex-col items-center justify-center cursor-pointer hover:bg-teal-50 hover:border-[#00b6b6] transition relative overflow-hidden group bg-gray-50"
