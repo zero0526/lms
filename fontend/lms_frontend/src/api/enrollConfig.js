@@ -1,7 +1,9 @@
 import axios from "axios";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+
 const enrollClient = axios.create({
-  baseURL: "/enroll", // Proxy sẽ chuyển /enroll -> http://localhost:8081/enroll
+  baseURL: `${API_BASE_URL}/enroll`, // Proxy sẽ chuyển /enroll -> http://localhost:8081/enroll
   withCredentials: false,
 });
 
