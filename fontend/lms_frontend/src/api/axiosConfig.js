@@ -1,13 +1,14 @@
 import axios from "axios";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+
 const apiClient = axios.create({
-  baseURL: "/api",
+  baseURL: `${API_BASE_URL}/api`,
   withCredentials: true, // Enable cookies
 });
 
 apiClient.interceptors.request.use(
   (config) => {
-    // Ưu tiên token từ storage (normal login)
     let accessToken = localStorage.getItem("accessToken");
 
     if (!accessToken) {
@@ -16,10 +17,9 @@ apiClient.interceptors.request.use(
 
     if (accessToken) {
       config.headers["Authorization"] = `Bearer ${accessToken}`;
-      console.log('🔑 Using token from storage');
+      console.log('Using token from storage');
     } else {
-      // Nếu không có token, axios tự động gửi cookies (OAuth)
-      console.log('🍪 Using cookie-based auth');
+      console.log('Using cookie-based auth');
     }
 
     return config;
@@ -51,7 +51,7 @@ apiClient.interceptors.response.use(
           // Normal login: refresh with token
           console.log('🔑 Refreshing with storage token');
           const response = await axios.post(
-            '/api/auth/refresh',
+            `${API_BASE_URL}/api/auth/refresh`,
             { refreshToken },
             { withCredentials: true }
           );
@@ -69,7 +69,7 @@ apiClient.interceptors.response.use(
         } else {
           // OAuth login: refresh with cookie
           console.log('🍪 Refreshing with cookie');
-          await axios.post('/api/auth/refresh', {}, { withCredentials: true });
+          await axios.post(`${API_BASE_URL}/api/auth/refresh`, {}, { withCredentials: true });
           
           // Retry original request (new token in cookie)
           return apiClient(originalRequest);

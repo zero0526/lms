@@ -11,22 +11,22 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8081',
+        target: process.env.VITE_API_URL ||  'http://localhost:8081',
         changeOrigin: true,
         secure: false,
         configure: (proxy, _options) => {
           proxy.on('proxyReq', (proxyReq, req, _res) => {
-            proxyReq.setHeader('Origin', 'http://localhost:8081');
+            proxyReq.setHeader('Origin', process.env.VITE_API_URL ||  'http://localhost:8081');
           });
         },
       },
       '/enroll': {
-        target: 'http://localhost:8081',
+        target: process.env.VITE_API_URL ||  'http://localhost:8081',
         changeOrigin: true,
         secure: false,
         configure: (proxy, _options) => {
           proxy.on('proxyReq', (proxyReq, req, _res) => {
-            proxyReq.setHeader('Origin', 'http://localhost:8081');
+            proxyReq.setHeader('Origin', process.env.VITE_API_URL ||  'http://localhost:8081');
           });
         },
       },

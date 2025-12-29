@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// API base URL
-const API_URL = import.meta.env.VITE_MEETING_API_URL || 'http://localhost:8081/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081';
+const API_URL = `${API_BASE_URL}/api`;
 
 // LiveKit WebSocket URL - used to replace Docker hostname
 const LIVEKIT_WS_URL = import.meta.env.VITE_LIVEKIT_WS_URL || 'ws://localhost:7880';
