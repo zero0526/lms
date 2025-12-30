@@ -6,7 +6,7 @@ import apiClient from "../api/axiosConfig";
 import { useUser } from "../contexts/UserContext";
 import ForgotPasswordModal from "../components/ForgotPasswordModal";
 
-const BACKEND_URL = "http://localhost:8081";
+const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:8081";
 
 const GoogleIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24">
