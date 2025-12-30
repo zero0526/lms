@@ -1,4 +1,5 @@
 import axios from "axios";
+import { redirectToLogin } from "./utils/navigationHelper";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
@@ -75,7 +76,7 @@ apiClient.interceptors.response.use(
         sessionStorage.removeItem("refreshToken");
         sessionStorage.removeItem("user");
         
-        window.location.href = "/login";
+        redirectToLogin();
         return Promise.reject(refreshError);
       }
     }
@@ -85,7 +86,7 @@ apiClient.interceptors.response.use(
       localStorage.removeItem("user");
       sessionStorage.removeItem("accessToken");
       sessionStorage.removeItem("user");
-      window.location.href = "/login";
+      redirectToLogin();
     }
     
     return Promise.reject(error);
