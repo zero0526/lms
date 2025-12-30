@@ -8,8 +8,6 @@ import ForgotPasswordModal from "../components/ForgotPasswordModal";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:8081";
 
-console.log("Backend URL:", BACKEND_URL);
-
 const GoogleIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24">
     <path
@@ -84,8 +82,6 @@ export default function Login() {
     try {
       const response = await apiClient.post('/auth/login', payload);
       const responseData = response.data.data;
-
-      console.log("Login Response Data:", responseData);
 
       const accessToken = responseData.accessToken;
       const refreshToken = responseData.refreshToken;
