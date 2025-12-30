@@ -16,16 +16,11 @@ const SimpleModal = ({ isOpen, onClose, onSave, title, placeholder, initialValue
       alert("Please enter a value");
       return;
     }
-
-    console.log("=== SIMPLE MODAL: CONFIRM ===");
-    console.log(`Input Value: ${value}`);
     
     try {
-      await onSave(value);  // ← Đợi onSave hoàn thành
-      console.log("onSave completed successfully");
+      await onSave(value);
     } catch (error) {
       console.error("onSave failed:", error);
-      // ← KHÔNG đóng modal nếu có lỗi
       return;
     }
   };

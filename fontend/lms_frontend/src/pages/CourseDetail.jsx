@@ -29,13 +29,9 @@ useEffect(() => {
         getCourseOutlinePublic(courseId)
       ]);
 
-      console.log("Course Details:", detailsData);
-      console.log("Course Outline:", outlineData);
-
       setCourseDetails(detailsData.data);
 
       const chapters = outlineData.data?.chapters || [];
-      console.log("Extracted chapters:", chapters);
       setCourseOutline(chapters);
 
       setIsLoading(false);

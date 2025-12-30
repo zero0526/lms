@@ -15,7 +15,6 @@ export const UserProvider = ({ children }) => {
       if (storedUser) {
         try {
           const parsedUser = JSON.parse(storedUser);
-          console.log("User restored:", parsedUser);
           setUser(parsedUser);
         } catch (error) {
           console.error("Error parsing user data:", error);
@@ -29,8 +28,6 @@ export const UserProvider = ({ children }) => {
   }, []);
 
   const updateUser = (newUserData) => {
-    console.log("Updating user context:", newUserData);
-    
     const normalizedData = {
       ...newUserData,
       avatar: newUserData.pictureUrl || newUserData.avatar,
@@ -49,8 +46,6 @@ export const UserProvider = ({ children }) => {
 
   // Logout function
   const logout = () => {
-    console.log("🚪 Logging out...");
-    
     // Clear storage
     localStorage.removeItem("user");
     localStorage.removeItem("accessToken");

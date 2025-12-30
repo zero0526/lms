@@ -32,23 +32,18 @@ export const useChat = (sessionId, currentUserId, currentUserName, currentUserAv
   // 2. Listen for realtime messages from LiveKit
   useEffect(() => {
     const handleDataReceived = (payload, _participant) => {
-      console.log("RECEIVED DATA FROM LIVEKIT:", payload);
       try {
         const decoder = new TextDecoder();
         const strData = decoder.decode(payload);
-        console.log("DECODED DATA:", strData);
         
         // Parse full ChatMessageResponse object from broadcast
         const msgData = JSON.parse(strData); 
 
         if (msgData.content && msgData.senderId) {
-          console.log("PROCESS CHAT MESSAGE:", msgData);
           if (String(msgData.senderId) !== String(currentUserId)) {
             const incomingMsg = { ...msgData, isSelf: false };
             setMessages(prev => [...prev, incomingMsg]);
             setLastMessage(incomingMsg);
-          } else {
-            console.log("MESSAGE IS FROM SELF (Skipping update from websocket)");
           }
         }
       } catch (e) {
@@ -57,10 +52,8 @@ export const useChat = (sessionId, currentUserId, currentUserName, currentUserAv
     };
 
     if (room) {
-      console.log("ATTACHING CHAT LISTENER TO ROOM:", room.name);
       room.on(RoomEvent.DataReceived, handleDataReceived);
       return () => {
-        console.log("DETACHING CHAT LISTENER FROM ROOM:", room.name);
         room.off(RoomEvent.DataReceived, handleDataReceived);
       };
     }
@@ -102,8 +95,6 @@ export const useChat = (sessionId, currentUserId, currentUserName, currentUserAv
         isSelf: true
       };
 
-      console.log("PREPARING TO BROADCAST:", fullMsg);
-
       // Update local state immediately
       setMessages(prev => [...prev, fullMsg]);
       setLastMessage(fullMsg);
@@ -116,7 +107,6 @@ export const useChat = (sessionId, currentUserId, currentUserName, currentUserAv
           await room.localParticipant.publishData(data, {
             reliable: true
           });
-          console.log("CLIENT BROADCAST SUCCESSFUL");
         } catch (broadcastErr) {
           console.warn("Failed to broadcast message (room may be disconnected):", broadcastErr);
         }

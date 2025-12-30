@@ -178,9 +178,6 @@ export const ChapterItem = ({
           <button 
             onClick={(e) => { 
               e.stopPropagation(); 
-              console.log(`=== DELETE CHAPTER CLICKED ===`);
-              console.log(`Chapter ID: ${chapter.id}`);
-              console.log(`Chapter Title: ${chapter.title}`);
               onDelete(chapter.id);  // ← GỌI onDelete với chapter.id
             }}
             className="p-2 text-gray-500 hover:text-red-600 rounded-full">
@@ -198,12 +195,10 @@ export const ChapterItem = ({
               index={lIndex}
               lesson={lesson}
               isExpanded={expandedLessons[lesson.id]}
-              onToggle={(lessonId) => toggleLesson(lessonId)} // Pass ID lên trên
+              onToggle={(lessonId) => toggleLesson(lessonId)}
               onEdit={onEditLesson}
               onDelete={(lessonId) => {
-                console.log(`=== CHAPTER ITEM: onDelete callback ===`);
-                console.log(`Calling onDeleteLesson with lessonId: ${lessonId}`);
-                onDeleteLesson(lessonId);  // ← GỌI onDeleteLesson (deleteLesson function)
+                onDeleteLesson(lessonId); 
               }}
               onAddContent={onAddContent}
               onEditContent={onEditContent}

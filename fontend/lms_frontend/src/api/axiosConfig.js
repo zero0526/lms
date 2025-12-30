@@ -10,18 +10,12 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     let accessToken = localStorage.getItem("accessToken");
-
     if (!accessToken) {
       accessToken = sessionStorage.getItem("accessToken");
     }
-
     if (accessToken) {
       config.headers["Authorization"] = `Bearer ${accessToken}`;
-      console.log('Using token from storage');
-    } else {
-      console.log('Using cookie-based auth');
     }
-
     return config;
   },
   (error) => {
@@ -41,15 +35,12 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        console.log('🔄 Token expired, attempting refresh...');
-
         // Try refresh token from storage (normal login)
         const refreshToken = localStorage.getItem('refreshToken') || 
                             sessionStorage.getItem('refreshToken');
 
         if (refreshToken) {
           // Normal login: refresh with token
-          console.log('🔑 Refreshing with storage token');
           const response = await axios.post(
             `${API_BASE_URL}/api/auth/refresh`,
             { refreshToken },
@@ -68,14 +59,13 @@ apiClient.interceptors.response.use(
           return apiClient(originalRequest);
         } else {
           // OAuth login: refresh with cookie
-          console.log('🍪 Refreshing with cookie');
           await axios.post(`${API_BASE_URL}/api/auth/refresh`, {}, { withCredentials: true });
           
           // Retry original request (new token in cookie)
           return apiClient(originalRequest);
         }
       } catch (refreshError) {
-        console.error('❌ Refresh failed');
+        console.error('Refresh failed');
         
         // Clear all credentials
         localStorage.removeItem("accessToken");

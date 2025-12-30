@@ -60,7 +60,6 @@ export default function Login() {
     
     // Redirect to OAuth
     const targetUrl = `${BACKEND_URL}/oauth2/authorization/${provider}?role=${encodeURIComponent(roleName)}`;
-    console.log("🔐 Redirecting to OAuth:", targetUrl);
     window.location.href = targetUrl;
   };
 
@@ -79,12 +78,10 @@ export default function Login() {
       password: password,
       role: roleName, 
     };
-    console.log("Sending Login Payload:", payload);
 
     try {
       const response = await apiClient.post('/auth/login', payload);
       const responseData = response.data.data;
-      console.log("Login Success:", responseData);
 
       const accessToken = responseData.accessToken;
       const refreshToken = responseData.refreshToken;
@@ -114,7 +111,6 @@ export default function Login() {
       }
 
       setUser(userToSave);
-      console.log("🔑 Normal login completed");
 
       // Redirect
       if (redirectTo) {
@@ -124,7 +120,7 @@ export default function Login() {
       }
       
     } catch (err) {
-      console.error("❌ Login Error:", err);
+      console.error("Login Error:", err);
       
       if (err instanceof AxiosError) {
         if (err.response) {

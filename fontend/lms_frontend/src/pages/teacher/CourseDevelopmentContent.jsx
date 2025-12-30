@@ -83,8 +83,6 @@ export default function CourseDevelopmentContent() {
       const response = await apiClient.post("/course/post", formData);
 
       if (response.status === 200 || response.status === 201) {
-        console.log("Create Response Data:", response.data); 
-
         const realId = response.data?.data?.id 
                     || response.data?.id 
                     || response.data?.courseId 

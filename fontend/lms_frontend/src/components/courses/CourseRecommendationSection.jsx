@@ -24,17 +24,10 @@ export default function CourseRecommendationSection() {
         const userId = getCurrentUserId();
         
         if (!userId) {
-          console.log("⚠️ No user logged in, skipping recommendations");
           setIsLoading(false);
           return;
         }
-
-        console.log("📚 Fetching recommended courses for user:", userId);
-        
         const response = await getRecommendedCourses(userId);
-        
-        console.log("Recommended courses response:", response);
-        
         // Transform data từ BE sang format của component
         const transformedCourses = (response.data || []).map(course => ({
           id: course.id,
@@ -49,9 +42,6 @@ export default function CourseRecommendationSection() {
           price: 0, // Free courses
           isCompleted: course.isCompleted
         }));
-        
-        console.log("🔄 Transformed courses:", transformedCourses);
-        
         setCourses(transformedCourses);
         setIsLoading(false);
       } catch (err) {

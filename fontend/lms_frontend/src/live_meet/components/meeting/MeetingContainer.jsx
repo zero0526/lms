@@ -21,7 +21,6 @@ export default function MeetingContainer(props) {
       style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}
       onConnected={() => console.log('LiveKit CONNECTED')}
       onDisconnected={(reason) => {
-        console.log('LiveKit DISCONNECTED:', reason);
         props.onLeave();
       }}
       onError={(err) => console.error('LiveKit ERROR:', err)}

@@ -24,17 +24,12 @@ export default function StudentLearningSection() {
         const userId = getCurrentUserId();
         
         if (!userId) {
-          console.log("⚠️ No user logged in");
           setError("Please log in to view your courses");
           setIsLoading(false);
           return;
         }
-
-        console.log("📚 Fetching enrolled courses for user:", userId);
         
         const response = await getEnrolledCourses(userId);
-        
-        console.log("Response:", response);
         
         // Transform data từ BE sang format của component
         const transformedCourses = (response.data || []).map(course => ({
@@ -49,8 +44,6 @@ export default function StudentLearningSection() {
           progressPercent: course.progress * 2,
           isPublished: course.isCompleted
         }));
-        
-        console.log("🔄 Transformed courses:", transformedCourses);
         
         setCourses(transformedCourses);
         setIsLoading(false);

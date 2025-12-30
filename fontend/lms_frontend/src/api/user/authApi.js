@@ -1,17 +1,8 @@
 import apiClient from "../axiosConfig";
 import apiPublicClient from "../axiosPublicConfig";
 
-/**
- * Change user password
- * @param {number} userId 
- * @param {string} currentPassword 
- * @param {string} newPassword 
- */
 export const changeUserPassword = async (userId, currentPassword, newPassword) => {
   try {
-    console.log("=== CHANGE PASSWORD ===");
-    console.log(`User ID: ${userId}`);
-
     const payload = {
       currentPassword,
       newPassword
@@ -20,7 +11,6 @@ export const changeUserPassword = async (userId, currentPassword, newPassword) =
     const res = await apiClient.post(`/user/update/password/${userId}`, payload);
 
     if (res.status === 200) {
-      console.log("Password changed successfully");
       return res.data;
     }
 
@@ -35,20 +25,10 @@ export const changeUserPassword = async (userId, currentPassword, newPassword) =
   }
 };
 
-/**
- * Request forgot password (send reset email)
- * @param {string} email - User email
- */
 export const requestForgotPassword = async (email) => {
   try {
-    console.log("=== FORGOT PASSWORD REQUEST ===");
-    console.log(`Email: ${email}`);
-
     const payload = { email: email.trim() };
-
     const response = await apiClient.post('/user/forgot/password', payload);
-
-    console.log("Forgot password request successful:", response.data);
     return response.data;
   } catch (error) {
     console.error("Forgot password request failed:", error);
@@ -66,35 +46,20 @@ export const requestForgotPassword = async (email) => {
   }
 };
 
-/**
- * Reset password với token (KHÔNG CẦN AUTH)
- * @param {string} token - Reset token từ email
- * @param {number} userId - User ID
- * @param {string} newPassword - Mật khẩu mới
- */
 export const resetPassword = async (token, userId, newPassword) => {
   try {
-    console.log("=== RESET PASSWORD ===");
-    console.log(`Token: ${token}`);
-    console.log(`User ID: ${userId}`);
-    console.log(`New Password: ${newPassword}`);
-
     const payload = { newPassword };
-
-    // Thêm maxRedirects: 0 để không follow redirect
     const response = await apiPublicClient.post(
       `/user/forgot?token=${token}&userId=${userId}`,
       payload,
       {
         maxRedirects: 0,
         validateStatus: function (status) {
-          // Chấp nhận cả 200, 302 là success
           return status >= 200 && status < 400;
         }
       }
     );
 
-    console.log("Reset password successful:", response.status);
     return response.data;
   } catch (error) {
     console.error("Reset password failed:", error);
@@ -105,7 +70,6 @@ export const resetPassword = async (token, userId, newPassword) => {
       
       // Xử lý 302 redirect
       if (error.response.status === 302) {
-        console.log("Password reset successful (got 302 redirect)");
         return { success: true, message: "Password reset successful" };
       }
       
@@ -134,14 +98,12 @@ export const resetPassword = async (token, userId, newPassword) => {
 
 /**
  * Logout user - Clear HTTP-only cookies và storage
- * @param {Object} userData - User data from storage
+ * @param {Object} userData 
  */
 export const logoutUser = async (userData) => {
   try {
-    console.log("🚪 Logging out...");
-    
     if (!userData || !userData.email) {
-      console.warn("⚠️ No user data found, clearing storage only");
+      console.warn("No user data found, clearing storage only");
       clearStorage();
       return;
     }
@@ -149,36 +111,23 @@ export const logoutUser = async (userData) => {
     // Prepare logout payload
     const logoutPayload = {
       email: userData.email,
-      password: "", // Backend có thể không cần password khi logout
+      password: "",
       fullName: userData.fullName || userData.userName || "",
       roleName: userData.role || "ROLE_STUDENT"
     };
-
-    console.log("📤 Sending logout request:", { email: logoutPayload.email, role: logoutPayload.roleName });
-
-    // Gọi backend để xóa HTTP-only cookies
     const response = await apiClient.post('/auth/logout', logoutPayload, {
-      withCredentials: true // ← Gửi cookies
+      withCredentials: true
     });
 
-    if (response.status === 200) {
-      console.log("Backend logout successful:", response.data);
-    }
-
   } catch (error) {
-    console.error("⚠️ Logout API error:", error);
-    
+    console.error("Logout API error:", error); 
     if (error.response) {
       console.error("Error status:", error.response.status);
       console.error("Error data:", error.response.data);
     }
-    
-    // Vẫn tiếp tục clear storage dù API lỗi
-    console.log("⚠️ Continuing to clear storage despite API error");
   } finally {
     // Luôn clear storage
     clearStorage();
-    console.log("User logged out from frontend");
   }
 };
 

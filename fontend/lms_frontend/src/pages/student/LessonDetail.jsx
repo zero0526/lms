@@ -50,7 +50,6 @@ export default function LessonPage() {
 
     // API ready callback
     window.onYouTubeIframeAPIReady = () => {
-      console.log("YouTube IFrame API Ready");
       setYoutubeReady(true);
     };
 
@@ -89,12 +88,8 @@ export default function LessonPage() {
           setIsLoading(false);
           return;
         }
-
-        console.log("Fetching lesson detail for lessonId:", lessonId);
         
         const response = await getLessonDetail(userId, lessonId);
-        
-        console.log("Lesson data:", response.data);
         
         setLessonData(response.data);
         setVideoEnded(false);
@@ -130,8 +125,6 @@ export default function LessonPage() {
       return;
     }
 
-    console.log("🎬 Initializing YouTube Player with ID:", videoId);
-
     // Destroy existing player
     if (youtubePlayerRef.current) {
       youtubePlayerRef.current.destroy();
@@ -166,19 +159,16 @@ export default function LessonPage() {
 
     // Playing state
     if (event.data === window.YT.PlayerState.PLAYING) {
-      console.log("▶️ Video Playing");
       startYouTubeProgressTracking();
     }
 
     // Paused state
     if (event.data === window.YT.PlayerState.PAUSED) {
-      console.log("⏸️ Video Paused");
       stopProgressTracking();
     }
 
     // Ended state
     if (event.data === window.YT.PlayerState.ENDED) {
-      console.log("🎉 Video Ended");
       handleVideoEnded();
     }
   };
@@ -193,15 +183,11 @@ export default function LessonPage() {
       clearInterval(progressIntervalRef.current);
     }
 
-    console.log("📹 Starting YouTube progress tracking (every 10 seconds)");
-
     progressIntervalRef.current = setInterval(async () => {
       try {
         if (!youtubePlayerRef.current) return;
 
         const currentTime = Math.floor(youtubePlayerRef.current.getCurrentTime());
-        
-        console.log(`⏱️ YouTube Progress: ${currentTime}s`);
 
         await updateVideoProgress(userId, lessonId, courseId, currentTime);
       } catch (error) {
@@ -215,7 +201,6 @@ export default function LessonPage() {
     if (progressIntervalRef.current) {
       clearInterval(progressIntervalRef.current);
       progressIntervalRef.current = null;
-      console.log("⏹️ Progress tracking stopped");
     }
   };
 
@@ -233,14 +218,11 @@ export default function LessonPage() {
 
     // Start tracking progress every 10 seconds
     const startProgressTracking = () => {
-      console.log("📹 Starting HTML5 video progress tracking");
       
       progressIntervalRef.current = setInterval(async () => {
         if (video.paused || video.ended) return;
         
         const currentTime = Math.floor(video.currentTime);
-        
-        console.log(`⏱️ HTML5 Progress: ${currentTime}s`);
         
         try {
           await updateVideoProgress(userId, lessonId, courseId, currentTime);
@@ -279,7 +261,6 @@ export default function LessonPage() {
 
   // Handle video ended (both YouTube and HTML5)
   const handleVideoEnded = async () => {
-    console.log("🎉 Video ended - updating final progress");
     
     setVideoEnded(true);
     stopProgressTracking();
@@ -296,14 +277,10 @@ export default function LessonPage() {
       } else if (videoRef.current) {
         finalTime = Math.floor(videoRef.current.duration);
       }
-      
-      console.log(`📤 Sending final progress: ${finalTime}s`);
 
       // Update final progress
       await updateVideoProgress(userId, lessonId, courseId, finalTime);
-      
-      console.log("Final progress updated, refreshing course outline...");
-      
+            
       // Refresh course outline to get updated progress
       await getCourseOutlineEnrolled(userId, courseId);
       

@@ -55,7 +55,6 @@ export default function TeacherCourseDetail() {
 
   // Reset states when courseId changes
   useEffect(() => {
-    console.log("🔄 Course ID changed to:", courseId);
     
     setCourseDetails(null);
     setCourseOutline([]);
@@ -77,21 +76,17 @@ export default function TeacherCourseDetail() {
       try {
         setIsLoading(true);
 
-        console.log("📚 Fetching course data for courseId:", courseId);
-
         // 1. Fetch course details
         const detailsData = await getCourseDetails(courseId);
-        console.log("📦 Course details:", detailsData.data);
         setCourseDetails(detailsData.data);
 
         // 2. Fetch public outline (teacher doesn't need enrollment check)
         const outlineData = await getCourseOutlinePublic(courseId);
-        console.log("📦 Course outline:", outlineData.data);
         setCourseOutline(outlineData.data?.chapters || []);
         
         setIsLoading(false);
       } catch (err) {
-        console.error("❌ Failed to fetch course data:", err);
+        console.error("Failed to fetch course data:", err);
         setError("Unable to load course information. Please try again later.");
         setIsLoading(false);
       }
@@ -109,8 +104,6 @@ export default function TeacherCourseDetail() {
         setIsLoadingReviews(true);
         const reviewsData = await getCourseReviews(courseId, reviewPage, reviewLimit);
         
-        console.log("📝 Reviews data:", reviewsData);
-        
         if (reviewsData.data && reviewsData.data.content) {
           setReviews(prev => reviewPage === 0 ? reviewsData.data.content : [...prev, ...reviewsData.data.content]);
           setHasMoreReviews(!reviewsData.data.last);
@@ -118,7 +111,7 @@ export default function TeacherCourseDetail() {
         
         setIsLoadingReviews(false);
       } catch (err) {
-        console.error("❌ Failed to fetch reviews:", err);
+        console.error("Failed to fetch reviews:", err);
         setIsLoadingReviews(false);
       }
     };
@@ -196,7 +189,6 @@ export default function TeacherCourseDetail() {
     setIsCreatingMeeting(true);
     try {
       const response = await createMeeting(courseId, title, description);
-      console.log("Meeting created:", response);
       
       // Extract meeting ID from response to build internal link
       let link = "";

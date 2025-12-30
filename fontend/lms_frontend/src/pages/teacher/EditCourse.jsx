@@ -98,8 +98,6 @@ export default function EditCourse() {
           };
         });
       });
-
-      console.log("Mapped Structure Updated");
     } catch (error) {
       console.error("Error fetching course:", error);
     }
@@ -127,7 +125,6 @@ export default function EditCourse() {
         }
 
         if (lesson && !lesson.isDetailsLoaded) {
-          console.log(`Auto-fetching details for lesson ${lessonId} (chapter ${chapterId})`);
           handleFetchLessonDetails(lessonId, chapterId);
         }
       }
@@ -247,10 +244,6 @@ export default function EditCourse() {
       }
     });
 
-    console.log(`=== OPEN ADD CONTENT ===`);
-    console.log(`Lesson ID: ${lessonId}`);
-    console.log(`Chapter ID: ${chapterId}`);
-
     setContentModal({
       isOpen: true,
       type: "add",
@@ -269,11 +262,6 @@ export default function EditCourse() {
         chapterId = ch.id;
       }
     });
-
-    console.log(`=== OPEN EDIT CONTENT ===`);
-    console.log(`Lesson ID: ${lessonId}`);
-    console.log(`Content Type: ${contentType}`);
-    console.log(`Content Data:`, contentData);
 
     if (contentType === "quiz") {
       setIsLoading(true);
@@ -422,11 +410,6 @@ export default function EditCourse() {
   const handleSaveContentModal = async (payload) => {
     const { lessonId, chapterId } = contentModal;
     const { contentType, data } = payload;
-
-    console.log("=== SAVE CONTENT ===");
-    console.log(`Chapter ID: ${chapterId}`);
-    console.log(`Lesson ID: ${lessonId}`);
-    console.log(`Content Type: ${contentType}`);
 
     setIsLoading(true);
 

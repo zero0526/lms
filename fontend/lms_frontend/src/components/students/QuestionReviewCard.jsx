@@ -49,7 +49,6 @@ export default function QuestionReviewCard({ question, questionNumber }) {
     try {
       setIsLoadingComments(true);
       const fetchedComments = await fetchQuestionComments(question.qId);
-      console.log("Fetched comments:", fetchedComments);
       setComments(fetchedComments);
       setCommentCount(fetchedComments.length);
     } catch (error) {
@@ -81,11 +80,6 @@ export default function QuestionReviewCard({ question, questionNumber }) {
 
     try {
       setIsPosting(true);
-      console.log("Posting comment...", {
-        userId: user.userId,
-        questionId: question.qId,
-        content: newComment
-      });
       
       await postQuestionComment(user.userId, question.qId, newComment, null);
       setNewComment("");
@@ -109,13 +103,6 @@ export default function QuestionReviewCard({ question, questionNumber }) {
     }
 
     try {
-      console.log("Posting reply...", {
-        userId: user.userId,
-        questionId: question.qId,
-        parentCommentId,
-        content
-      });
-      
       await postQuestionComment(user.userId, question.qId, content, parentCommentId);
       
       // Reload comments and update count

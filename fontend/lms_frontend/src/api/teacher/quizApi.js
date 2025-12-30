@@ -5,19 +5,10 @@ import apiClient from "../axiosConfig";
  */
 export const fetchQuizDetails = async (quizId) => {
   try {
-    console.log(`=== FETCHING QUIZ DETAILS ===`);
-    console.log(`Quiz ID: ${quizId}`);
-    
     const res = await apiClient.get(`/quiz/${quizId}`);
-    console.log("Quiz Details Response:", res.data);
-    
     const quizData = res.data.data;
-    
-    if (quizData) {
-      console.log(`Quiz Title: ${quizData.title}`);
-      console.log(`Question Count: ${quizData.questions.length}`);
-      
-      // ← Transform backend data sang format của ContentModal
+    if (quizData) { 
+      // Transform backend data sang format của ContentModal
       const transformedData = {
         id: quizData.id,
         title: quizData.title,
@@ -42,8 +33,7 @@ export const fetchQuizDetails = async (quizId) => {
           })),
         })),
       };
-      
-      console.log("Transformed Quiz Data:", transformedData);
+
       return transformedData;
     }
     
@@ -64,10 +54,6 @@ export const fetchQuizDetails = async (quizId) => {
 export const addQuiz = async (lessonId, quizData) => {
   try {
     const formData = buildQuizFormData(quizData, false);
-    
-    console.log("=== ADD QUIZ ===");
-    console.log(`Lesson ID: ${lessonId}`);
-    logFormData(formData);
 
     const res = await apiClient.put(`/lesson/${lessonId}/add-quiz`, formData, {
       headers: { "Content-Type": undefined },
@@ -86,11 +72,6 @@ export const addQuiz = async (lessonId, quizData) => {
 export const updateQuiz = async (quizId, quizData) => {
   try {
     const formData = buildQuizFormData(quizData, true);
-    
-    console.log("=== UPDATE QUIZ ===");
-    console.log(`Quiz ID: ${quizId}`);
-    logFormData(formData);
-
     const res = await apiClient.put(`/quiz/${quizId}`, formData, {
       headers: { "Content-Type": undefined },
     });
@@ -121,10 +102,9 @@ function buildQuizFormData(data, isEditMode) {
   questions.forEach((q, qIdx) => {
     formData.append(`questions[${qIdx}].qText`, q.question);
     
-    // ← IMAGE: Chỉ append nếu là File (upload mới)
+    // IMAGE: Chỉ append nếu là File
     if (q.qImage && q.qImage instanceof File) {
       formData.append(`questions[${qIdx}].qImage`, q.qImage);
-      console.log(`  → Question ${qIdx + 1}: Uploading NEW image`);
     }
     
     formData.append(`questions[${qIdx}].explanation`, q.explanation || "");
@@ -132,22 +112,18 @@ function buildQuizFormData(data, isEditMode) {
     formData.append(`questions[${qIdx}].score`, q.score.toString());
     formData.append(`questions[${qIdx}].order`, (qIdx + 1).toString());
 
-    // ← question.id (nếu EDIT và ID hợp lệ)
+    // question.id
     if (isEditMode && q.id && typeof q.id === 'number' && q.id < 1000000) {
       formData.append(`questions[${qIdx}].id`, q.id.toString());
-      console.log(`  → Question ${qIdx + 1}: Existing ID = ${q.id}`);
-    } else {
-      console.log(`  → Question ${qIdx + 1}: NEW question (no ID)`);
     }
 
-    // ← OPTIONS
+    // OPTIONS
     q.options.forEach((opt, oIdx) => {
       formData.append(`questions[${qIdx}].mcqContents[${oIdx}].cText`, opt.text);
       
       // ← IMAGE
       if (opt.cImage && opt.cImage instanceof File) {
         formData.append(`questions[${qIdx}].mcqContents[${oIdx}].cImage`, opt.cImage);
-        console.log(`    → Option ${oIdx + 1}: Uploading NEW image`);
       }
       
       formData.append(`questions[${qIdx}].mcqContents[${oIdx}].isCorrect`, opt.isCorrect.toString());
@@ -155,26 +131,9 @@ function buildQuizFormData(data, isEditMode) {
       // ← option.id (nếu EDIT và ID hợp lệ)
       if (isEditMode && opt.id && typeof opt.id === 'number' && opt.id > 100) {
         formData.append(`questions[${qIdx}].mcqContents[${oIdx}].id`, opt.id.toString());
-        console.log(`    → Option ${oIdx + 1}: Existing ID = ${opt.id}`);
-      } else {
-        console.log(`    → Option ${oIdx + 1}: NEW option (no ID)`);
       }
     });
   });
 
   return formData;
-}
-
-/**
- * Helper: Log FormData content
- */
-function logFormData(formData) {
-  console.log("=== FormData Content ===");
-  for (let pair of formData.entries()) {
-    if (pair[1] instanceof File) {
-      console.log(`${pair[0]}: [File: ${pair[1].name}, Size: ${pair[1].size}]`);
-    } else {
-      console.log(`${pair[0]}: ${pair[1]}`);
-    }
-  }
 }
