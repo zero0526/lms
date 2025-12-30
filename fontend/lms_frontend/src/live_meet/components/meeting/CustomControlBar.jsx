@@ -47,8 +47,6 @@ export default function CustomControlBar({
       alert('Teacher has disabled your Camera permissions.');
       return;
     }
-
-    console.log('Toggle Camera. Current:', isCamOn);
     setCamBusy(true);
 
     try {
@@ -87,15 +85,6 @@ export default function CustomControlBar({
     stopRecording,
   } = useRecording(room.name, initialEgressId);
 
-  /* ================= DEBUG LOG ================= */
-  useEffect(() => {
-    console.log('--- ROOM STATE ---');
-    console.log('Mic:', isMicOn);
-    console.log('Cam:', isCamOn);
-    console.log('Room:', room.state);
-  }, [isMicOn, isCamOn, room.state]);
-
-  /* ================= UI ================= */
   return (
     <div className="h-20 bg-gray-900 border-t border-gray-800 flex items-center justify-center gap-4 px-4 z-50">
       

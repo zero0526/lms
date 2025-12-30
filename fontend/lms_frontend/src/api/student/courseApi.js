@@ -7,11 +7,8 @@ export const getEnrolledCourses = async (userId) => {
   }
 
   try {
-    console.log("Fetching enrolled courses for userId:", userId);
     
     const response = await apiClient.get(`/course/${userId}`);
-    
-    console.log("Enrolled courses response:", response.data);
     
     return response.data;
   } catch (error) {
@@ -62,9 +59,7 @@ export const checkCourseCompletion = async (userId, courseId) => {
 
 export const getRecommendedCourses = async (userId) => {
   try {
-    console.log(`Fetching recommended courses for user: ${userId}`);
     const response = await apiClient.get(`/course/recommend/${userId}`);
-    console.log("Recommended courses response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Failed to fetch recommended courses:", error);

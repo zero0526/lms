@@ -93,8 +93,6 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
         });
         
         setQuizData(initialData.questions || []);
-        
-        console.log("Loaded Quiz Data:", initialData.questions);
       }
     } else {
       setIsEditMode(false);
@@ -112,7 +110,6 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
   const handleVideoUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    console.log("📹 Video file selected:", file.name);
     setIsLoadingDuration(true);
     setVideoData(prev => ({
       ...prev,
@@ -129,8 +126,6 @@ const ContentModal = ({ isOpen, onClose, onSave, initialData = null, contentType
     videoElement.onloadedmetadata = function() {
       window.URL.revokeObjectURL(videoElement.src);
       const durationInSeconds = Math.round(videoElement.duration);
-      
-      console.log("Video duration auto-detected:", durationInSeconds, "seconds");
       
       setVideoData(prev => ({
         ...prev,

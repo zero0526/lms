@@ -36,7 +36,6 @@ export default function CommentItem({
       setRepliesError(null);
       
       try {
-        console.log(`🔍 Fetching replies for comment ${comment.id}`);
         const response = await getCommentReplies(comment.id);
         
         // Transform data
@@ -50,8 +49,6 @@ export default function CommentItem({
           isEdited: reply.isEdited,
           numOfChild: reply.numOfChild
         }));
-        
-        console.log("Replies loaded:", transformedReplies);
         setReplies(transformedReplies);
         setShowReplies(true);
       } catch (error) {

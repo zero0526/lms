@@ -184,8 +184,6 @@ const handleLogout = async () => {
   };
 
   const avatarUrl = user?.avatar || user?.pictureUrl;
-  console.log("Navbar avatarUrl:", avatarUrl);
-  console.log("User object:", user);
 
   return (
     <nav className="flex justify-between items-center px-4 md:px-10 py-4 bg-[#00b6b6] text-white fixed top-0 w-full z-50">

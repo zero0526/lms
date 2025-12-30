@@ -35,13 +35,7 @@ export default function StudentCourseContent({ currentLessonId, onLessonChange }
         setIsLoading(false);
         return;
       }
-
-      console.log("Fetching course outline for courseId:", courseId);
-      
       const response = await getCourseOutlineEnrolled(userId, courseId);
-      
-      console.log("Course outline response:", response);
-      
       const chaptersData = response.data?.chapters || [];
       setChapters(chaptersData);
       
@@ -84,7 +78,6 @@ export default function StudentCourseContent({ currentLessonId, onLessonChange }
   // Listen for outline update events
   useEffect(() => {
     const handleOutlineUpdate = () => {
-      console.log("📡 Received outline update event, refreshing...");
       fetchCourseOutline();
     };
 

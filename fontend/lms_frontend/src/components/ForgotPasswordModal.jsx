@@ -30,11 +30,7 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
 
     try {
       setIsLoading(true);
-      
-      console.log("Sending forgot password request for:", email);
-      
       await requestForgotPassword(email);
-      
       setSuccess(true);
       setEmail("");
       

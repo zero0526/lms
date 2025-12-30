@@ -57,7 +57,6 @@ export default function StudentCourseDetail() {
 
   // Reset all states when courseId changes
   useEffect(() => {
-    console.log("🔄 Course ID changed to:", courseId);
     
     setIsEnrolled(false);
     setCourseDetails(null);
@@ -83,29 +82,22 @@ export default function StudentCourseDetail() {
       try {
         setIsLoading(true);
 
-        console.log("📚 Fetching course data for courseId:", courseId);
-
         // 1. Fetch course details
         const detailsData = await getCourseDetails(courseId);
         setCourseDetails(detailsData.data);
 
         // 2. Check if user is logged in
         if (!currentUser?.userId) {
-          console.log("👤 Guest user - fetching public outline");
           
           // Guest: Fetch public outline
           const publicOutline = await getCourseOutlinePublic(courseId);
           
-          console.log("📦 Public Outline:", publicOutline);
-          
           setIsEnrolled(false);
           setCourseOutline(publicOutline.data?.chapters || []);
         } else {
-          console.log("👤 Logged in user - checking enrollment");
           
           // Logged in: Check enrollment status
           const enrolled = await checkEnrollmentStatus(currentUser.userId, courseId);
-          console.log("Enrollment status:", enrolled);
           setIsEnrolled(enrolled);
 
           // Fetch appropriate outline based on enrollment
@@ -115,14 +107,12 @@ export default function StudentCourseDetail() {
           } else {
             outlineData = await getCourseOutlinePublic(courseId);
           }
-          
-          console.log("📦 Outline data:", outlineData);
           setCourseOutline(outlineData.data?.chapters || []);
         }
         
         setIsLoading(false);
       } catch (err) {
-        console.error("❌ Failed to fetch course data:", err);
+        console.error("Failed to fetch course data:", err);
         setError("Unable to load course information. Please try again later.");
         setIsLoading(false);
       }
@@ -150,8 +140,6 @@ export default function StudentCourseDetail() {
         // Fetch the enrolled outline
         const enrolledOutline = await getCourseOutlineEnrolled(currentUser.userId, courseId);
         
-        console.log("Enrolled outline after enroll:", enrolledOutline);
-        
         setIsEnrolled(enrolledOutline.data?.isEnrolled || true);
         setCourseOutline(enrolledOutline.data?.chapters || []);
       }
@@ -172,8 +160,6 @@ export default function StudentCourseDetail() {
       try {
         setIsLoadingReviews(true);
         const reviewsData = await getCourseReviews(courseId, reviewPage, reviewLimit);
-        
-        console.log("Reviews data:", reviewsData);
         
         if (reviewsData.data && reviewsData.data.content) {
           setReviews(prev => reviewPage === 0 ? reviewsData.data.content : [...prev, ...reviewsData.data.content]);
@@ -212,7 +198,6 @@ const refreshReviews = async () => {
     
     // Fetch reviews again from page 0
     const reviewsData = await getCourseReviews(courseId, 0, reviewLimit);
-    console.log("Refreshed reviews:", reviewsData);
     
     if (reviewsData.data && reviewsData.data.content) {
       setReviews(reviewsData.data.content);
@@ -254,8 +239,6 @@ const handleSubmitReview = async () => {
       courseId: parseInt(courseId),
       comment: userComment.trim()
     };
-
-    console.log("Submitting review:", reviewData);
 
     await submitCourseReview(reviewData);
     

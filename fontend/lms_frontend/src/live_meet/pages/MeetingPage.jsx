@@ -24,8 +24,6 @@ export default function MeetingPage() {
       alias: alias
     });
   
-    console.log("result join room", result);
-  
     if (result) {
       setConnectionData({
         token: result.token,

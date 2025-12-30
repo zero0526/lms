@@ -42,8 +42,6 @@ export default function MyCoursesContent() {
         setIsLoading(true);
         const response = await fetchPublishedCourses(userId);
 
-        console.log("Published Courses Response:", response);
-
         const mappedCourses = (response.data || []).map(course => ({
           id: course.courseId,
           courseId: course.courseId,

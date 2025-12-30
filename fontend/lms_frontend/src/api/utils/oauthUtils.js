@@ -28,8 +28,6 @@ const deleteCookie = (name) => {
  * @returns {Object|null} User data or null if no tokens found
  */
 export const processOAuthTokens = () => {
-  console.log("🔐 Processing OAuth tokens from cookies...");
-  
   // Get tokens from cookies
   const accessToken = getCookie('accessToken');
   const refreshToken = getCookie('refreshToken');
@@ -40,8 +38,6 @@ export const processOAuthTokens = () => {
     return null;
   }
   
-  console.log("✅ Found accessToken in cookie");
-  
   // Get remember preference from OAuth flow
   const rememberMe = sessionStorage.getItem('oauth_remember') === 'true';
   const storage = rememberMe ? localStorage : sessionStorage;
@@ -50,7 +46,6 @@ export const processOAuthTokens = () => {
   storage.setItem('accessToken', accessToken);
   if (refreshToken) {
     storage.setItem('refreshToken', refreshToken);
-    console.log("✅ Saved refreshToken to storage");
   }
   
   // Parse and save user data
@@ -59,7 +54,6 @@ export const processOAuthTokens = () => {
     try {
       userData = JSON.parse(decodeURIComponent(userDataStr));
       storage.setItem('user', JSON.stringify(userData));
-      console.log("Saved user data to storage:", userData);
     } catch (e) {
       console.error("Failed to parse userData cookie:", e);
     }
@@ -72,8 +66,6 @@ export const processOAuthTokens = () => {
   
   // Clean up OAuth session storage
   sessionStorage.removeItem('oauth_remember');
-  
-  console.log("🧹 Cleaned up OAuth cookies");
   
   return userData;
 };
@@ -106,6 +98,4 @@ export const clearAuthData = () => {
   deleteCookie('refreshToken');
   deleteCookie('userData');
   deleteCookie('JSESSIONID');
-  
-  console.log("🧹 Cleared all auth data");
 };

@@ -5,35 +5,11 @@ import apiClient from "../axiosConfig";
  */
 export const fetchLessonDetails = async (userId, lessonId) => {
   try {
-    console.log(`Fetching details for lessonID: ${lessonId}...`);
     const res = await apiClient.get(`/lesson/details`, {
       params: { userId, lessonId },
     });
 
     const details = res.data.data;
-    
-    // --- LOG DEBUG ---
-    console.log(`=== LESSON DETAILS: ${lessonId} ===`);
-    if (details) {
-      console.log(`Title: "${details.title}"`);
-      console.log(`Duration: ${details.duration}`);
-      
-      if (details.urlVideo) {
-        console.log(`=== VIDEO ===`);
-        console.log(`Video URL: ${details.urlVideo}`);
-      }
-      
-      if (details.docs) {
-        console.log(`=== DOCUMENTS ===`);
-        if (Array.isArray(details.docs)) {
-          console.log(`Document Count: ${details.docs.length}`);
-        }
-      }
-      
-      if (details.quizzes && details.quizzes.length > 0) {
-        console.log(`=== QUIZZES (${details.quizzes.length}) ===`);
-      }
-    }
 
     return details;
   } catch (error) {
@@ -89,9 +65,7 @@ export const updateLesson = async (lessonId, title, order, description = "") => 
  */
 export const deleteLesson = async (lessonId) => {
   try {
-    console.log(`Deleting lesson: ${lessonId}`);
     const res = await apiClient.delete(`/lesson/${lessonId}`);
-    console.log("Delete lesson response:", res);
     return res.data;
   } catch (error) {
     console.error("Error deleting lesson:", error);
@@ -164,9 +138,7 @@ export const updateLessonDoc = async (lessonId, docData, lessonTitle, lessonOrde
  */
 export const deleteLessonDoc = async (docId) => {
   try {
-    console.log(`Deleting document ${docId} from lesson ${lessonId}`);
     const res = await apiClient.delete(`/course-material/${docId}`);
-    console.log("Delete lesson document response:", res);
     return res.data;
   } catch (error) {
     console.error("Error deleting lesson document:", error);

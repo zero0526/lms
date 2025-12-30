@@ -48,7 +48,6 @@ export default function CourseList() {
       try {
         const tagsResponse = await getCourseTags(10);
         const tagsData = tagsResponse.data || [];
-        console.log("Tags Data:", tagsData);
         setCategories(tagsData);
       } catch (error) {
         console.error("Failed to fetch tags:", error);
@@ -121,11 +120,7 @@ export default function CourseList() {
 
           params.sortBy = filters.sort === "newest" ? "latest" : filters.sort;
 
-          console.log("Fetching with params:", params);
-
           const coursesResponse = await getIntroduceCourses(params);
-          
-          console.log("API Response:", coursesResponse);
           
           coursesData = coursesResponse.data.content || [];
           totalCount = coursesResponse.data.totalElements || 0;
@@ -146,8 +141,6 @@ export default function CourseList() {
           instructorName: course.instructorName || "Unknown",
           isCompleted: course.isCompleted
         }));
-        
-        console.log("Mapped Courses:", mappedCourses);
 
         setCourses(mappedCourses);
         setFilteredCourses(mappedCourses);

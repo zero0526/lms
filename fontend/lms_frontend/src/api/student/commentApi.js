@@ -10,9 +10,6 @@ import apiClient from "../axiosConfig";
  */
 export const postQuestionComment = async (userId, questionId, content, parentCommentId = null) => {
   try {
-    console.log("=== POST COMMENT ===");
-    console.log(`User ID: ${userId}, Question ID: ${questionId}`);
-    console.log(`Content: ${content}, Parent ID: ${parentCommentId}`);
 
     const payload = {
       questionId,
@@ -21,8 +18,7 @@ export const postQuestionComment = async (userId, questionId, content, parentCom
     };
 
     const response = await apiClient.post(`/question-comment/${userId}`, payload);
-    
-    console.log("Comment posted successfully:", response.data);
+
     return response.data;
   } catch (error) {
     console.error("Failed to post comment:", error);
@@ -43,9 +39,7 @@ export const postQuestionComment = async (userId, questionId, content, parentCom
  */
 export const fetchQuestionComments = async (questionId) => {
   try {
-    console.log(`Fetching comments for question: ${questionId}`);
     const response = await apiClient.get(`/question-comment/question/${questionId}`);
-    console.log("Comments fetched:", response.data);
     
     // Transform response to match expected structure
     const comments = (response.data.data || []).map(comment => ({
@@ -77,7 +71,6 @@ export const fetchQuestionComments = async (questionId) => {
  */
 export const editQuestionComment = async (commentId, userId, content) => {
   try {
-    console.log(`Editing comment ${commentId} by user ${userId}`);
     
     const response = await apiClient.put(`/question-comment/${commentId}`, null, {
       params: {
@@ -85,8 +78,7 @@ export const editQuestionComment = async (commentId, userId, content) => {
         content
       }
     });
-    
-    console.log("Comment edited successfully:", response.data);
+
     return response.data;
   } catch (error) {
     console.error("Failed to edit comment:", error);
@@ -108,7 +100,6 @@ export const editQuestionComment = async (commentId, userId, content) => {
  */
 export const deleteQuestionComment = async (commentId, userId) => {
   try {
-    console.log(`Deleting comment ${commentId} by user ${userId}`);
     
     const response = await apiClient.delete(`/question-comment/${commentId}`, {
       params: {
@@ -116,7 +107,7 @@ export const deleteQuestionComment = async (commentId, userId) => {
       }
     });
     
-    console.log("Comment deleted successfully:", response.data);
+
     return response.data;
   } catch (error) {
     console.error("Failed to delete comment:", error);
@@ -140,9 +131,7 @@ export const getCommentReplies = async (commentId) => {
   }
 
   try {
-    console.log(`Fetching replies for comment: ${commentId}`);
     const response = await apiClient.get(`/question-comment/question-comment/${commentId}`);
-    console.log("Replies response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Get comment replies error:", error);

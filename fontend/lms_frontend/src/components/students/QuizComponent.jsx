@@ -76,11 +76,7 @@ export default function QuizComponent({ quizzes }) {
         return;
       }
 
-      console.log("Starting quiz with ID:", quizId, "for user:", userId);
-
       const response = await startQuiz(quizId, userId);
-
-      console.log("Quiz started, response:", response);
 
       setQuestions(response.data.questions);
       setAttemptId(response.data.attemptId);
@@ -139,14 +135,8 @@ export default function QuizComponent({ quizzes }) {
       setQuizState("submitting");
       setSubmitError(null);
 
-      console.log("Submitting quiz...");
-      console.log("Attempt ID:", attemptId);
-      console.log("Answers:", answers);
-
       // Call API
       const response = await submitQuiz(attemptId, answers);
-
-      console.log("Quiz submitted successfully:", response);
       
       setSubmittedAttemptId(attemptId);
       setQuizState("completed");

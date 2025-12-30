@@ -4,15 +4,11 @@ import apiClient from "../axiosConfig";
  * Fetch user profile by userId
  */
 export const fetchUserProfile = async (userId) => {
-  try {
-    console.log(`=== FETCHING USER PROFILE ===`);
-    console.log(`User ID: ${userId}`);
-    
+  try { 
     const response = await apiClient.get(`/user/info/${userId}`);
     const result = response.data;
 
     if (result.status === 200) {
-      console.log("Profile Data:", result.data);
       return result.data;
     }
     
@@ -31,8 +27,6 @@ export const fetchUserProfile = async (userId) => {
  */
 export const updateUserProfile = async (userId, profileData, avatarFile = null) => {
   try {
-    console.log("=== UPDATE PROFILE ===");
-    console.log(`User ID: ${userId}`);
     
     const formData = new FormData();
     formData.append("fullName", profileData.fullName || "");
@@ -43,17 +37,6 @@ export const updateUserProfile = async (userId, profileData, avatarFile = null) 
 
     if (avatarFile) {
       formData.append("picture", avatarFile);
-      console.log(`Uploading avatar: ${avatarFile.name}`);
-    }
-
-    // ← LOG FormData
-    console.log("FormData Content:");
-    for (let pair of formData.entries()) {
-      if (pair[1] instanceof File) {
-        console.log(`  ${pair[0]}: [File: ${pair[1].name}]`);
-      } else {
-        console.log(`  ${pair[0]}: ${pair[1]}`);
-      }
     }
 
     const res = await apiClient.put(`/user/update/info/${userId}`, formData, {
@@ -62,15 +45,8 @@ export const updateUserProfile = async (userId, profileData, avatarFile = null) 
       }
     });
 
-    console.log("=== API RESPONSE ===");
-    console.log("Status:", res.status);
-    console.log("Data:", res.data);
-
     if (res.status === 200) {
-      // ← Đợi backend upload ảnh xong (1 giây)
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // ← Fetch lại profile để lấy pictureUrl mới
       const updatedProfile = await fetchUserProfile(userId);
       return updatedProfile;
     }

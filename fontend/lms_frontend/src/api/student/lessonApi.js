@@ -18,16 +18,12 @@ export const getLessonDetail = async (userId, lessonId) => {
   }
 
   try {
-    console.log("Fetching lesson detail for userId:", userId, "lessonId:", lessonId);
-    
     const response = await apiClient.get(`/lesson/details`, {
       params: {
         userId: userId,
         lessonId: lessonId
       }
     });
-    
-    console.log("Lesson detail response:", response.data);
     
     return response.data;
   } catch (error) {
@@ -52,21 +48,13 @@ export const updateVideoProgress = async (userId, lessonId, courseId, currentSec
   }
 
   try {
-    console.log("📹 Updating video progress:", {
-      userId,
-      lessonId,
-      courseId,
-      currentSecond: Math.floor(currentSecond)
-    });
-
     const response = await apiClient.post('/course/update-progress', {
       lessonId: parseInt(lessonId),
       userId: parseInt(userId),
       currentSecond: Math.floor(currentSecond),
       courseId: parseInt(courseId)
     });
-    
-    console.log("Progress updated:", response.data);
+
     return response.data;
   } catch (error) {
     console.error("Update video progress error:", error);
@@ -93,7 +81,6 @@ export const updateLessonProgress = async (userId, lessonId, progress) => {
       progress: Math.min(100, Math.max(0, progress))
     });
     
-    console.log("Progress updated:", response.data);
     return response.data;
   } catch (error) {
     console.error("Update progress error:", error);
@@ -132,7 +119,6 @@ export const updateLastWatchedAt = async (userId, lessonId, watchedAt) => {
 export const markLessonCompleted = async (userId, lessonId) => {
   try {
     const response = await updateLessonProgress(userId, lessonId, 100);
-    console.log("Lesson marked as completed");
     return response;
   } catch (error) {
     console.error("Mark completed error:", error);

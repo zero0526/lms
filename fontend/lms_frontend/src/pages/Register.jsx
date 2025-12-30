@@ -38,7 +38,6 @@ export default function Register() {
         roleName, 
       };
       
-      console.log("Register Payload:", payload);
       await apiClient.post("/auth/register", payload);
       alert("Registration successful! Please check your email to verify your account before logging in.");
       navigate("/login");

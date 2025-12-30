@@ -98,7 +98,6 @@ export const getCourseOutlineEnrolled = async (userId, courseId) => {
   }
 
   const response = await apiClient.get(`/course/outline?userId=${userId}&courseId=${courseId}`);
-  console.log("📦 Enrolled Outline Response:", response.data);
   return response.data;
 };
 
@@ -118,17 +117,11 @@ export const enrollCourse = async (userId, courseId) => {
   }
 
   try {
-    console.log("=== ENROLLING IN COURSE ===");
-    console.log("User ID:", userId);
-    console.log("Course ID:", courseId);
-
     const enrollData = {
       userId: parseInt(userId),
       courseId: parseInt(courseId),
       enrolledAt: new Date().toISOString()
     };
-    
-    console.log("📤 Enroll request data:", enrollData);
     
     // Tạo request riêng với full URL (không qua apiClient)
     const baseURL = apiClient.defaults.baseURL.replace('/api', ''); // Loại bỏ /api
@@ -138,10 +131,7 @@ export const enrollCourse = async (userId, courseId) => {
         'Authorization': apiClient.defaults.headers.Authorization || ''
       }
     });
-    
-    console.log("Enroll response:", response.data);
-    console.log("=== END ENROLL ===\n");
-    
+
     return response.data;
     
   } catch (error) {
@@ -167,7 +157,6 @@ export const enrollCourse = async (userId, courseId) => {
  */
 export const checkEnrollmentStatus = async (userId, courseId) => {
   if (!userId || userId === 'undefined' || userId === undefined) {
-    console.log("⚠️ No userId - User is guest");
     return false;
   }
 
@@ -177,23 +166,12 @@ export const checkEnrollmentStatus = async (userId, courseId) => {
   }
 
   try {
-    console.log("=== CHECK ENROLLMENT STATUS ===");
-    console.log("userId:", userId);
-    console.log("courseId:", courseId);
-    
     // Gọi API outline với userId
     const response = await apiClient.get(`/course/outline?userId=${userId}&courseId=${courseId}`);
-    
-    console.log("📦 Response:", response.data);
-    
     // BE đã trả về isEnrolled field rồi!
     const isEnrolled = response.data?.data?.isEnrolled || false;
-    
-    console.log("Enrollment status from BE:", isEnrolled);
-    console.log("=== END CHECK ENROLLMENT ===\n");
-    
+
     return isEnrolled;
-    
   } catch (error) {
     console.error("Check enrollment error:", error);
     return false;

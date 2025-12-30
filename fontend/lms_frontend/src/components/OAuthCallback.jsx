@@ -9,27 +9,20 @@ export default function OAuthCallback() {
   const { setUser } = useUser();
   
   useEffect(() => {
-    console.log("📍 OAuth Callback Page Loaded");
-    
     // Process tokens from cookies
     const userData = processOAuthTokens();
     
     if (userData) {
       // Update user context
       setUser(userData);
-      
       // Get redirect path
       const redirectTo = getOAuthRedirect();
-      
-      console.log("✅ OAuth login successful");
-      console.log("Redirect to:", redirectTo || '/home');
-      
       // Redirect user
       setTimeout(() => {
         navigate(redirectTo || '/home', { replace: true });
       }, 500);
     } else {
-      console.error("❌ OAuth login failed - no tokens found");
+      console.error("OAuth login failed - no tokens found");
       alert("OAuth login failed. Please try again.");
       navigate('/login', { replace: true });
     }
