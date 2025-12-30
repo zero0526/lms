@@ -1,5 +1,5 @@
 import axios from "axios";
-import { redirectToLogin } from '../utils/navigationHelper';
+import { redirectToLogin } from "./utils/navigationHelper";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
