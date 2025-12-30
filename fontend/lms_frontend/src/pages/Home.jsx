@@ -2,11 +2,61 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import heroImg from "../assets/hero1.png";
 import featureImg from "../assets/features.png";
-import ExploreCourses from "../components/ExploreCourses";
 import WhatIsTOTC from "../components/WhatIsTOTC";
 import AllInOneSoftware from "../components/AllInOneSoftware";
+import { useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useUser } from "../contexts/UserContext";
 
 export default function Home() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { setUser } = useUser();
+
+  // Xử lý OAuth Callback từ Backend
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const accessToken = params.get("accessToken");
+
+    if (accessToken) {
+      const refreshToken = params.get("refreshToken");
+      const userToSave = {
+        userId: params.get("id"),
+        userName: params.get("fullName"), 
+        email: params.get("email"),
+        role: params.get("role"),
+        avatar: params.get("pictureUrl"),
+      };
+
+      const remember = sessionStorage.getItem("oauth_remember") === "true";
+      const redirectUrl = sessionStorage.getItem("oauth_redirect");
+      
+      const userString = JSON.stringify(userToSave);
+
+      if (remember) {
+        localStorage.setItem("accessToken", accessToken);
+        if (refreshToken) localStorage.setItem("refreshToken", refreshToken);
+        localStorage.setItem("user", userString);
+      } else {
+        sessionStorage.setItem("accessToken", accessToken);
+        if (refreshToken) sessionStorage.setItem("refreshToken", refreshToken);
+        sessionStorage.setItem("user", userString);
+      }
+
+      setUser(userToSave);
+
+      sessionStorage.removeItem("oauth_remember");
+      sessionStorage.removeItem("oauth_redirect");
+      sessionStorage.removeItem("oauth_course_name");
+
+      if (redirectUrl) {
+        navigate(redirectUrl, { replace: true });
+      } else {
+        navigate("/home", { replace: true });
+      }
+    }
+  }, [location, navigate, setUser]);
+  
   return (
     <div className="bg-white text-gray-800">
       <Navbar />
