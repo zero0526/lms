@@ -8,6 +8,8 @@ import ForgotPasswordModal from "../components/ForgotPasswordModal";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:8081";
 
+console.log("Backend URL:", BACKEND_URL);
+
 const GoogleIcon = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24">
     <path
