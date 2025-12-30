@@ -85,6 +85,8 @@ export default function Login() {
       const response = await apiClient.post('/auth/login', payload);
       const responseData = response.data.data;
 
+      console.log("Login Response Data:", responseData);
+
       const accessToken = responseData.accessToken;
       const refreshToken = responseData.refreshToken;
 
